@@ -1,0 +1,14 @@
+git*.mat
++Semedo_*
+cmocean/*
+.MATLABDriveTag*
+utils/*
+data/*
+*.csv
+Tutorial/
+gramm/
+.other_matfiles
+DATA_TABLES
+*.sess
+*.vim
+figures
