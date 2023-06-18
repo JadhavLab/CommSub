@@ -1,36 +1,59 @@
-function Components = timeVarying(Patterns, Option)
+function Components = timeVarying(Patterns, Option, r)
+% Components = timeVarying(Patterns, Option)
+%
+% This function takes the patterns and performs the time varying analysis
+% on them. It returns a struct with the critical components for each
+% behavior and the subspaces for each behavior.
+%
+% Inputs:
+%   Patterns: struct with the patterns for each partition
+%   Option: struct with the options for the analysis
+%
+% Outputs:
+%   Components: struct with the critical components for each behavior and
+%   the subspaces for each behavior
+
+
+disp("Running time varying analysis")
+tic
+
+const = option.constants();
+
+if ~isfield(Patterns, 'rankRegress') || isempty(Patterns(1).rankRegress)
+    error("Patterns must have the rankRegress field")
+end
 
 %% Take the behavior table
-running_spikeTimes = timeBinMidPoints(sessionTypePerBin == 1);
-[animal_behavior, throwout_times] = table.behavior.lookup(animal, running_spikeTimes);
+running_spikeTimes = r.timeBinMidPoints(r.sessionTypePerBin == 1);
+[animal_behavior, throwout_times] = table.behavior.lookup(Option.animal, ...
+    running_spikeTimes);
 [animal_behavior,unique_times] = behaviors.addBehToTable(animal_behavior);
 
 clear Components
-Components= struct("compAnalysisByBeh",[], "allSubSpaceComponents",[]);
+Components= struct(...
+    "compAnalysisByBeh",[], ...
+    "allSubSpaceComponents",[]...
+);
 Components = repmat(Components, ...
-    [Option.numPartition, Option.waysOfPartitions]);
+                    [Option.numPartition, Option.waysOfPartitions]);
 
 for p = 1:Option.numPartition
     for j = [HPC, PFC]
-        if j == HPC
-            target = "CA1";
-        else
-            target = "PFC";
-        end
+
+        target = const.areanames(j);
         
-        B_ = cell(1,6);
-        for i = 1:nPatternAndControl
+        B_ = cell(1,Option.nPatternAndControl);
+        for i = 1:Option.nPatternAndControl
             B_{i} = Patterns(p,j,i).rankRegress.B_;
         end
         
         [total_subspaces, cell_subspaces] = components.subspaceSimilarity...
-            (Option.dimCompAnalysis, B_, spikeRateMatrix, celllookup, Option.sourceArea, target,...
+            (Option.dimCompAnalysis, B_, r.spikeRateMatrix, r.celllookup, Option.sourceArea, target,...
             'source_index', Patterns(p,j,i).index_source,...
             'target_index', Patterns(p,j,i).index_target);
         
-        [ behavior_running_subspaces] = components.animalBehComponents...
+        [behavior_running_subspaces] = components.animalBehComponents...
             (unique_times, throwout_times, total_subspaces,sessionTypePerBin);
-        % also add the subspace strength to the table
  
         [critical_behaviors, unifiedTime, critical_components, critical_times] = ...
             components.makeBehaviorStructs(Option.dimCompAnalysis, cellOfWindows, ...
@@ -45,5 +68,7 @@ for p = 1:Option.numPartition
         end
     end
 end
+
+disp("Finished time varying analysis in " + string(toc) + " seconds")
 
 

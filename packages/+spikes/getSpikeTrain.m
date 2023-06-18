@@ -16,6 +16,9 @@ function [timeBinStartEnd, timeBinMidPoints, times_spiking, spikeCountMatrix, sp
 %   is swept along the time axis collecting samples at the
 %   samplingRate.
 %
+%  if not given, the timebinSize is used as the sampling rate
+%   and the window size is set to 1 second.
+%
 % Output
 % -----
 % timeBinStartEnd: axis of start and end times of each time bin
@@ -46,6 +49,9 @@ function [timeBinStartEnd, timeBinMidPoints, times_spiking, spikeCountMatrix, sp
 %% setting up inputs
 %     filename = "JS15spikes01.mat";
 %     timebinSize = 0.1;
+
+disp("...loading spikes for " + animal)
+tic
 
 load(animal + "spikes01.mat");
 % % In this case using for-looping integers is easier than raw forlooping the
@@ -105,6 +111,7 @@ for epoch = 1:numel(spikes)
                             if isempty(spikes{epoch}{tetrode}{neuron}.data)
                                 continue
                             else
+                                disp("...getting spike times for neuron " + neuron + " on tetrode " + tetrode + " on epoch " + epoch)
                                 neuron_data = spikes{epoch}{tetrode}{neuron}.data(:,1);
                                 times_spiking{i} = [times_spiking{i}, neuron_data'];
                                 
@@ -125,6 +132,7 @@ start_time = intmax;
 end_time = -1;
 
 % find the start & end time of the day
+disp("...finding start and end times of the day")
 for i = 1:num_cells
     if isempty(times_spiking{i})
         continue
@@ -154,7 +162,8 @@ if nargin == 3 && ~isempty(samplingRate) %RY added new option for sampling rate 
     nTimes = length(timeBinStartEnd);
     spikeCountMatrix = zeros(num_cells,nTimes);
     
-    
+    % chunk size is the number of time bins to process at a time -- purely for
+    % the amount of time to process each loop
     chunkSize = 500;
     
     %         spikeCountSlice = zeros(1, nTime);
@@ -169,8 +178,8 @@ if nargin == 3 && ~isempty(samplingRate) %RY added new option for sampling rate 
     %             spikeCountMatrix(i, :) = spikeCountSlice;
     %         end
     %         spikeRateMatrix = spikeCountMatrix/timebinSize;
-    
-    
+
+    % windowStarts/Stops determines the start and stop times of each time bin
     windowStarts = (timeBinStartEnd - timebinSize/2);
     windowStops =  (timeBinStartEnd + timebinSize/2);
     p = ProgressBar(num_cells, ...
@@ -231,3 +240,4 @@ for i = 1:numel(timeBinMidPoints)
     end
 end
 
+disp("...done " + toc + " seconds")

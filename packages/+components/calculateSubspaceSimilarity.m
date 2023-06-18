@@ -1,10 +1,26 @@
 function [subspace, subspace_belonging] = calculateSubspaceSimilarity...
     (optDim, B_, spikeRaster, celllookup, sourceRegion, targetRegion, varargin)
+%CALCULATESUBSPACESIMILARITY calculate the similarity of the firing rate
+% activity of the cells to the subspace provided in B_
+%
+% Inputs:
+%   optDim - the number of dimensions to use for the subspace, Optimal Dimension
+%   B_ - the subspace
+%   spikeRaster - the spike raster matrix
+%   celllookup - the cell lookup table
+%   sourceRegion - the source region, string 
+%   targetRegion - the target region, string
+%   varargin - 'source_index' - the index of the source cells
+%              'target_index' - the index of the target cells
+%
+% Outputs:
+%   subspace - the subspace
+%   subspace_belonging - the similarity of the firing rate activity of the
+%   cells to the subspace
 
 ip = inputParser;
 ip.addParameter('source_index', []);
 ip.addParameter('target_index', []);
-
 ip.parse(varargin{:});
 opt = ip.Results;
 
@@ -16,6 +32,7 @@ opt = ip.Results;
 subspace = [];
 
 
+% build a row of the expected source and target neuron activity
 for iRank = 1:optDim
     curr_source = u(:,iRank);
     curr_target = v(:,iRank);
@@ -26,11 +43,11 @@ end
 
 
 
-%%
-if ~isempty(opt.source_index) | ~isempty(opt.target_index)
-    % get the speicifc cells from the whole spike raster by the source/target
-    % indices
+% calculate the similarity of the firing rate activity of the cells to the
+% subspace
+if ~isempty(opt.source_index) || ~isempty(opt.target_index)
 
+    % grab the correct cells specified by the source and target index
     selected_spikeRaster = [];
     for i = 1:numel(opt.source_index)
         for j = 1:height(celllookup)
@@ -52,7 +69,7 @@ if ~isempty(opt.source_index) | ~isempty(opt.target_index)
     end
     %% take the subspaces
     try
-    subspace_belonging = subspace * selected_spikeRaster;
+        subspace_belonging = subspace * selected_spikeRaster;
     catch
         keyboard
     end

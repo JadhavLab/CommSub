@@ -5,6 +5,8 @@ function Patterns = partition(r, Option)
 % when the partition is three-ways, direction==1 means same target/source pair
 % and direction==2 means diff target/source pair
 % ----------------------------
+disp('Partitioning data...')
+tic
  
 % Initialize the scaffold of the pattern struct
 Patterns = initPatternStruct();
@@ -66,3 +68,4 @@ if numel(szCellOfWindows) == 2 && szCellOfWindows(1) == 1
 end
 Patterns = reshape(Patterns, [Option.numPartition, numel(directionality), size(r.windowInfo.cellOfWindows)]);
 
+disp(['Partitioning data took ', num2str(toc), ' seconds.'])

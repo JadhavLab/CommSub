@@ -1,4 +1,28 @@
 function Patterns = rankRegress(Patterns, Option)
+% RANKREGRESS - Reduced rank regression
+%   Patterns = rankRegress(Patterns, Option)
+%
+% INPUTS:
+%   Patterns - [1 x 1 struct] see partitionPatterns.m for fields
+%   Option   - [1 x 1 struct] see option.setdefaults.m and
+%                                 option.defaults.m for all fields
+%
+% OUTPUTS:
+%   Patterns - [1 x 1 struct] see partitionPatterns.m for fields
+%                   adds the following fields:
+%                   rankRegress - [1 x 1 struct]
+%                       cvl - [1 x 1 struct] cross validation loss
+%                       cvLoss - [2 x nDims] cross validation loss
+%                       optDimReducedRankRegress - [1 x 1 double]
+%                       B - [nTarget x nDims] regression weights
+%                       B_ - [nSource x nDims] regression weights
+%                       V - [nDims x nDims] covariance matrix
+%                       muOptLoss - [1 x 1 double] mean optimal loss
+%                       stdOptLoss - [1 x 1 double] std optimal loss
+%                       muFullLoss - [1 x 1 double] mean full loss
+%                       stdFullLoss - [1 x 1 double] std full loss
+disp("rank regression")
+tic
 
 if Option.waysOfPartitions ~= 2
     nTarget = size(Patterns(1).X_target,1);
@@ -29,7 +53,8 @@ cvFun = @(Ytrain, Xtrain, Ytest, Xtest) ...
 % and then recomputes B,V,B_ with optimal dimension
 % -------------------------------------------------------------------
 
-for n = progress(numel(Patterns), 'Title', 'RankRegress')
+disp("Running " + numel(Patterns) + " partitions")
+for n = progress(1:numel(Patterns), 'Title', 'RankRegress')
 
     p = Patterns(n);
 
@@ -92,3 +117,5 @@ for n = progress(numel(Patterns), 'Title', 'RankRegress')
 
     Patterns(n) = p;
 end
+
+disp("rank regression done in "+toc+" seconds")

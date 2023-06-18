@@ -1,4 +1,38 @@
 function [cellOfWindows, cutoffs] = ThetaDeltaRipple(Events, Option)
+% [cellOfWindows, cutoffs] = ThetaDeltaRipple(Events, Option)
+%   Generates windows for theta, delta, and ripple events
+%   INPUTS:
+%       Events: struct with fields:
+%           times: 1 x nEvents vector of event times
+%           H: nEvents x nPatterns matrix of H values
+%           Hvals: nEvents x nPatterns matrix of H values
+%       Option: struct with fields:
+%           patternNames: 1 x nPatterns cell array of pattern names
+%               (e.g. {'SWR', 'Ripple', 'Theta', 'Delta'})
+%           winSize: size of window in seconds
+%               (e.g. 0.5)
+%           quantileToMakeWindows: quantile of H values to make windows
+%               (e.g. 0.9)
+%           equalWindowsAcrossPatterns: true/false
+%               meaning if true, equalizes number of windows across patterns
+%           generateH: cell array of strings of H to generate
+%               meaning if {'fromCoherence', 'fromWpli'}, then will generate
+%               H from coherence and wpli
+%           lowerControl: true/false
+%               meaning if true, will generate control windows from lower
+%               quantile of H values
+%           oldControlBehavior: true/false
+%               meaning if true, will generate control windows from lower
+%               quantile of H values
+%           singleControl: true/false
+%               meaning if true, will generate control windows from lower
+%               quantile of H values
+%   OUTPUTS:
+%       cellOfWindows: 1 x nPatterns cell array of windows
+%       cutoffs: nPatterns x 1 vector of cutoffs
+
+disp("Generating windows for events")
+tic;
 
 THETA  = 1;
 DELTA  = 2;
@@ -108,3 +142,7 @@ if Option.singleControl && warnedEmptyControls
     end
 end
 
+disp("")
+disp("Windows generated " + num2str(numWindowsCut) + " windows cut")
+disp("  time elapsed: " + num2str(toc) + " seconds")
+disp("  cutoffs: " + num2str(cutoffs))

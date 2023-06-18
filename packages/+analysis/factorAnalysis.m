@@ -1,12 +1,16 @@
 function Patterns = factorAnalysis(Patterns, Option)
 
-q = 1: nSource;
-cvNumFolds = 10;
+consts = option.constants();
+HPC = consts.HPC;
+PFC = consts.PFC;
+
+cvNumFolds = Option.rankRegress.cvNumFolds;
 cvOptions = statset('crossval');
 regressMethod = @FactorRegress;
 for p = 1:Option.numPartition
-    for i = 1:nPatternAndControl
+    for i = 1:Option.nPatternAndControl
         for j = [HPC, PFC]
+            q = 1: nSource;
             disp("processing the "+p+" partition and the "+i+" pattern "+j)
             currSource = Patterns(p,j,i).X_source';
             currTarget = Patterns(p,j,i).X_target';

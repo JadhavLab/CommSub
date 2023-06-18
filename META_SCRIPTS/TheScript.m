@@ -67,6 +67,7 @@ r.pfc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "PFC");
 r.hpc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "CA1");
 r.pfc.X = trialSpikes.separateSpikes(spikeSampleMatrix, areaPerNeuron, "PFC");
 r.hpc.X = trialSpikes.separateSpikes(spikeSampleMatrix, areaPerNeuron, "CA1");
+
 %% Separate firing pattern into source and target
 [nPFCneurons,~,~] = size(r.pfc.X{1});
 [nHPCneurons,~,~] = size(r.hpc.X{1});
@@ -80,6 +81,9 @@ r.windowInfo.cellOfWindows = cellOfWindows;
 r.windowInfo.nWindows      = cellfun(@(x) size(x, 1), cellOfWindows);
 r.nPattern = 3;
 r.nControl = Option.nPatternAndControl - r.nPattern;
+r.timeBinMidPoints = timeBinMidPoints;
+r.sessionTypePerBin = sessionTypePerBin;
+frChecks(r, "appendFigTitle", r.animal);
 
 
 %%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
@@ -87,12 +91,16 @@ Patterns = trialSpikes.partitionAndInitialize(r, Option);
 
 %%%%%%%%%%%%%%%% ANALYSIS SECTION    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if Option.analysis.rankRegress
-    % TODO: fix Option.rankregress => Option.rankRegress
+    % TODO: 
+    % 1. fix Option.rankregress => Option.rankRegress
+    % 2. most rankRegress.B_ are empty
     Patterns = analysis.rankRegress(Patterns, Option);
 end
 
 if Option.analysis.timeVarying
     % ISSUE: hits a bug on line 4
+    % TODO: 1 .also return epochwise zscored neural firing matching
+    %       2. return timeseries of smoothed firing rate
     Components = analysis.timeVarying(Patterns, Option);
 end
 

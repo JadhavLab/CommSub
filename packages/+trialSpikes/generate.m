@@ -1,7 +1,11 @@
 function [spikeSampleMatrix, spikeSampleTensor, trialTimes] = ...
     generate(spikeCountMatrix, timeAxis, cellOfWindows, samplesPerTrial,...
     numResult)
-%
+% function [spikeSampleMatrix, spikeSampleTensor] = ...
+%     generate(spikeCountMatrix, timeAxis, cellOfWindows, samplesPerTrial,...
+%     numResult)
+% Generate spike sample matrix and tensor
+% 
 % Input
 % -----
 % spikes : numeric, time x neurons
@@ -22,6 +26,7 @@ function [spikeSampleMatrix, spikeSampleTensor, trialTimes] = ...
 % spikeSampleTensor : {neuron x time x trial per network pattern}
 %
 % Feb 16, 2021 modified to include trialTimes
+disp('Generating spike sample matrix and tensor')
 
 [nNeurons,~]      = size(spikeCountMatrix);
 spikeSampleTensor = cell(size(cellOfWindows));

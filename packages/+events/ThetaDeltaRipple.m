@@ -1,8 +1,46 @@
 function Events = ThetaDeltaRipple(Option)
+% Generates the event matrix for theta, delta and ripple events
+% 
+% USAGE : Events = ThetaDeltaRipple(Option)
+%
+% INPUT : Option : struct
+%   Option.animal : string
+%       Name of the animal
+%   Option.sourceArea : string
+%       Name of the source area
+%   Option.generateH : string
+%       Method for generating the event matrix
+%       "fromSpectra" : Use the spectrogram to generate the event matrix
+%       "fromFilteredEEG" : Use the filtered EEG to generate the event matrix
+%       "fromCoherence" : Use the coherence to generate the event matrix
+%       "fromWpli" : Use the wpli to generate the event matrix
+%       "fromRipTimes" : Use the ripple times to generate the event matrix
+%   Option.frequenciesPerPattern : int
+%       Number of frequencies per pattern
+%   Option.patternNames : cell array of strings
+%       Names of the patterns
+%   Option.globalrippleWindow : int
+%       Window size for the global ripple
+%   Option.globalrippleWindowUnits : string
+%       Units for the window size for the global ripple
+%
+% OUTPUT : Events : struct
+%   Events.times : array of doubles
+%       Times of the events, Tx3, where T is the number of events, and 3
+%       are the theta, delta and ripple events
+%   Events.H : array of doubles
+%       Event matrix
+%   Events.Hvals : array of doubles
+%       Values of the event matrix
+%   Events.Hnanlocs : array of doubles
+%       Locations of the NaNs in the event matrix
 
-THETA  = 1;
-DELTA  = 2;
+disp("Generating event matrix");
+tic;
+
 RIPPLE = 3;
+DELTA  = 2;
+THETA  = 1;
 
 if contains(Option.generateH, "fromSpectra")
 
@@ -50,22 +88,23 @@ end
 % `   ``|---'|---'`---'`---'`---'
 %       |    |                   
 %% Modify ripple pattern? Lower the threshold as with window sizes
-if contains(Option.generateH,"fromRipTimes")
+if contains(Option.generateH, "fromRipTimes")
 
     load(Option.animal + "globalripple01.mat");
     
     if any(contains(Option.generateH, ["fromWpli", "fromCoherence"]))
-        [~, H(:,RIPPLE), Hnanlocs(:,RIPPLE), Hvals(:,RIPPLE), minRippleThreshold, original] = ...
+        [~, H(:,RIPPLE), Hnanlocs(:,RIPPLE), Hvals(:,RIPPLE), minRippleThreshold, ~] = ...
             events.generateFromRipples(globalripple, ...
             'amplitude_at_riptime', true,...
             'rippleBand', Hvals(:,RIPPLE),...
             'rippleBandTime', times,...
             'globalrippleWindowUnits', 'amp');
     else
-        [~, H(:,RIPPLE), Hnanlocs(:,RIPPLE), Hvals(:,RIPPLE), minRippleThreshold, original] = ...
+        % RY: Hvals, not H here for obvious reasons: you  want the original ripple band activity
+        [~, H(:,RIPPLE), Hnanlocs(:,RIPPLE), Hvals(:,RIPPLE), minRippleThreshold, ~] = ...
             events.generateFromRipples(globalripple, ...
             'amplitude_at_riptime', true,...
-            'rippleBand', Hvals(:,RIPPLE),... RY: Hvals, not H here for obvious reasons: you  want the original ripple band activity
+            'rippleBand', Hvals(:,RIPPLE),... 
             'rippleBandTime', times,...
             'globalrippleWindowUnits', 'std');
     end
@@ -77,3 +116,4 @@ Events.H = H;
 Events.Hvals = Hvals;
 Events.Hnanlocs = Hnanlocs;
 Events.minRippleThreshold = minRippleThreshold;
+disp("Event matrix generated " + toc + " seconds");

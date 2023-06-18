@@ -60,7 +60,7 @@ Default.analysis.singleNeuronPrediction = false;
 % Default.generateH = "fromCoherence "+" fromRipTimes";
 % Default.generateH = "fromSpectra "+" fromRipTimes";
 %
-Default.rankregress.cvnum = 10; % number of cross-validation folds
+Default.rankRegress.cvnum = 10; % number of cross-validation folds
 Default.jpecc.cvnum = 4; % number of cross-validation folds
 
 
