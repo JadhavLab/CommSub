@@ -10,6 +10,7 @@ function [fig_smoothingthroughout, ...
 %   
 
 disp("Plotting spike rates for each bin to observe time dynamic");
+tic
 
 ip = inputParser();
 ip.addParameter('saveFigures', false, @islogical);
@@ -86,6 +87,8 @@ saveas(fig_smoothingindividual, fullfile(Opt.savePath, "smoothingindividual" + O
 saveas(fig_smoothingindividual, fullfile(Opt.savePath, "smoothingindividual" + Opt.appendFigTitle + ".svg"));
 
 close all;
+
+disp("Plotting spike rates for each bin to observe time dynamic took " + toc + " seconds");
 
 end
 

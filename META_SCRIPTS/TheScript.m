@@ -83,7 +83,9 @@ r.nPattern = 3;
 r.nControl = Option.nPatternAndControl - r.nPattern;
 r.timeBinMidPoints = timeBinMidPoints;
 r.sessionTypePerBin = sessionTypePerBin;
-frChecks(r, "appendFigTitle", r.animal);
+r.spikeRateMatrix = spikeRateMatrix;
+r.spikeCountMatrix = spikeCountMatrix;
+frChecks(r, "appendFigTitle", char(Option.animal));
 
 
 %%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
