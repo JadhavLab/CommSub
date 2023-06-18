@@ -4,6 +4,15 @@ function Default = defaults(name)
 % Returns the default structure encoding some basic options
 %
 % Now changes in default values automatically occur across scripts
+%
+% Important variables we iterate over:
+%   - Default.generateH = "fromCoherence "+" fromRipTimes" |
+%                         "fromSpectra "+" fromRipTimes"
+%   - Default.animal = "ZT2" | "JS13" | "JS14" | "JS21" | "ER1" | "JS17"
+%
+%  Less important iteration variables:
+%  - Default.sourceArea = "CA1" | "PFC" % not enough PFC cells usually for
+%                                       % source to be PFC
 
 
 if nargin == 0
@@ -51,7 +60,8 @@ Default.stablePerf                    = 0.9;
 
 % What to run?
 Default.generateH                = join(["fromSpectra","fromRipTimes"], "  ");
-Default.analysis.run_selected_genH        = false;
+Default.analysis.run_selected_genH      = false;
+Default.analysis.frChecks               = true;
 Default.analysis.rankRegress            = true;
 Default.analysis.factorAnalysis         = false;
 Default.analysis.timeVarying            = false;

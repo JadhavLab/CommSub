@@ -85,13 +85,16 @@ r.timeBinMidPoints = timeBinMidPoints;
 r.sessionTypePerBin = sessionTypePerBin;
 r.spikeRateMatrix = spikeRateMatrix;
 r.spikeCountMatrix = spikeCountMatrix;
-frChecks(r, "appendFigTitle", char(Option.animal));
-
 
 %%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
 Patterns = trialSpikes.partitionAndInitialize(r, Option);
 
 %%%%%%%%%%%%%%%% ANALYSIS SECTION    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if Option.analysis.frChecks 
+    % firing rate checks
+    frChecks(r, "appendFigTitle", char(Option.animal));
+end
+
 if Option.analysis.rankRegress
     % TODO: 
     % 1. fix Option.rankregress => Option.rankRegress
@@ -109,6 +112,8 @@ end
 if Option.analysis.factorAnalysis
     Patterns = analysis.factorAnalysis(Patterns, Option);
 end
+
+% TODO: function that outputs average response of Pattern struct per neuron
 
 %%%%%%%%%%%% Assign all of the RAW relevent structures %%%%%%%%%%%%
 Raw = struct();
