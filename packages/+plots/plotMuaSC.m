@@ -15,12 +15,17 @@ ip = inputParser();
 ip.addParameter('ax',        gca, @ishandle);
 ip.addParameter('colorCols', 1:3, @isnumeric);
 ip.addParameter('ylim',      [],  @isnumeric);
-ip.addParameter('kws',       {},  @iscell);
+ip.addParameter('kws',       {'color','k', 'linestyle', '--'},  @iscell);
+ip.addParameter('smooth',    2.5e3,   @isnumeric);
 ip.parse(varargin{:});
 Opt = ip.Results;
 
 scm   = sum(r.spikeCountMatrix, 1);
 times = r.timeBinMidPoints;
+
+if Opt.smooth > 0
+    scm = smooth(scm, Opt.smooth);
+end
 
 % Plot the heatmap
 axes(Opt.ax);
@@ -28,12 +33,13 @@ axes(Opt.ax);
 if isempty(Opt.ylim)
     im=plot(times, scm, Opt.kws{:});
 else
-    scm = (scm - min(Opt.ylim)/(max(Opt.ylim)-min(Opt.ylim))) .* ...
+    scm = (scm - min(scm))./(max(scm)-min(scm)) .* ...
         (max(Opt.ylim)-min(Opt.ylim));
     im=plot(times, scm, Opt.kws{:});
     ylim(Opt.ylim);
 end
 uistack(im, 'top');
+im.Tag = 'MUA spike count';
 % colormap(Opt.ax, cmap);
 % caxis([0 1]);
 % set(gca, 'YDir', 'normal');

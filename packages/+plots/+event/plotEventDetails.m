@@ -16,7 +16,8 @@ ip.addParameter('upperQuantile', 0.99, @isnumeric);
 ip.addParameter('logAxis', [2], @isnumeric); % log delta axis
 ip.addParameter('r', [], @isstruct); % r structure -- if given, we plot the 
                                      % spikes
-ip.addParameter('spikePlotStyle', 'heatmap', @ischar); 
+ip.addParameter('spikePlotStyle', 'heatmapBehind', @ischar); 
+ip.addParameter('showMuaSC', true, @islogical); % show MUA spike counts
 % 'heatmap' or 'raster' or 'heatmapBehind', 'rasterBehind'
 % heatmap : heatmap of spike counts
 % raster : raster plot of spikes
@@ -24,6 +25,7 @@ ip.addParameter('spikePlotStyle', 'heatmap', @ischar);
 % rasterBehind : raster plot of spikes behind the event time series
 ip.parse(varargin{:});
 Opt = ip.Results;
+Opt.r = r
 
 if isempty(Opt.savePath)
     Opt.savePath = fullfile(figuredefine(), "EventDetails");
@@ -95,11 +97,11 @@ f=fig("Time series of events" + Opt.appendFigTitle);
 figure(f)
 spikesGiven = ~isempty(Opt.r)
 if spikesGiven && strcmp(Opt.spikePlotStyle, 'heatmap')
-    tile = tiledlayout(nPatterns, 1, ...
+    tile = tiledlayout(nPatterns + 2, 1, ...
         'TileSpacing', 'compact', 'Padding', 'compact');
 elseif spikesGiven && strcmp(Opt.spikePlotStyle, 'raster')
 else
-    tile = tiledlayout(nPatterns + 2, 1, ...
+    tile = tiledlayout(nPatterns, 1, ...
         'TileSpacing', 'compact', 'Padding', 'compact');
 end
 for i = 1:nPatterns
@@ -129,10 +131,15 @@ for i = 1:nPatterns
         hold on
         plots.heatmapBinSpikes(r, 'colorCols', 1:3, 'ylim', ylim());
     end
+    if Opt.showMuaSC
+        hold on
+        plots.plotMuaSC(r, 'ylim', ylim());
+    end
     ylabel(Option.patternNames(i) + " magnitude" + append);
 end
 linkaxes(tile.Children, 'x');
-if ~isempty(Opt.r)
+
+if ~isempty(Opt.r) && strcmp(Opt.spikePlotStyle, 'heatmap')
 
     scm = Opt.r.spikeCountMatrix;
     hpc = Opt.r.celllookup.region == "CA1";
@@ -170,5 +177,21 @@ if ~isempty(Opt.r)
     imagesc(scm_times, 1:size(scm_pfc, 1), scm_pfc);
     colormap(ax,cmap)
     colorbar();
+elseif ~isempty(Opt.r) && strcmp(Opt.spikePlotStyle, 'raster')
+    error("Not implemented");
+    % ax = nexttile();
+    % plot(Opt.r);
+    % title("Spike raster");
+    % xlabel("Time (s)");
+    % ylabel("Cell");
 end
+sgtitle("Time series of events" + Opt.appendFigTitle ...
+    + newline + "WindowQuantile = " + quantileToMakeWindows);
+savefig("Time_series_of_events" + Opt.appendFigTitle ...
+    + "_WindowQuantile=" + quantileToMakeWindows + ".fig");
+saveas(gcf, "Time_series_of_events" + Opt.appendFigTitle ...
+    + "_WindowQuantile=" + quantileToMakeWindows + ".png");
+saveas(gcf, "Time_series_of_events" + Opt.appendFigTitle ...
+    + "_WindowQuantile=" + quantileToMakeWindows + ".svg");
+
 
