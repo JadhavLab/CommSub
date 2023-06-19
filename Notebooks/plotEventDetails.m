@@ -16,6 +16,12 @@ ip.addParameter('upperQuantile', 0.99, @isnumeric);
 ip.addParameter('logAxis', [2], @isnumeric); % log delta axis
 ip.addParameter('r', [], @isstruct); % r structure -- if given, we plot the 
                                      % spikes
+ip.addParameter('spikePlotStyle', 'heatmap', @ischar); 
+% 'heatmap' or 'raster' or 'heatmapBehind', 'rasterBehind'
+% heatmap : heatmap of spike counts
+% raster : raster plot of spikes
+% heatmapBehind : heatmap of spike counts behind the event time series
+% rasterBehind : raster plot of spikes behind the event time series
 ip.parse(varargin{:});
 Opt = ip.Results;
 
@@ -59,11 +65,16 @@ tile = tiledlayout(nPatterns, 1, ...
     'TileSpacing', 'compact', 'Padding', 'compact');
 for i = 1:nPatterns
     nexttile();
-    histogram(H(:,i), 'BinWidth', 0.1);
+    histogram(H(:,i), 'NumBins', 1000, 'Normalization', 'count')
     title(Option.patternNames(i));
     hold on;
     line([windowQ(i) windowQ(i)], ylim(), 'Color', 'r');
     line([windowQlow(i) windowQlow(i)], ylim(), 'Color', 'r', 'LineStyle', ':');
+    % Plot the CDF
+    [N,edges] = histcounts(H(:,i), 'Normalization', 'cdf', 'NumBins', 1000 );
+    bin_centers = edges(1:end-1) + diff(edges)/2;
+    N = N * max(ylim());
+    plot(bin_centers, N, 'b:', 'LineWidth', 1.5); % light black dashed line
     if i == nPatterns
         legend("", "Window quantile (high)", "Window quantile (low)");
     end
@@ -80,10 +91,13 @@ saveas(gcf, "Histogram_of_event_magnitudes" + Opt.appendFigTitle ...
 %% TIME SERIES
 
 % Plot the events in the time series
-fig("Time series of events" + Opt.appendFigTitle);
-if isempty(Opt.r)
+f=fig("Time series of events" + Opt.appendFigTitle);
+figure(f)
+spikesGiven = ~isempty(Opt.r)
+if spikesGiven && strcmp(Opt.spikePlotStyle, 'heatmap')
     tile = tiledlayout(nPatterns, 1, ...
         'TileSpacing', 'compact', 'Padding', 'compact');
+elseif spikesGiven && strcmp(Opt.spikePlotStyle, 'raster')
 else
     tile = tiledlayout(nPatterns + 2, 1, ...
         'TileSpacing', 'compact', 'Padding', 'compact');
@@ -91,9 +105,7 @@ end
 for i = 1:nPatterns
     nexttile();
     h = H(:,i);
-    if ismember(i, Opt.logAxis)
-        h = log(h);
-    end
+    if ismember(i, Opt.logAxis); h = log(h); end
     plot(times, h);
     title(Option.patternNames(i));
     hold on;
@@ -113,10 +125,15 @@ for i = 1:nPatterns
     if ismember(i, Opt.logAxis)
         append = " (log)";
     end
+    if Opt.spikePlotStyle == "heatmapBehind"
+        hold on
+        plots.heatmapBinSpikes(r, 'colorCols', 1:3, 'ylim', ylim());
+    end
     ylabel(Option.patternNames(i) + " magnitude" + append);
 end
 linkaxes(tile.Children, 'x');
 if ~isempty(Opt.r)
+
     scm = Opt.r.spikeCountMatrix;
     hpc = Opt.r.celllookup.region == "CA1";
     pfc = Opt.r.celllookup.region == "PFC";
@@ -127,7 +144,7 @@ if ~isempty(Opt.r)
     scm_times = Opt.r.timeBinMidPoints;
 
     % ca1
-    ax =nexttile();
+    ax = nexttile();
     cmap = gray;
     % cmap = flipud(cmap);
     cmap(:, 1:2) = 0;
