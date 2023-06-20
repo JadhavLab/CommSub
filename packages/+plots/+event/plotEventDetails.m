@@ -1,7 +1,24 @@
 function plotEventDetails(Events, Option, varargin)
-% plotEventDetails(Events)
+% plotEventDetails(Events, Option, varargin)
 %
 % Plots the details of the events in the Events structure.
+%
+% INPUTS
+%   Events: structure containing the events
+%   Option: structure containing the options
+%   varargin: optional arguments
+%       'saveFigures': whether to save the figures (default: false)
+%       'appendFigTitle': string to append to the figure title
+%       'savePath': path to save the figures
+%       'lowerQuantile': lower quantile to use for the window
+%       'upperQuantile': upper quantile to use for the window
+%       'logAxis': which axes to log
+%       'r': structure containing the spikes
+%       'spikePlotStyle': 'heatmap' or 'raster' or 'heatmapBehind', 'rasterBehind'
+%           heatmap : heatmap of spike counts
+%           raster : raster plot of spikes
+%           heatmapBehind : heatmap of spike counts behind the event time series
+%           rasterBehind : raster plot of spikes behind the event time series
 
 disp("Plotting event details...");
 tic

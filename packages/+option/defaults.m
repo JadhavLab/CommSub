@@ -9,6 +9,7 @@ function Default = defaults(name)
 %   - Default.generateH = "fromCoherence "+" fromRipTimes" |
 %                         "fromSpectra "+" fromRipTimes"
 %   - Default.animal = "ZT2" | "JS13" | "JS14" | "JS21" | "ER1" | "JS17"
+%   componet analysis: animal_list = ["JS21","ZT2","ER1","JS14","JS13","JS17"];
 %
 %  Less important iteration variables:
 %  - Default.sourceArea = "CA1" | "PFC" % not enough PFC cells usually for
