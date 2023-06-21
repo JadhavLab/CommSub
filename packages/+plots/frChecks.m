@@ -71,6 +71,7 @@ spikeRatesSmoothedRun = smooth(spikeRatesRun, windowSize);
 % applied individually to sleep and run
 % -------------------------------------------------
 fig_smoothingindividual =  fig("smoothingindividual" + Opt.appendFigTitle);
+set(fig_smoothingindividual, 'Position', get(0, 'Screensize'));
 tileAxes = tiledlayout(2, 1);
 nexttile;
 plot(spikeRatesSleep, "Color", [1,1,1], "LineWidth", 0.5, "LineStyle", ":")

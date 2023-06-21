@@ -4,7 +4,7 @@ function heatmapBinSpikes(r, varargin)
 % Plots a heatmap of the spike count matrix.
 %
 % Inputs:
-%   r           - the results struct
+%   r           - the results struct | spikeCountMatrix
 %
 % Options:
 %   ax          - axis to plot on
@@ -14,32 +14,70 @@ function heatmapBinSpikes(r, varargin)
     ip.addParameter('ax', gca, @ishandle);
     ip.addParameter('colorCols', 1:3, @isnumeric);
     ip.addParameter('ylim', [], @isnumeric);
+    ip.addParameter('times', [], @isnumeric);
+    ip.addParameter('cmap', gray(256), @isnumeric);
+    ip.addParameter('colorbar', true, @islogical);
+    ip.addParameter('upperHalfCmap', false, @islogical);
+    ip.addParameter('inverseCmap', false, @islogical);
+    ip.addParameter('background', 'w', @(x) ischar(x) || isnumeric(x));
     ip.parse(varargin{:});
     Opt = ip.Results;
 
-    scm   = r.spikeCountMatrix;
-    times = r.timeBinMidPoints;
+    if isstruct(r)
+        scm   = r.spikeCountMatrix;
+    else
+        scm   = r;
+    end
+    if isempty(Opt.times) && isstruct(r)
+        times = r.timeBinMidPoints;
+    elseif isempty(Opt.times)
+        times = 1:size(scm, 2);
+    else
+        times = Opt.times;
+    end
 
     % Compute the color map
-    cmap = gray;
+    cmap = Opt.cmap;
     % cmap = flipud(cmap);
     cmap(:, setdiff(1:3,Opt.colorCols)) = 0;
-    cmap = cmap(128:end, :);
-    cmap = repelem(cmap, 2, 1);
+    if Opt.upperHalfCmap
+        cmap = cmap(128:end, :);
+        cmap = repelem(cmap, 2, 1);
+    end
+    if Opt.inverseCmap
+        cmap = flipud(cmap);
+    end
     cmap(1, :) = 1;
 
-    % Plot the heatmap
-    axes(Opt.ax);
-    % hold on;
-    if isempty(Opt.ylim)
-        im=imagesc( Opt.ax, times, 1:height(r.celllookup), r.spikeCountMatrix);
-        ylim([1 height(r.celllookup)]);
-        ylabel("Cell #");
+    % ylimits
+    ylim_given = false;
+    if ~isempty(Opt.ylim) 
+        ylim_given = true;
+        if numel(Opt.ylim) == 2
+            Opt.ylim = linspace(Opt.ylim(1), Opt.ylim(2), size(scm, 1));
+        end
     else
-        im=imagesc( Opt.ax, times, Opt.ylim, r.spikeCountMatrix);
+        Opt.ylim = 1:size(scm, 1);
     end
+
+    % Plot the heatmap
+    im = imagesc(Opt.ax, times, Opt.ylim, scm);
+    if ~ylim_given
+        ylim([min(Opt.ylim), max(Opt.ylim)]);
+        ylabel("Cell #");
+    end
+
     uistack(im, 'bottom');
     colormap(Opt.ax, cmap);
     % caxis([0 1]);
-    set(gca, 'YDir', 'normal');
-    xlim([times(1) times(end)]);
+    if ischar(Opt.background)
+        [name,Opt.background] = colornames("wikipedia", Opt.background);
+        disp("SEtting background to " + name);
+    end
+    set(gca, 'YDir', 'normal', 'Color', Opt.background);
+    % xlim([times(1) times(end)]);
+    if Opt.colorbar
+        colorbar('off');
+        cb = colorbar('Location', 'eastoutside');
+        cb.Label.String = 'Spike Count';
+    end

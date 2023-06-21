@@ -74,6 +74,9 @@ Default.analysis.singleNeuronPrediction = false;
 Default.rankRegress.cvnum = 10; % number of cross-validation folds
 Default.jpecc.cvnum = 4; % number of cross-validation folds
 
+Default.save    = true; % whether to save the results
+Default.saveRaw = false; % whether to save the raw data
+
 
 %% --------- OPTIONS SPECIFIC TO SCRIPT TYPE ---------------------------------
 if     name == "TheScript"

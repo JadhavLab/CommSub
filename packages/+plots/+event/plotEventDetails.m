@@ -42,7 +42,6 @@ ip.addParameter('showMuaSC', true, @islogical); % show MUA spike counts
 % rasterBehind : raster plot of spikes behind the event time series
 ip.parse(varargin{:});
 Opt = ip.Results;
-Opt.r = r
 
 if isempty(Opt.savePath)
     Opt.savePath = fullfile(figuredefine(), "EventDetails");
@@ -56,11 +55,11 @@ end
 times = Events.times;
 H = Events.Hvals;
 nPatterns = size(Events.H, 2);
-quantileToMakeWindows = Option.quantileToMakeWindows;
+quantileToMakeWindows     = Option.quantileToMakeWindows;
 quantileToMakeWindows_low = 1 - quantileToMakeWindows;
 
 % Nan above and below the quantiles
-windowQ = zeros(nPatterns, 1);
+windowQ    = zeros(nPatterns, 1);
 windowQlow = zeros(nPatterns, 1);
 for i = 1:nPatterns
     lowerQ = quantile(H(:, i), Opt.lowerQuantile);
@@ -79,7 +78,8 @@ assert(~isequal(Hc{:}), "All values are equal")
 %% EVENT DISTRIBUTIONS
 
 % Histogram of magnitude and where we're setting high/low thresholds
-figure();
+f=figure();
+set(f, 'Position', get(0, 'Screensize'));
 tile = tiledlayout(nPatterns, 1, ...
     'TileSpacing', 'compact', 'Padding', 'compact');
 for i = 1:nPatterns
@@ -111,7 +111,7 @@ saveas(gcf, "Histogram_of_event_magnitudes" + Opt.appendFigTitle ...
 
 % Plot the events in the time series
 f=fig("Time series of events" + Opt.appendFigTitle);
-figure(f)
+set(f, 'Position', get(0, 'Screensize'));
 spikesGiven = ~isempty(Opt.r)
 if spikesGiven && strcmp(Opt.spikePlotStyle, 'heatmap')
     tile = tiledlayout(nPatterns + 2, 1, ...
@@ -146,11 +146,11 @@ for i = 1:nPatterns
     end
     if Opt.spikePlotStyle == "heatmapBehind"
         hold on
-        plots.heatmapBinSpikes(r, 'colorCols', 1:3, 'ylim', ylim());
+        plots.heatmapBinSpikes(Opt.r, 'colorCols', 1:3, 'ylim', ylim());
     end
     if Opt.showMuaSC
         hold on
-        plots.plotMuaSC(r, 'ylim', ylim());
+        plots.plotMuaSC(Opt.r, 'ylim', ylim());
     end
     ylabel(Option.patternNames(i) + " magnitude" + append);
 end

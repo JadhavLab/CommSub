@@ -79,7 +79,7 @@ r.pfc.nNeurons = nPFCneurons;
 r.hpc.nNeurons = nHPCneurons;
 r.windowInfo.cellOfWindows = cellOfWindows;
 r.windowInfo.nWindows      = cellfun(@(x) size(x, 1), cellOfWindows);
-r.nPattern = Option.nPattern;
+r.nPattern = Option.nPatterns;
 r.nControl = Option.nPatternAndControl - r.nPattern;
 r.timeBinMidPoints = timeBinMidPoints;
 r.sessionTypePerBin = sessionTypePerBin;
@@ -91,6 +91,7 @@ Patterns = trialSpikes.partitionAndInitialize(r, Option);
 
 %%%%%%%%%%%%%%%% ANALYSIS SECTION    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if Option.analysis.checks
+    disp("Running checks")
     % firing rate checks
     plots.frChecks(r, "appendFigTitle", char(Option.animal));
     plots.event.plotEventDetails(Events, Option, ...
@@ -119,23 +120,11 @@ end
 
 % TODO: function that outputs average response of Pattern struct per neuron
 
-%%%%%%%%%%%% Assign all of the RAW relevent structures %%%%%%%%%%%%
-Raw = struct();
-kws = {'UniformOutput',false};
-Raw.X_pfc = cellfun(@(x) cellfun(@(y) single(y), x, kws{:}), X_pfc, kws{:});
-Raw.X_hpc = cellfun(@(x) cellfun(@(y) single(y), x, kws{:}), X_hpc, kws{:});
-Raw.H = struct('H', H,...
-               'Hvals', Hvals,...
-               'Hnanlocs', Hnanlocs,...
-               'Htimes', Htimes);
-Raw.frequenciesPerPattern = frequenciesPerPattern;
-Raw.cellOfWindows = cellOfWindows;
-Raw.spikeSampleTensor = spikeSampleTensor;
-Raw.patternNames = patternNames;
-Raw.directionality = directionality;
 
 %%%%%%%%%%%%%%%% CREATE TABLE AND SAVE RESULTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if Option.save
+
+    disp("Saving results")
 
     % Ready the path
     table_folder = fullfile(codedefine(), 'DATA_TABLES');
@@ -218,3 +207,22 @@ if Option.save
     save(fullfile(datadefine, 'mostRecentState'))
 end
 
+% TODO: consider whether this is needed ... should be r isntead?
+if Option.saveRaw
+    Raw = struct();
+    kws = {'UniformOutput',false};
+    Raw.X_pfc = cellfun(@(x) cellfun(@(y) single(y), x, kws{:}), X_pfc, kws{:});
+    Raw.X_hpc = cellfun(@(x) cellfun(@(y) single(y), x, kws{:}), X_hpc, kws{:});
+    Raw.H = struct('H', H,...
+                   'Hvals', Hvals,...
+                   'Hnanlocs', Hnanlocs,...
+                   'Htimes', Htimes);
+    Raw.frequenciesPerPattern = frequenciesPerPattern;
+    Raw.cellOfWindows = cellOfWindows;
+    Raw.spikeSampleTensor = spikeSampleTensor;
+    Raw.patternNames = patternNames;
+    Raw.directionality = directionality;
+    Raw.celllookup = celllookup;
+    save(fullfile(datadefine, "hash_Raw", hash), ...
+        "Option", "Raw",'-v7.3')
+end
