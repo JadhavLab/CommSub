@@ -1,4 +1,4 @@
-function Patterns = rankRegress(Patterns, Option)
+function [Patterns] = rankRegress(Patterns, Option)
 % RANKREGRESS - Reduced rank regression
 %   Patterns = rankRegress(Patterns, Option)
 %
@@ -21,6 +21,12 @@ function Patterns = rankRegress(Patterns, Option)
 %                       stdOptLoss - [1 x 1 double] std optimal loss
 %                       muFullLoss - [1 x 1 double] mean full loss
 %                       stdFullLoss - [1 x 1 double] std full loss
+%                       singlesource_B - [1 x nSource cell] regression
+%                           weights for single source prediction
+%                       singlesource_optDim - [1 x nSource cell] optimal
+%                           dimension for single source prediction
+%                       B_rrr - [nSource x nTarget] reduced rank regression
+%                           weights
 disp("rank regression")
 tic
 

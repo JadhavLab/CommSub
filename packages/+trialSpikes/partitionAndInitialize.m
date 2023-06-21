@@ -1,4 +1,15 @@
 function Patterns = partition(r, Option) 
+% partition - Partition data into source and target areas
+% 
+% Parameters:
+%   r - A struct containing raw and processed data
+%   Option - A struct containing options for the partitioning
+% 
+% Returns:
+%   Patterns - A struct containing the partitioned data (partitions of
+%               neurons; subsampled sets of them)
+%   Patterns_overall - A struct WITHOUT parititioning neurons
+%
 % ----------------------------
 % Note:
 % ----------------------------
@@ -9,7 +20,8 @@ disp('Partitioning data...')
 tic
  
 % Initialize the scaffold of the pattern struct
-Patterns = initPatternStruct();
+Patterns         = initPatternStruct();
+Patterns_overall = initPatternStruct();
 
 % Split cells into source and target areas
 [s_hpc, s_pfc, t_hpc, t_pfc, s_hpc_index,...
@@ -52,12 +64,36 @@ for i = 1:numel(r.windowInfo.cellOfWindows)
         
         % Assign directionality
         Patterns(iPartition,j,i).directionality = directionality(j);
-        
+
         % Assign pattern name
         try
             Patterns(iPartition,j,i).name = Option.patternNames(i);
-        catch E
+        catch 
+            Patterns(iPartition,j,i).name = "Pattern " + i;
         end
+
+        if iPartition == 1
+
+            % Assign x_source and x_target
+            Patterns_overall(j,i).X_source = s_all
+            Patterns_overall(j,i).X_target = t_all
+
+            % Assign index_source and index_target
+            Patterns_overall(j,i).index_source = s_ind_all;
+            Patterns_overall(j,i).index_target = t_ind_all;
+
+            % Assign directionality
+            Patterns_overall(j,i).directionality = directionality(j);
+
+            % Assign pattern name
+            try
+                Patterns(iPartition,j,i).name = Option.patternNames(i);
+            catch 
+                Patterns(iPartition,j,i).name = "Pattern " + i;
+            end
+
+        end
+        
     end
 end
 end
