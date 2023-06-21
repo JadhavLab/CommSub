@@ -72,7 +72,7 @@ function heatmapBinSpikes(r, varargin)
     % caxis([0 1]);
     if ischar(Opt.background) && ~isempty(Opt.background)
         [name,Opt.background] = colornames("wikipedia", Opt.background);
-        disp("SEtting background to " + name);
+        % disp("SEtting background to " + name);
     else
         Opt.background = [1 1 1];
     end

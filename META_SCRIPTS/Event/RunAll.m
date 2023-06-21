@@ -1,3 +1,4 @@
+clear all
 
 % ===================================================
 % OPTION STRUCT encoding properties of the script run

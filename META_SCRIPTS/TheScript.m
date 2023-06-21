@@ -25,15 +25,15 @@ disp(Option);
 % Documentation
 % Events is a struct with fields:
 % - .times : array of times of events
-% - .H     : Event Matrix, T x 3, and each column are theta, delta, ripple
-% - .Hvals : Event Matrix, T x 3, values without nans
+% - .H     : Event Matrix,    T x 3, and each column are theta, delta, ripple
+% - .Hvals : Event Matrix,    T x 3, values without nans
 % - .Hnanlocs : Event Matrix, T x 3, logicals of nans
 
 %%%%%%%%%%%%%%%% CUT WINDOWS WITH EVENT MATRICES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [cellOfWindows, cutoffs] = windows.ThetaDeltaRipple(Events, Option);
 % Documentation
 % -  cellOfWindows: 1 x nPatterns cell array of windows
-% -  cutoffs: nPatterns x 1 vector of cutoffs
+% -  cutoffs:       nPatterns x 1 vector of cutoffs
 
 %%%%%%%%%%%%%%%% ACQUIRE SPIKES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Getting spikes
@@ -97,19 +97,21 @@ if Option.analysis.checks
     % firing rate checks
     a = @() plots.frChecks(r, "appendFigTitle", char(Option.animal));
     b = @() plots.event.plotEventDetails(Events, Option, ...
+        "savePath", fullfile(figuredefine(), "eventDetails"), ...
         "appendFigTitle", char(Option.animal), ...
         'r', r, ...
         'spikePlotStyle', 'heatmapBehind');
     c = @() plots.event.plotSingleEvents(cellOfWindows, Events, Option, r, ...
-        'before', 1, 'after', 1, 'appendFigTitle', char(Option.animal), ...
+        'before', 0.5, 'after', 0.5, 'appendFigTitle', char(Option.animal), ...
         'eventTypes', ["theta", "delta", "ripple"], ...
         'displayType', 'heatmap');
     % Run plots in parallel
-    a = parfeval(gcp, a, 0);
-    b = parfeval(gcp, b, 0);
-    c = parfeval(gcp, c, 0);
+    % a = parfeval(gcp, a, 0);
+    % b = parfeval(gcp, b, 0);
+    % c = parfeval(gcp, c, 0);
     % Wait for plots to finish
-    wait(a); wait(b); wait(c);
+    % wait(a); wait(b); wait(c);
+    a(); b(); c();
 end
 
 % Rank regression of network pattern windows of spiking activity

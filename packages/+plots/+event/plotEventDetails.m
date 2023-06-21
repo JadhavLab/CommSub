@@ -19,12 +19,14 @@ function plotEventDetails(Events, Option, varargin)
 %           raster : raster plot of spikes
 %           heatmapBehind : heatmap of spike counts behind the event time series
 %           rasterBehind : raster plot of spikes behind the event time series
+%       'showMuaSC': whether to show the MUA spike counts
 
 disp("Plotting event details...");
 tic
 
 [Opt, H, nPatterns, times, windowQ, windowQlow] = ...
     plots.event.processEventsPreamble(Events, Option, varargin{:});
+    % processEventsPreamble
 
 %% EVENT DISTRIBUTIONS
 
@@ -51,12 +53,11 @@ for i = 1:nPatterns
 end
 sgtitle("Histogram of event magnitudes" + Opt.appendFigTitle ...
     + newline + "WindowQuantile = " + Option.quantileToMakeWindows);
-savefig("Histogram_of_event_magnitudes" + Opt.appendFigTitle ...
-    + "_WindowQuantile=" + Option.quantileToMakeWindows + ".fig");
-saveas(gcf, "Histogram_of_event_magnitudes" + Opt.appendFigTitle ...
-    + "_WindowQuantile=" + Option.quantileToMakeWindows + ".png");
-saveas(gcf, "Histogram_of_event_magnitudes" + Opt.appendFigTitle ...
-    + "_WindowQuantile=" + Option.quantileToMakeWindows + ".svg");
+file = fullfile(Opt.savePath, ...
+    "Histogram_of_event_magnitudes" + Opt.appendFigTitle + "_WindowQuantile=" + Option.quantileToMakeWindows)
+savefig(f, file + ".fig");
+saveas(f, file + ".png");
+saveas(f, file + ".svg");
 
 %% TIME SERIES
 
@@ -155,11 +156,10 @@ elseif ~isempty(Opt.r) && strcmp(Opt.spikePlotStyle, 'raster')
 end
 sgtitle("Time series of events" + Opt.appendFigTitle ...
     + newline + "WindowQuantile = " + Option.quantileToMakeWindows);
-savefig("Time_series_of_events" + Opt.appendFigTitle ...
-    + "_WindowQuantile=" + Option.quantileToMakeWindows + ".fig");
-saveas(gcf, "Time_series_of_events" + Opt.appendFigTitle ...
-    + "_WindowQuantile=" + Option.quantileToMakeWindows + ".png");
-saveas(gcf, "Time_series_of_events" + Opt.appendFigTitle ...
-    + "_WindowQuantile=" + Option.quantileToMakeWindows + ".svg");
+file = "Time_series_of_events" + Opt.appendFigTitle + "_WindowQuantile=" + Option.quantileToMakeWindows
+file = fullfile(Opt.savePath, file);
+savefig(file + ".fig");
+saveas(gcf, file + ".png");
+saveas(gcf, file + ".svg");
 
 
