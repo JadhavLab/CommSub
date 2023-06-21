@@ -90,16 +90,30 @@ r.spikeCountMatrix = spikeCountMatrix;
 Patterns = trialSpikes.partitionAndInitialize(r, Option);
 
 %%%%%%%%%%%%%%%% ANALYSIS SECTION    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plots regarding the raw and processed data
 if Option.analysis.checks
     disp("Running checks")
     % firing rate checks
-    plots.frChecks(r, "appendFigTitle", char(Option.animal));
-    plots.event.plotEventDetails(Events, Option, ...
+    a = @() plots.frChecks(r, "appendFigTitle", char(Option.animal));
+    b = @() plots.event.plotEventDetails(Events, Option, ...
         "appendFigTitle", char(Option.animal), ...
         'r', r, ...
         'spikePlotStyle', 'heatmapBehind');
+    c = @() plots.event.plotSingleEvents(cellOfWindows, Events, Option, r, ...
+        'before', 1, 'after', 1, 'appendFigTitle', char(Option.animal), ...
+        'eventTypes', ["theta", "delta", "ripple"], ...
+        'displayType', 'heatmap');
+    % Run plots in parallel
+    a = parfeval(gcp, a, 0);
+    b = parfeval(gcp, b, 0);
+    c = parfeval(gcp, c, 0);
+    % Wait for plots to finish
+    wait(a); wait(b); wait(c);
 end
 
+% Rank regression of network pattern windows of spiking activity
+% (Subspaces acquired here)
 if Option.analysis.rankRegress
     % TODO: 
     % 1. fix Option.rankregress => Option.rankRegress
@@ -107,6 +121,7 @@ if Option.analysis.rankRegress
     Patterns = analysis.rankRegress(Patterns, Option);
 end
 
+% How much spiking moment to moment is explained by subspace
 if Option.analysis.timeVarying
     % ISSUE: hits a bug on line 4
     % TODO: 1 .also return epochwise zscored neural firing matching
@@ -114,12 +129,14 @@ if Option.analysis.timeVarying
     Components = analysis.timeVarying(Patterns, Option);
 end
 
+% Factor analysis of network pattern windows of spiking activity
+% (Used to measure instrinsic dimensionality of network activity)
 if Option.analysis.factorAnalysis
     Patterns = analysis.factorAnalysis(Patterns, Option);
 end
 
-% TODO: function that outputs average response of Pattern struct per neuron
-
+% TODO: (1) plug in JPECC version of rankRegress here
+% TODO: (2) function that outputs average response of Pattern struct per neuron
 
 %%%%%%%%%%%%%%%% CREATE TABLE AND SAVE RESULTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if Option.save

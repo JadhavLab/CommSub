@@ -19,7 +19,7 @@ function heatmapBinSpikes(r, varargin)
     ip.addParameter('colorbar', true, @islogical);
     ip.addParameter('upperHalfCmap', false, @islogical);
     ip.addParameter('inverseCmap', false, @islogical);
-    ip.addParameter('background', 'w', @(x) ischar(x) || isnumeric(x));
+    ip.addParameter('background', '', @(x) ischar(x) || isnumeric(x));
     ip.parse(varargin{:});
     Opt = ip.Results;
 
@@ -70,9 +70,11 @@ function heatmapBinSpikes(r, varargin)
     uistack(im, 'bottom');
     colormap(Opt.ax, cmap);
     % caxis([0 1]);
-    if ischar(Opt.background)
+    if ischar(Opt.background) && ~isempty(Opt.background)
         [name,Opt.background] = colornames("wikipedia", Opt.background);
         disp("SEtting background to " + name);
+    else
+        Opt.background = [1 1 1];
     end
     set(gca, 'YDir', 'normal', 'Color', Opt.background);
     % xlim([times(1) times(end)]);

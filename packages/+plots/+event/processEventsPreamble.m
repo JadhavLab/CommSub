@@ -1,7 +1,7 @@
 function [Opt, H, nPatterns, times, windowQ, windowQlow] = processEventsPreamble(Events, Option, varargin)
 % processEventsPreamble(Events, Option)
 %
-% Handles the common preamble in processing event structures.
+% Handles the common preamble in processing event plots
 
 disp("Processing events preamble...");
 tic
