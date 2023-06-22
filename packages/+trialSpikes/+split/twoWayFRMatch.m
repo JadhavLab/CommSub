@@ -1,12 +1,11 @@
 function [X_source, X_target, nSource, nTarget, index_source, index_target] =...
-    matchFRinDiscreteRanges(X_samesourceRegion, X_diffsourceRegion, ...
-    samesource_FR, diffsource_FR, nBins)
+    matchFRinDiscreteRanges(X_source, X_target, source_FR, target_FR, nBins)
 %
 % this function matches the firing rates of two target region with discrete
 % bins from the FR histogram for every pattern
+% 
 % it will make the prediction matrix more populated by having two regions
 % with neurons that have matching firing rate
-%
 %
 % ------------------------------------------------------------------------%
 % input: the firing pattern matrices from the two regions                 %
@@ -14,141 +13,139 @@ function [X_source, X_target, nSource, nTarget, index_source, index_target] =...
 %         the number of source and target population eventually decided   %
 %         and the neuronal indices of those used                          %
 % ------------------------------------------------------------------------%
-%
 
-%% sort the firing pattern matrices by firing rate so as to index neurons
-% samesource_FR = hpcFR;
-% diffsource_FR = pfcFR;
-numSameSource = size(samesource_FR,2);
-numDiffSource = size(diffsource_FR,2);
-
+%% (1) sort the firing pattern matrices by firing rate so as to index neurons
+% source_FR = hpcFR; target_FR = pfcFR;
+numsource = size(source_FR, 2); % number of neurons in source region
+numtarget = size(target_FR, 2); % number of neurons in target region
 
 % append index to firing rate table
-samesource_FR = [samesource_FR; 1:numSameSource];
-diffsource_FR = [diffsource_FR; 1:numDiffSource];
+source_FR = [source_FR; 1:numsource]; % append index to firing rate table
+target_FR = [target_FR; 1:numtarget];
+FR_column = 1; index_column = 2;
 
-% sort the firing rate and keep the index so as to track when binning
-firing_rate_ranking_samesource = sortrows(samesource_FR');
-firing_rate_ranking_diffsource = sortrows(diffsource_FR');
+% sort the firing rate (we've appended the index to the firing rate table
+% which helps us trace back to the neurons)
+firing_rate_ranking_source = sortrows(source_FR');
+firing_rate_ranking_target = sortrows(target_FR');
 
-diffsource_ranking = firing_rate_ranking_diffsource';
-samesource_ranking = firing_rate_ranking_samesource';
-%% create hist-counts of bins that capture FR distributions discretely
+% we transposed before sorting, so we transpose back
+target_ranking = firing_rate_ranking_target';
+source_ranking = firing_rate_ranking_source';
 
+%% (2) create hist-counts of bins that capture FR distributions discretely
 % initialize neuron counts, pattern matrices, and index trackers
-nSource = 0;
-nTarget = 0;
-numResult = numel(X_diffsourceRegion);
-X_source  = cell(size(X_diffsourceRegion));
-X_target  = cell([2, size(X_diffsourceRegion)]);
+numResult = numel(X_target);
+X_source  = cell(size(X_target));
+X_target  = cell([2, size(X_target)]);
 
-histcounts_diffsource = histcounts(firing_rate_ranking_diffsource(:,1), nBins);
-histcounts_samesource = histcounts(firing_rate_ranking_samesource(:,1), nBins);
+% officially binning the firing rates into nBins
+histcounts_target = histcounts(firing_rate_ranking_target(:,1), nBins);
+histcounts_source = histcounts(firing_rate_ranking_source(:,1), nBins);
 
-binCounts = zeros(1,nBins);
-sameSourceSmaller_marker = zeros(1,nBins);
-
+% ESTABLISH MAX CELLS PER BIN
+% initialize the bin counts and the sourceSmaller_marker
+cellsToPick = zeros(1,nBins);
+areaThatBounded_marker = zeros(1,nBins);
+% iterate over the bins to pick indices and neurons from the two regions
 for i = 1:nBins
     % Look at both bins
-    diffsource_count = histcounts_diffsource(i);
-    samesource_count = histcounts_samesource(i);
-    % Pikc the cell count from the brain area with the least
-    nCells = min(diffsource_count, samesource_count);
-    binCounts(i) = nCells;
-    
+    target_count = histcounts_target(i);
+    source_count = histcounts_source(i);
+    % Pick the MAX CELLS we will sample from the brain area with the least
+    nCells = min(target_count, source_count);
+    cellsToPick(i) = nCells;
     % Which area are we going to randomly sample?
-    if diffsource_count > samesource_count
-        sameSourceSmaller_marker(i) = 1; % same source for this bin was smaller
+    if target_count > source_count
+        areaThatBounded_marker(i) = 1; % same source for this bin was smaller
     end
 end
 
-indexTargetCount = cumsum(binCounts);
+
+%% (3) iterate over the bins to pick indices and neurons from the two regions
+
+% indexTargetCount = cumsum(cellsToPick);
 nTarget = 0;
 index_target = zeros(2,nTarget);
 
-%% iterate over the bins to pick indices and neurons from the two regions
+sourceCountTracker = 0;
+targetCountTracker = 0;
 
-samesourceCountTracker = 0;
-diffsourceCountTracker = 0;
-
-samesourceRegionTracker = 0;
-diffsourceRegionTracker = 0;
+sourceTracker = 0;
+targetTracker = 0;
 
 
 for i = 1:nBins
     
-    diffsource_count = histcounts_diffsource(i);
-    samesource_count = histcounts_samesource(i);
+    target_count = histcounts_target(i);
+    source_count = histcounts_source(i);
     % pick the smaller neuron per bin size
-    nCells = binCounts(i);
+    nCells = cellsToPick(i);
     
     % NON-MATCHING AREA SELECTION (SOURCE ~= TARGET)
-    if sameSourceSmaller_marker(i) == 0
-        % take all cells from that bin from the population diff than
-        % source
-        
-
-         indices_diffsource = diffsource_ranking(2,diffsourceRegionTracker+1:diffsourceRegionTracker+nCells);
+    if areaThatBounded_marker(i) == 0
+        % source: take all cells from that bin from the population diff than
+        indices_target = ... 
+            target_ranking(index_column,... 
+                           targetTracker+1:targetTracker+nCells);
         
         % randomly select the same # of cells from the source population
-        possible_indices_of_indices = randperm(samesource_count);
-        indices_samesource = samesource_ranking(2,possible_indices_of_indices(1:nCells) + samesourceRegionTracker);
+        random_ordering = randperm(source_count);
+        indices_source = source_ranking(index_column,... 
+            random_ordering(1:nCells) + sourceTracker);
         
         for j = 1:numResult
-            X_target{2,j} = [X_target{2,j}; X_diffsourceRegion{j}(indices_diffsource,:, :)];
-            X_target{1,j} = [X_target{1,j}; X_samesourceRegion{j}(indices_samesource,:, :)];
+            X_target{2,j} = [X_target{2,j}; X_target{j}(indices_target,:, :)];
+            X_target{1,j} = [X_target{1,j}; X_source{j}(indices_source,:, :)];
         end
         
         
-    % MATCHING AREA SELECTION (SOURCE ~= TARGET)
+    % MATCHING AREA SELECTION (SOURCE == TARGET)
     else
-        % take all cells from that bin from the population same as
-        % source
-        
-        indices_samesource = samesource_ranking(2,samesourceRegionTracker+1:samesourceRegionTracker+nCells);
+        % source: take all cells from that bin from the population same as
+        indices_source = source_ranking(2,sourceTracker+1:sourceTracker+nCells);
         
         % randomly select the same # of cells from the source population
-        %         disp(indices_samesource + " same source less")
+        %         disp(indices_source + " same source less")
         % index the indices of source population first
-        possible_indices_of_indices = randperm(diffsource_count);
-        indices_diffsource = diffsource_ranking(2,possible_indices_of_indices(1:nCells) + diffsourceRegionTracker);
+        random_ordering = randperm(target_count);
+        indices_target = target_ranking(2,... 
+            random_ordering(1:nCells) + targetTracker);
         % select neurons from the source region
         for j = 1:numResult
-            X_target{1,j} = [X_target{1,j}; X_samesourceRegion{j}(indices_samesource,:, :)];
-            X_target{2,j} = [X_target{2,j}; X_diffsourceRegion{j}(indices_diffsource,:, :)];
+            X_target{1,j} = [X_target{1,j}; X_source{j}(indices_source,:, :)];
+            X_target{2,j} = [X_target{2,j}; X_target{j}(indices_target,:, :)];
         end
         
     end
     
-    assert(diffsourceCountTracker <= numDiffSource)
+    assert(targetCountTracker <= numtarget)
     
-    if  any(indices_diffsource > numDiffSource)
-   
+    if  any(indices_target > numtarget)
         keyboard
     end
-    index_target(2,diffsourceCountTracker+1: diffsourceCountTracker+nCells) = indices_diffsource;
-    diffsourceCountTracker = diffsourceCountTracker + nCells;
+    index_target(2,targetCountTracker+1: targetCountTracker+nCells) = indices_target;
+    targetCountTracker = targetCountTracker + nCells;
     
-    index_target(1,samesourceCountTracker+1: samesourceCountTracker+nCells) = indices_samesource;
-    samesourceCountTracker = samesourceCountTracker + nCells;
+    index_target(1,sourceCountTracker+1: sourceCountTracker+nCells) = indices_source;
+    sourceCountTracker = sourceCountTracker + nCells;
     
-    diffsourceRegionTracker = diffsourceRegionTracker + diffsource_count;
-    samesourceRegionTracker = samesourceRegionTracker + samesource_count;
+    targetTracker = targetTracker + target_count;
+    sourceTracker = sourceTracker + source_count;
     
     nTarget = nTarget + nCells;
-    if numSameSource - nTarget <= numSameSource/3
+    if numsource - nTarget <= numsource/3
         break
     end
+
 end
 
 %% finally, taking care of the source
 
-nSource = numSameSource-nTarget;
-
-index_source = setdiff((1:numSameSource),index_target(1,:));
-
+nSource = numsource-nTarget;
+index_source = setdiff((1:numsource),index_target(1,:));
 for i = 1:numResult
-    X_source{i} = X_samesourceRegion{i}(index_source,:, :);
+    X_source{i} = X_source{i}(index_source,:, :);
 end
 
 
