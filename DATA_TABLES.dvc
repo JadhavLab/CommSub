@@ -1,0 +1,6 @@
+outs:
+- md5: 98c4c5e2a0698ced2c009b71671b17c6.dir
+  size: 23568658
+  nfiles: 16
+  hash: md5
+  path: DATA_TABLES
