@@ -41,8 +41,9 @@ disp(Option);
 %%%%%%%%%%%%%%%% ACQUIRE SPIKES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Getting spikes
 [timeBinStartEnd, timeBinMidPoints, ~, spikeCountMatrix, spikeRateMatrix, ...
-    areaPerNeuron, cell_index, sessionTypePerBin] = spikes.getSpikeTrain(Option.animal, ...
-    Option.spikeBinSize,  Option.samplingRate);
+    areaPerNeuron, cell_index, sessionTypePerBin] = ...
+    spikes.getSpikeTrain(Option.animal, ...
+            Option.spikeBinSize,  Option.samplingRate);
 
 % filter the neurons whose firing rate is lower than specified threshold
 if Option.preProcess_FilterLowFR 
@@ -54,8 +55,9 @@ end
 
 
 %%%%%%%%%%%%%%%% ACQUIRE TRIALS FROM WINDOWS + SPIKES %%%%%%%%%%%%%%%%%%%
+% RYAN bug here .. timeBinStartEnd instead of timeBinMidPoints
 [spikeSampleMatrix, spikeSampleTensor, trialTimes] = trialSpikes.generate(...
-    spikeCountMatrix, timeBinMidPoints, cellOfWindows, ... % RYAN bug here .. timeBinStartEnd instead of timeBinMidPoints
+    spikeCountMatrix, timeBinMidPoints, cellOfWindows, ... 
     Option.timesPerTrial, Option.nPatternAndControl);
 
 
@@ -64,7 +66,8 @@ end
 r.hpc = struct;
 r.pfc = struct;
 %%%%%%%%%%%%%%%% SEPRATE BRAIN AREA DATASULT STRUCTURES %%%%%%%%%%%%%%%%%%
-%% Separate spikesSampleMatrix/Tensor by area that neurons are in PFC and neurons that in HPC
+% Separate spikesSampleMatrix/Tensor by area that neurons are in PFC and
+% neurons that in HPC
 [r.pfc.FR, r.hpc.FR] = trialSpikes.separateFiringRate(avgFR, areaPerNeuron);
 r.pfc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "PFC");
 r.hpc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "CA1");
@@ -162,7 +165,7 @@ if Option.save
 
     % Check for singular results in factor analysis
     factorAnalysisChecksum = sum(Patterntable.singularWarning) ...
-                             > 0.7*size(Patterntable,1);
+                             > 0.7 * size(Patterntable,1);
     if factorAnalysisChecksum
         warning("too many singular results in factor analysis")
         choice = input ("proceed to store results?");

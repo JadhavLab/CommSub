@@ -1,0 +1,4 @@
+[core]
+    remote = citadel
+['remote "citadel"']
+    url = ../citadel:/volume1/sharespace-commsub/CommunicationSubspace

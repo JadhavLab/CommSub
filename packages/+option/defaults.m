@@ -28,17 +28,23 @@ Default = struct();
 % ----- Key properties -----
 Default.animal                        = "ZT2";
 Default.samplingRate                  = [] ;             % For spikes.getSpikeTrain, nan if not given
+
+% used to determine how large the individual bins are in spikeCountMatrix
+Default.spikeBinSize                  = 0.050;           % 30 milliseconds, prviously 150 ms TIME BIN FOR EACH SAMPLE OF TRRIAL
+
 % ----- Trial and trial binning -----
 Default.winSize                       = [-0.15, 0.15];   % size of the
                                                          % full-wave trial
                                                          % window -- OVERAL
                                                          % LTRIAL WINDOW
-Default.spikeBinSize                  = 0.050;           % 30 milliseconds, prviously 150 ms TIME BIN FOR EACH SAMPLE OF TRRIAL
-Default.spikeShiftSize                = 0.010;           % 30 milliseconds, prviously 150 ms HOW MUCH TO SHIFT TO CRERAT EACH SAMLPE
-Default.timesPerTrial                 = ceil(range(Default.winSize)/Default.spikeShiftSize);
-assert(Default.timesPerTrial > 1);
 Default.equalWindowsAcrossPatterns    = true;            % whether all three patterns have the same #windows
 Default.quantileToMakeWindows         = 0.85;
+
+% TRIAL WINDOW
+% how long -- this will interpolate all to be timesPerTrial long
+Default.spikeShiftSize                = 0.010; % used to default Default.timesPerTrial - size of actual trial sample
+Default.timesPerTrial                 = ceil(range(Default.winSize)/Default.spikeShiftSize); % 
+assert(Default.timesPerTrial > 1);
 
 % About brain areas
 Default.sourceArea                    = "CA1";           % only when there are

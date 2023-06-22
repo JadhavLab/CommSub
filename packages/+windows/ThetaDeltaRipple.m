@@ -43,7 +43,8 @@ nPatterns = numel(Option.patternNames);
 %%--------------------
 %% 1s: THETA AND DELTA
 %%--------------------
-[cellOfWindows, cutoffs] = windows.make(Events.times, Option.quantileToMakeWindows, Events.H(:,THETA:DELTA), Option.winSize);
+[cellOfWindows, cutoffs] = windows.make(Events.times, ...
+    Option.quantileToMakeWindows, Events.H(:,THETA:DELTA), Option.winSize);
 
 %%----------------
 %% 1b :RIPPLES

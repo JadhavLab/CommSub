@@ -1,4 +1,4 @@
-function Patterns = partition(r, Option) 
+function [Patterns, Patterns_overall] = partition(r, Option) 
 % partition - Partition data into source and target areas
 % 
 % Parameters:
