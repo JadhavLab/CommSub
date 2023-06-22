@@ -34,6 +34,9 @@ disp(Option);
 % Documentation
 % -  cellOfWindows: 1 x nPatterns cell array of windows
 % -  cutoffs:       nPatterns x 1 vector of cutoffs
+% TODO: modify to be able to include overall pattern and track patterns
+% PRIORITY; overall: medium, track: very low, overall can be included in
+% cellOfWindows, whereas, track can be included as a separate output
 
 %%%%%%%%%%%%%%%% ACQUIRE SPIKES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Getting spikes
