@@ -1,0 +1,54 @@
+function [results] = core(x_area1, x_area2, varargin)
+% core canonical correlation analysis
+%   [results] = core(x_area1, x_area2) performs canonical correlation
+%   analysis on the two matrices x_area1 and x_area2. the matrices should
+%   have the same number of rows (observations) and different number of
+%   columns (variables). the function returns a structure with the
+%   following fields:
+%       a: canonical coefficients for area1
+%       b: canonical coefficients for area2
+%       r: canonical correlations
+%       u: canonical scores for area1
+%       v: canonical scores for area2
+%       stats: statistics for the test of h0: r = 0
+%       area1_scores: top canonical scores for area1
+%       area2_scores: top canonical scores for area2
+%       cross_area_corr: correlation between the top canonical scores
+%
+
+ip = inputparser;
+ip.addoptional('ploton', false, @islogical);
+ip.parse(varargin{:});
+opt = ip.results;
+
+% run cca
+[a, b, r, u, v, stats] = canoncorr(x_area1, x_area2);
+
+% correlation between the first scores
+cross_area_corr = corr(u(:,1), v(:,1));
+
+% top cv scores
+area1_scores  = u(:,1);
+area2_scores = v(:,1);
+
+results = struct(...
+    'a', a, ...
+    'b', b, ...
+    'r', r, ...
+    'u', u, ...
+    'v', v, ...
+    'stats', stats, ...
+    'area1_scores', area1_scores, ...
+    'area2_scores', area2_scores, ...
+    'cross_area_corr', cross_area_corr ...
+);
+
+% make the plot
+if opt.ploton
+    scatter(area1_scores, area2_scores); % scatter plot of the scores
+    hold on; % keep the scatter plot when adding the next plot
+    plot([-1, 1], [-1, 1], 'k--'); % add the x=y line (adjust the range as needed)
+    xlabel('area1 cross-activity');
+    ylabel('area2 cross-activity');
+    title('cross-activity');
+end
