@@ -44,18 +44,20 @@ nPatterns = numel(Option.patternNames);
 %% 1s: THETA AND DELTA
 %%--------------------
 [cellOfWindows, cutoffs] = windows.make(Events.times, ...
-    Option.quantileToMakeWindows, Events.H(:,THETA:DELTA), Option.winSize);
+    Option.quantileToMakeWindows, Events.H(:,THETA:DELTA), Option,...
+    'positiveDerivativeCheck', true, ...
+    'outlierQuantile', Option.thetadelta_outlierQuantile);
 
 %%----------------
 %% 1b :RIPPLES
 %%----------------
 if any(contains(Option.generateH, ["fromCoherence","fromWpli"]))
     [cellOfWindows(RIPPLE), cutoffs(RIPPLE)] = windows.make(Events.times,...
-        Option.quantileToMakeWindows,  Events.H(:,RIPPLE), Option.winSize,...
+        Option.quantileToMakeWindows,  Events.H(:,RIPPLE), Option,...
         'quantile', Events.Hvals(:,RIPPLE),'higherThanQuantile', true); % % RY: quantile needs to be hvals for ripple coherence/wpli threshold to be correct, but timesd computed from Events.H such that non-ripple times thrown out
 else
     [cellOfWindows(RIPPLE), cutoffs(RIPPLE)] = windows.make(Events.times, ...
-        1,   Events.H(:,RIPPLE), Option.winSize, 'threshold', 'raw','higherThanQuantile', true);
+        1,   Events.H(:,RIPPLE), Option, 'threshold', 'raw','higherThanQuantile', true);
 end
 
 windows.countMessage(cellOfWindows, Option.patternNames,...
@@ -87,9 +89,13 @@ if Option.oldControlBehavior
 else
     Hc = Events.H;
 end
-[Hc_cellOfWindows, Hc_cutoffs] = windows.make(Events.times,  quantileControl,...  % add windows of control patterns
-    Hc(:,THETA:DELTA), Option.winSize,... % Selects less than quantile
+[Hc_cellOfWindows, Hc_cutoffs] = ...
+    windows.make(Events.times,  quantileControl,...  % add windows of control patterns
+    Hc(:,THETA:DELTA), Option,... % Selects less than quantile
+    'outlierQuantile', Option.thetadelta_outlierQuantile,...
+    'positiveDerivativeCheck', true, ...
     'higherThanQuantile', Option.oldControlBehavior);
+
 
 % -----------------------
 % Controls: RIPPLES
@@ -101,10 +107,10 @@ if any(contains(Option.generateH, ["fromCoherence","fromWpli"]))
 else
     if Option.oldControlBehavior
         [Hc_cellOfWindows(RIPPLE), Hc_cutoffs(RIPPLE)] = windows.make(Events.times, ...
-            1,   Hc(:,RIPPLE), Option.winSize, 'threshold', 'raw','higherThanQuantile', true); %RY quantile won't work because these are raw
+            1,   Hc(:,RIPPLE), Option, 'threshold', 'raw','higherThanQuantile', true); %RY quantile won't work because these are raw
     else
         [Hc_cellOfWindows(RIPPLE), Hc_cutoffs(RIPPLE)] = windows.make(Events.times, ...
-            quantileControl,   Events.Hvals(:,RIPPLE), Option.winSize, 'threshold', 'quantile','higherThanQuantile', Option.oldControlBehavior); %RY quantile won't work because these are raw
+            quantileControl,   Events.Hvals(:,RIPPLE), Option, 'threshold', 'quantile','higherThanQuantile', Option.oldControlBehavior); %RY quantile won't work because these are raw
     end
 end
 
@@ -125,6 +131,13 @@ end
 cellOfWindows(length(cellOfWindows)+1:length(Hc_cellOfWindows)+length(cellOfWindows)) = Hc_cellOfWindows;
 cutoffs = [cutoffs,Hc_cutoffs];
 
+% -------------------------------
+% If any cellOfWindows is empty, throw an error
+% -------------------------------
+if any(cellfun(@isempty, cellOfWindows))
+    error("A network pattern has no windows. Check your settings...")
+end
+
 % -----------------------------------------
 % Ensure each pattern has equal # of window
 % -----------------------------------------
@@ -142,6 +155,7 @@ if Option.singleControl && warnedEmptyControls
         end
     end
 end
+
 
 disp("")
 disp("Windows generated " + num2str(numWindowsCut) + " windows cut")

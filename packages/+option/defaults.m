@@ -33,13 +33,17 @@ Default.samplingRate                  = [] ;             % For spikes.getSpikeTr
 Default.spikeBinSize                  = 0.050;           % 30 milliseconds, prviously 150 ms TIME BIN FOR EACH SAMPLE OF TRRIAL
 
 % ----- Trial and trial binning -----
-Default.winSize                       = [-0.15, 0.15];   % size of the
+Default.winSize                       = [0, 0.300];   % size of the
                                                          % full-wave trial
                                                          % window -- OVERAL
                                                          % LTRIAL WINDOW
+Default.positiveDerivativeCheck       = [Default.winSize(1), Default.winSize(2)/2]; % period of window with enforced positive derivative
+
+% used to be [-0.15, 0.15]
 Default.equalWindowsAcrossPatterns    = true;            % whether all three patterns have the same #windows
 Default.quantileToMakeWindows         = 0.85;
 
+Default.thetadelta_outlierQuantile    = [0, 0.995];     % quantile to remove outliers from theta and delta
 % TRIAL WINDOW
 % how long -- this will interpolate all to be timesPerTrial long
 Default.spikeShiftSize                = 0.010; % used to default Default.timesPerTrial - size of actual trial sample
@@ -52,7 +56,7 @@ Default.waysOfPartitions              = 2;
 
 % Controls
 Default.singleControl                 = false;           % whether to use just one control column
-Default.oldControlBehavior            = false;
+Default.oldControlBehavior            = false;           % whether to call genratePatternShuffle for control (Which creates shuffled Hc. if false, Hc=H -- which needs to be true for finding low periods of activity)
 Default.lowerControl                  = true;
 Default.binsToMatchFR                 = 20;
 Default.preProcess_FilterLowFR        = true;

@@ -1,4 +1,7 @@
-
+% TODO:
+% 1. have way of passing generate_H cell, and then just load all of those
+%    patterns simulateously in 1 go instead of as separate runs
+% 
 % ---- PATH -----
 % Matlab uses startup.m to run startup code...
 % Put this in your startup.m so that the code for this is in path:
