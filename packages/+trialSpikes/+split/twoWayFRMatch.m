@@ -35,9 +35,9 @@ source_FR_ranked = firing_rate_ranking_source';
 
 %% (2) create hist-counts of bins that capture FR distributions discretely
 % initialize neuron counts, pattern matrices, and index trackers
-numResult = numel(X_target);
-X_source  = cell(size(X_target));
-X_target  = cell([2, size(X_target)]);
+nPattern = numel(X_target);
+Y_source  = cell(size(X_target));
+Y_target  = cell([2, size(X_target)]);
 
 % officially binning the firing rates into nBins
 histcounts_target = histcounts(firing_rate_ranking_target(:,1), nBins);
@@ -81,6 +81,11 @@ for i = 1:nBins
     source_count = histcounts_source(i);
     % pick the smaller neuron per bin size
     pickCells_i = cellsToPick(i);
+    disp("----------------------------------")
+    disp("i " + i)
+    disp("pickCells_i " + pickCells_i)
+    disp("target tracker " + targetCountTracker)
+    disp("----------------------------------")
     
     % Source has fewer neurons in this bin
     if areaThatBounded_marker(i) == 0
@@ -97,9 +102,9 @@ for i = 1:nBins
         indices_source = source_FR_ranked(index_column,... 
             random_ordering(1:pickCells_i) + sourceTracker);
         
-        for j = 1:numResult
-            X_target{1,j} = [X_target{1,j}; X_source{j}(indices_source,:, :)];
-            X_target{2,j} = [X_target{2,j}; X_target{j}(indices_target,:, :)];
+        for j = 1:nPattern
+            Y_target{1,j} = [Y_target{1,j}; X_source{j}(indices_source,:, :)];
+            Y_target{2,j} = [Y_target{2,j}; X_target{j}(indices_target,:, :)];
         end
         
     % Target has fewer neurons in this bin
@@ -118,9 +123,9 @@ for i = 1:nBins
         indices_target = target_FR_ranked(index_column,... 
             random_ordering(1:pickCells_i) + targetTracker);
         % select neurons from the source region
-        for j = 1:numResult
-            X_target{1,j} = [X_target{1,j}; X_source{j}(indices_source,:, :)];
-            X_target{2,j} = [X_target{2,j}; X_target{j}(indices_target,:, :)];
+        for j = 1:nPattern
+            Y_target{1,j} = [Y_target{1,j}; X_source{j}(indices_source,:, :)];
+            Y_target{2,j} = [Y_target{2,j}; X_target{j}(indices_target,:, :)];
         end
         
     end
@@ -150,11 +155,10 @@ for i = 1:nBins
 end
 
 %% finally, taking care of the source
-
 nSource = numsource-nTarget;
 index_source = setdiff((1:numsource),index_target(1,:));
-for i = 1:numResult
-    X_source{i} = X_source{i}(index_source,:, :);
+for i = 1:nPattern
+    Y_source{i} = X_source{i}(index_source,:, :);
 end
 
 
