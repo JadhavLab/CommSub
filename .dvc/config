@@ -1,2 +1,4 @@
+[core]
+    autostage = true
 ['remote "citadel"']
     url = ssh://ryoung@129.64.53.12:47822/volume/sharespace-commsub/CommunicationSubspace
