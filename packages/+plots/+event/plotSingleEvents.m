@@ -26,12 +26,21 @@ ip.addParameter('after', 1, @isscalar); % Number of seconds to add to the end of
 ip.addParameter('before', 1, @isscalar); % Number of seconds to subtract from the beginning of the window
 ip.addParameter('eventTypes', 'theta')
 ip.addParameter('saveFolder', fullfile(figuredefine(), 'singleEvents'),...
-                @ischar);
+                @(x) ischar(x) || isstring(x));
 ip.addParameter('appendFigTitle', '', @ischar);
 ip.addParameter('subspaceComponents', [], @isnumeric);
+ip.addParameter('subspaceTimes', [], @isnumeric);
+ip.addParameter('subspaceColors', 'dense', @ischar);
 ip.parse(varargin{:});
 Opt = ip.Results;
 varargin = {ip.Unmatched};
+
+if ~isempty(Opt.subspaceComponents)
+    if isempty(Opt.subspaceTimes)
+        error('If you provide subspaceComponents, you must also provide subspaceTimes.')
+    end
+    Opt.subspaceColors = cmocean(Opt.subspaceColors, size(Opt.subspaceComponents, 1));   
+end
 
 if ~exist(Opt.saveFolder, 'dir')
     mkdir(Opt.saveFolder)
@@ -127,25 +136,29 @@ for eventType = string(Opt.eventTypes)
         end % switch Opt.displayType
 
         if ~isempty(Opt.subspaceComponents)
-            keyboard;
-            spike_count_times  = r.timeBinMidPoints;
+            spike_count_times  = Opt.subspaceTimes;
             spike_count_inds = find(spike_count_times > boundary(1)...
                         & spike_count_times < boundary(2));
-            spikeCountTimes = spike_count_times(spike_count_inds);
-            objs = []
+            sub_times = spike_count_times(spike_count_inds);
+            objs = [];
             for j = 1:size(Opt.subspaceComponents, 1)
-                sub = Opt.subspaceComponents(j, event_inds)
-                sub = (sub - min(sub)) / (max(sub) - min(sub)) .* ...
-                    (max(ylim()) - min(ylim())) + min(ylim())
+                color = Opt.subspaceColors(j, :);
+                sub = Opt.subspaceComponents(j, spike_count_inds);
                 subplot(2, 1, 1);
+                sub = (sub - min(sub)) / (max(sub) - min(sub)) .* ...
+                    (max(ylim()) - min(ylim())) + min(ylim());
                 hold on;
-                o1=plot(spike_count_times, sub)
-                    
+                o1=plot(sub_times, sub, 'linewidth', 0.5, 'color', color)
+                % o3=fill(sub_times, sub, o1.Color, 'FaceAlpha', 0.1)
                 subplot(2, 1, 2);
+                sub = (sub - min(sub)) / (max(sub) - min(sub)) .* ...
+                    (max(ylim()) - min(ylim())) + min(ylim());
                 hold on;
-                o2=plot(spike_count_times, sub)
+                o2=plot(sub_times, sub, 'linewidth', 0.5, 'color', color)
+                % o4=fill(sub_times, sub, o2.Color, 'FaceAlpha', 0.1)
                 objs = [objs, o1, o2];
             end
+
         end
 
         linkaxes([subplot(2, 1, 1), subplot(2, 1, 2)], 'x');
