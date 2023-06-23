@@ -24,6 +24,9 @@ disp("Running with Option struct => ")
 disp(Option);
 
 %%%%%%%%%%%%%%%% OBTAIN EVENT MATRICES    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp("------------------------")
+disp("    Obtaining events    ")
+disp("------------------------")
 [Events] = events.ThetaDeltaRipple(Option);
 % Documentation
 % Events is a struct with fields:
@@ -33,6 +36,9 @@ disp(Option);
 % - .Hnanlocs : Event Matrix, T x 3, logicals of nans
 
 %%%%%%%%%%%%%%%% CUT WINDOWS WITH EVENT MATRICES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp("------------------------")
+disp("    Cutting windows     ")
+disp("------------------------")
 [cellOfWindows, cutoffs] = windows.ThetaDeltaRipple(Events, Option);
 % Documentation
 % -  cellOfWindows: 1 x nPatterns cell array of windows
@@ -43,6 +49,9 @@ disp(Option);
 
 %%%%%%%%%%%%%%%% ACQUIRE SPIKES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Getting spikes
+disp("------------------------")
+disp("    Getting spikes      ")
+disp("------------------------")
 [timeBinStartEnd, timeBinMidPoints, ~, spikeCountMatrix, spikeRateMatrix, ...
     areaPerNeuron, cell_index, sessionTypePerBin] = ...
     spikes.getSpikeTrain(Option.animal, ...
@@ -50,7 +59,9 @@ disp(Option);
 
 % filter the neurons whose firing rate is lower than specified threshold
 if Option.preProcess_FilterLowFR 
+    disp("------------------------")
     disp("Filtering low FR neurons")
+    disp("------------------------")
     [spikeCountMatrix, spikeRateMatrix, avgFR, areaPerNeuron, cell_index]...
         = trialSpikes.filterFR(spikeCountMatrix, spikeRateMatrix, 0.1, ...
         timeBinStartEnd, areaPerNeuron, cell_index);
@@ -59,6 +70,9 @@ end
 
 %%%%%%%%%%%%%%%% ACQUIRE TRIALS FROM WINDOWS + SPIKES %%%%%%%%%%%%%%%%%%%
 % RYAN bug here .. timeBinStartEnd instead of timeBinMidPoints
+disp("------------------------")
+disp("   Windowing spikes     ")
+disp("------------------------")
 [spikeSampleMatrix, spikeSampleTensor, trialTimes] = trialSpikes.generate(...
     spikeCountMatrix, timeBinMidPoints, cellOfWindows, ... 
     Option.timesPerTrial, Option.nPatternAndControl);
@@ -96,9 +110,15 @@ r.spikeRateMatrix = spikeRateMatrix;
 r.spikeCountMatrix = spikeCountMatrix;
 
 %%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
+disp("------------------------")
+disp(" Subsampling partitions ")
+disp("------------------------")
 Patterns = trialSpikes.partitionAndInitialize(r, Option);
 
 %%%%%%%%%%%%%%%% ANALYSIS SECTION    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp("------------------------")
+disp("     Analysis           ")
+disp("------------------------")
 
 % Plots regarding the raw and processed data
 if Option.analysis.checks
@@ -182,7 +202,8 @@ if Option.save
     hash = hash(1:7); % Take the first 7 letters of the hash
     hash = string(hash);
     timestamp = string(date());
-    tablerow = [Optiontable, table(timestamp, hash, numWindowsCut, cutoffs, optimizationResult)]; % Combine option columns with hash and date
+    tablerow = [Optiontable, ...
+        table(timestamp, hash, numWindowsCut, cutoffs, optimizationResult)]; % Combine option columns with hash and date
     tablecontent = [Patterntable, repmat(tablerow, height(Patterntable), 1)]; % combine those with all rows of the pattern table
 
     %% Check and Hash

@@ -156,6 +156,12 @@ if Option.singleControl && warnedEmptyControls
     end
 end
 
+% -------------------------------
+% If any cellOfWindows is empty, throw an error
+% -------------------------------
+if any(cellfun(@isempty, cellOfWindows))
+    error("A network pattern has no windows. Check your settings...")
+end
 
 disp("")
 disp("Windows generated " + num2str(numWindowsCut) + " windows cut")

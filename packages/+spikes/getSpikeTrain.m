@@ -22,14 +22,14 @@ function [timeBinStartEnd, timeBinMidPoints, times_spiking, spikeCountMatrix, sp
 % Output
 % -----
 % timeBinStartEnd: axis of start and end times of each time bin
-
+%
 % timeBinMidPoints: an array of all the time bin's midpoints
-
+%
 % times_spiking : cell
 %   For every neuron, one list of spike times across the sessions,
 %   stored in a cell
 %
-
+%
 %
 % spikeCountMatrix : timebins x neurons matrix
 %   Spike counts per timebin
@@ -45,7 +45,7 @@ function [timeBinStartEnd, timeBinMidPoints, times_spiking, spikeCountMatrix, sp
 %
 % cell_index: the tetrode*cell tuple of all cells in the interactions
 %end
-
+%
 %% setting up inputs
 %     filename = "JS15spikes01.mat";
 %     timebinSize = 0.1;
@@ -111,7 +111,7 @@ for epoch = 1:numel(spikes)
                             if isempty(spikes{epoch}{tetrode}{neuron}.data)
                                 continue
                             else
-                                disp("...getting spike times for neuron " + neuron + " on tetrode " + tetrode + " on epoch " + epoch)
+                                % disp("...getting spike times for neuron " + neuron + " on tetrode " + tetrode + " on epoch " + epoch)
                                 neuron_data = spikes{epoch}{tetrode}{neuron}.data(:,1);
                                 times_spiking{i} = [times_spiking{i}, neuron_data'];
                                 
