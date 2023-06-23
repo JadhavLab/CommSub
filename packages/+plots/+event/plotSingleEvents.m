@@ -28,6 +28,7 @@ ip.addParameter('eventTypes', 'theta')
 ip.addParameter('saveFolder', fullfile(figuredefine(), 'singleEvents'),...
                 @ischar);
 ip.addParameter('appendFigTitle', '', @ischar);
+ip.addParameter('subspaceComponents', [], @isnumeric);
 ip.parse(varargin{:});
 Opt = ip.Results;
 varargin = {ip.Unmatched};
@@ -124,6 +125,28 @@ for eventType = string(Opt.eventTypes)
                 hold on;
                 error('Unknown display type.')
         end % switch Opt.displayType
+
+        if ~isempty(Opt.subspaceComponents)
+            keyboard;
+            spike_count_times  = r.timeBinMidPoints;
+            spike_count_inds = find(spike_count_times > boundary(1)...
+                        & spike_count_times < boundary(2));
+            spikeCountTimes = spike_count_times(spike_count_inds);
+            objs = []
+            for j = 1:size(Opt.subspaceComponents, 1)
+                sub = Opt.subspaceComponents(j, event_inds)
+                sub = (sub - min(sub)) / (max(sub) - min(sub)) .* ...
+                    (max(ylim()) - min(ylim())) + min(ylim())
+                subplot(2, 1, 1);
+                hold on;
+                o1=plot(spike_count_times, sub)
+                    
+                subplot(2, 1, 2);
+                hold on;
+                o2=plot(spike_count_times, sub)
+                objs = [objs, o1, o2];
+            end
+        end
 
         linkaxes([subplot(2, 1, 1), subplot(2, 1, 2)], 'x');
         % aspect ratio 0.3

@@ -90,6 +90,7 @@ r.pfc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "PFC");
 r.hpc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "CA1");
 r.pfc.X = trialSpikes.separateSpikes(spikeSampleMatrix, areaPerNeuron, "PFC");
 r.hpc.X = trialSpikes.separateSpikes(spikeSampleMatrix, areaPerNeuron, "CA1");
+r.trialTimes = trialTimes
 
 %% Separate firing pattern into source and target
 [nPFCneurons,~,~] = size(r.pfc.X{1});
@@ -131,7 +132,7 @@ if Option.analysis.rankRegress
     % TODO: 
     % 1. fix Option.rankregress => Option.rankRegress
     % 2. most rankRegress.B_ are empty
-    Patterns = analysis.rankRegress(Patterns, Option);
+    Patterns = analysis.rankRegress(Patterns(1), Option);
 end
 
 % How much spiking moment to moment is explained by subspace

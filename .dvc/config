@@ -1,4 +1,2 @@
-[core]
-    remote = citadel
 ['remote "citadel"']
-    url = ../citadel:/volume1/sharespace-commsub/CommunicationSubspace
+    url = ssh://ryoung@129.64.53.12:47822/volume/sharespace-commsub/CommunicationSubspace

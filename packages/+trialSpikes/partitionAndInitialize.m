@@ -23,15 +23,16 @@ tic
 Patterns         = initPatternStruct();
 Patterns_overall = initPatternStruct();
 
+% ------------------------------
+% Place paritioned data properly
+% ------------------------------
+for iPartition = 1:Option.numPartition
+
 % Split cells into source and target areas
 [s_hpc, s_pfc, t_hpc, t_pfc, s_hpc_index,...
  s_pfc_index, t_hpc_index, t_pfc_index, directionality] = ...
     trialSpikes.split.legacyRun(r, Option);
 
-% ------------------------------
-% Place paritioned data properly
-% ------------------------------
-for iPartition = 1:Option.numPartition
 for i = 1:numel(r.windowInfo.cellOfWindows)
     for j = 1:numel(directionality)
         
@@ -55,8 +56,9 @@ for i = 1:numel(r.windowInfo.cellOfWindows)
         end
         
         % Assign x_source and x_target
-        Patterns(iPartition,j,i).X_source = s_dat{i};
-        Patterns(iPartition,j,i).X_target = t_dat{i};
+        Patterns(iPartition,j,i).X_source  = s_dat{i};
+        Patterns(iPartition,j,i).X_target  = t_dat{i};
+        Patterns(iPartition,j,i).X_time    = reshape(r.trialTimes{i}',1,[]);
         
         % Assign index_source and index_target
         Patterns(iPartition,j,i).index_source = s_ind;
@@ -72,27 +74,27 @@ for i = 1:numel(r.windowInfo.cellOfWindows)
             Patterns(iPartition,j,i).name = "Pattern " + i;
         end
 
-        if iPartition == 1
-
-            % Assign x_source and x_target
-            Patterns_overall(j,i).X_source = s_all
-            Patterns_overall(j,i).X_target = t_all
-
-            % Assign index_source and index_target
-            Patterns_overall(j,i).index_source = s_ind_all;
-            Patterns_overall(j,i).index_target = t_ind_all;
-
-            % Assign directionality
-            Patterns_overall(j,i).directionality = directionality(j);
-
-            % Assign pattern name
-            try
-                Patterns(iPartition,j,i).name = Option.patternNames(i);
-            catch 
-                Patterns(iPartition,j,i).name = "Pattern " + i;
-            end
-
-        end
+        % if iPartition == 1
+        %
+        %     % Assign x_source and x_target
+        %     Patterns_overall(j,i).X_source = s_all;
+        %     Patterns_overall(j,i).X_target = t_all;
+        %
+        %     % Assign index_source and index_target
+        %     Patterns_overall(j,i).index_source = s_ind_all;
+        %     Patterns_overall(j,i).index_target = t_ind_all;
+        %
+        %     % Assign directionality
+        %     Patterns_overall(j,i).directionality = directionality(j);
+        %
+        %     % Assign pattern name
+        %     try
+        %         Patterns(iPartition,j,i).name = Option.patternNames(i);
+        %     catch 
+        %         Patterns(iPartition,j,i).name = "Pattern " + i;
+        %     end
+        %
+        % end
         
     end
 end

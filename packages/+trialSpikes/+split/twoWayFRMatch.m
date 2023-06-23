@@ -1,5 +1,5 @@
-function [X_source, X_target, nSource, nTarget, index_source, index_target] =...
-    matchFRinDiscreteRanges(X_source, X_target, source_FR, target_FR, nBins)
+function [Y_source, Y_target, nSource, nTarget, index_source, index_target] =...
+    matchFRinDiscreteRanges(X_source, X_target, source_FR, target_FR, nBins, varargin)
 %
 % this function matches the firing rates of two target region with discrete
 % bins from the FR histogram for every pattern
@@ -13,6 +13,13 @@ function [X_source, X_target, nSource, nTarget, index_source, index_target] =...
 %         the number of source and target population eventually decided   %
 %         and the neuronal indices of those used                          %
 % ------------------------------------------------------------------------%
+
+ip = inputParser;
+ip.addParameter('verbose', false, @islogical);
+ip.addParameter('ploton',  true, @islogical);
+ip.parse(varargin{:});
+Opt = ip.Results;
+
 
 %% (1) sort the firing pattern matrices by firing rate so as to index neurons
 % source_FR = hpcFR; target_FR = pfcFR;
@@ -81,12 +88,14 @@ for i = 1:nBins
     source_count = histcounts_source(i);
     % pick the smaller neuron per bin size
     pickCells_i = cellsToPick(i);
-    disp("----------------------------------")
-    disp("i " + i)
-    disp("pickCells_i " + pickCells_i)
-    disp("target tracker " + targetCountTracker)
-    disp("----------------------------------")
-    
+    if Opt.verbose
+        disp("----------------------------------")
+        disp("i " + i)
+        disp("pickCells_i " + pickCells_i)
+        disp("target tracker " + targetCountTracker)
+        disp("----------------------------------")
+    end
+        
     % Source has fewer neurons in this bin
     if areaThatBounded_marker(i) == 0
         % This condition checks if the source region has fewer neurons in the

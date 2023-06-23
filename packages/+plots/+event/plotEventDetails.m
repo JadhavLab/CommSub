@@ -64,7 +64,7 @@ saveas(f, file + ".svg");
 % Plot the events in the time series
 f=fig("Time series of events" + Opt.appendFigTitle);
 set(f, 'Position', get(0, 'Screensize'));
-spikesGiven = ~isempty(Opt.r)
+spikesGiven = ~isempty(Opt.r);
 if spikesGiven && strcmp(Opt.spikePlotStyle, 'heatmap')
     tile = tiledlayout(nPatterns + 2, 1, ...
         'TileSpacing', 'compact', 'Padding', 'compact');
