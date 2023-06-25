@@ -21,6 +21,6 @@ for n = 1:numel(Patterns)
     p.cca = result;
     
     % Assign the updated struct back to the original array
-    Patterns(n) = p;
+    Patterns = nd.set(Patterns, n, p);
 end
 

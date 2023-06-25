@@ -22,7 +22,6 @@ ip.parse(varargin{:});
 opt = ip.Results;
 
 % run cca
-    keyboard
 [a, b, r, u, v, stats] = canoncorr(x_area1', x_area2');
 
 % correlation between the first scores

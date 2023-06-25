@@ -77,6 +77,7 @@ Default.analysis.rankRegress            = true;
 Default.analysis.factorAnalysis         = false;
 Default.analysis.timeVarying            = false;
 Default.analysis.singleNeuronPrediction = false;
+Default.analysis.cca                    = false;
 % Default.generateH = "fromWpli " + " fromRipTimes";
 % Default.generateH = "fromCoherence "+" fromRipTimes";
 % Default.generateH = "fromSpectra "+" fromRipTimes";

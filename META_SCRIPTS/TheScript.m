@@ -126,9 +126,9 @@ disp("------------------------")
 % (Subspaces acquired here)
 if Option.analysis.rankRegress
     % TODO: 
-    % 1. fix Option.rankregress => Option.rankRegress
-    % 2. most rankRegress.B_ are empty
-    Patterns         = analysis.rankRegress(Patterns, Option);   
+    % 1. fix Option.rankregress => Option.rankRegress                 
+    % 2. most rankRegress.B_ are empty                                
+    Patterns         = analysis.rankRegress(Patterns, Option);        
     Patterns_overall = analysis.rankRegress(Patterns_overall, Option);
 end
 

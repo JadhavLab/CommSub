@@ -27,6 +27,7 @@ Patterns_overall = initPatternStruct();
 % Place paritioned data properly
 % ------------------------------
 for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
+% for iPartition = progress(1:2, 'Title', 'Partitioning data')
 
     % Split cells into source and target areas
     % [s_hpc, s_pfc, t_hpc, t_pfc, s_hpc_index,...
@@ -42,7 +43,7 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
             directionality = split_info.directionality(j);
             sourcetarg = directionality.split('-');
             source = sourcetarg(1);
-            target = sourcetarg(1);
+            target = sourcetarg(2);
             s_dat = split_info.source{i};
             s_ind = split_info.source_index;
             t_dat = split_info.target{j, 1, i};
@@ -82,6 +83,9 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
                     t_ind_all = 1:size(t_all, 1);
                 else
                     error('Target area not recognized')
+                end
+                if source ~= target
+                    assert(numel(s_ind_all) ~= numel(t_ind_all), 'Source and target areas are the same')
                 end
                 % Assign x_source and x_target
                 Patterns_overall(j,i).X_source = s_all;
