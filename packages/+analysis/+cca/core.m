@@ -16,13 +16,14 @@ function [results] = core(x_area1, x_area2, varargin)
 %       cross_area_corr: correlation between the top canonical scores
 %
 
-ip = inputparser;
-ip.addoptional('ploton', false, @islogical);
+ip = inputParser;
+ip.addParameter('ploton', false, @islogical);
 ip.parse(varargin{:});
-opt = ip.results;
+opt = ip.Results;
 
 % run cca
-[a, b, r, u, v, stats] = canoncorr(x_area1, x_area2);
+    keyboard
+[a, b, r, u, v, stats] = canoncorr(x_area1', x_area2');
 
 % correlation between the first scores
 cross_area_corr = corr(u(:,1), v(:,1));

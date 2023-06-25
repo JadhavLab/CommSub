@@ -1,4 +1,4 @@
-function [Patterns] = ccaAnalysis(Patterns)
+function [Patterns] = ccaAnalysis(Patterns, Option)
 % ccaAnalysis - Apply CCA to each pattern struct
 %   Patterns = ccaAnalysis(Patterns)
 %
@@ -13,11 +13,12 @@ function [Patterns] = ccaAnalysis(Patterns)
 for n = 1:numel(Patterns)
     p = Patterns(n);
 
-    curr_area1 = p.X_area1;
-    curr_area2 = p.X_area2;
+    curr_area1 = p.X_source;
+    curr_area2 = p.X_target;
     
     % Assuming cca.core function takes two arguments: X_area1 and X_area2
-    p.cca = cca.core(curr_area1, curr_area2);
+    result = analysis.cca.core(curr_area1, curr_area2);
+    p.cca = result;
     
     % Assign the updated struct back to the original array
     Patterns(n) = p;

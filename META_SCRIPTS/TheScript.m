@@ -114,17 +114,13 @@ r.spikeCountMatrix = spikeCountMatrix;
 disp("------------------------")
 disp(" Subsampling partitions ")
 disp("------------------------")
-Patterns = trialSpikes.partitionAndInitialize(r, Option);
+[Patterns, Patterns_overall] = trialSpikes.partitionAndInitialize(r, Option);
 
 %%%%%%%%%%%%%%%% ANALYSIS SECTION    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp("------------------------")
 disp("     Analysis           ")
 disp("------------------------")
 
-% Plots regarding the raw and processed data
-if Option.analysis.checks
-    plots.runChecks(Patterns, Option, r, cellOfWindows);
-end
 
 % Rank regression of network pattern windows of spiking activity
 % (Subspaces acquired here)
@@ -132,7 +128,8 @@ if Option.analysis.rankRegress
     % TODO: 
     % 1. fix Option.rankregress => Option.rankRegress
     % 2. most rankRegress.B_ are empty
-    Patterns = analysis.rankRegress(Patterns(1), Option);
+    Patterns         = analysis.rankRegress(Patterns, Option);   
+    Patterns_overall = analysis.rankRegress(Patterns_overall, Option);
 end
 
 % How much spiking moment to moment is explained by subspace
@@ -147,6 +144,19 @@ end
 % (Used to measure instrinsic dimensionality of network activity)
 if Option.analysis.factorAnalysis
     Patterns = analysis.factorAnalysis(Patterns, Option);
+end
+
+if Option.analysis.cca
+    Patterns         = analysis.cca(Patterns, Option);
+    Patterns_overall = analysis.cca(Patterns, Option);
+end
+
+% Plots regarding the raw and processed data (and sometimes
+% relation to processed Patterns struct)
+% TODO: Think about splitting this into checks involving
+%        versus not involving the Patterns struct
+if Option.analysis.checks
+    plots.runChecks(Patterns, Option, r, cellOfWindows);
 end
 
 % TODO: (1) plug in JPECC version of rankRegress here
