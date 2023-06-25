@@ -169,5 +169,3 @@ index_source = setdiff((1:numsource),index_target(1,:));
 for i = 1:nPattern
     Y_source{i} = X_source{i}(index_source,:, :);
 end
-
-
