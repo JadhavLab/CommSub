@@ -31,6 +31,7 @@ ip.addParameter('appendFigTitle', '', @ischar);
 ip.addParameter('subspaceComponents', [], @isnumeric);
 ip.addParameter('subspaceTimes', [], @isnumeric);
 ip.addParameter('subspaceColors', 'dense', @ischar);
+ip.addParameter('subspaceSmoothing', 0, @isscalar);
 ip.parse(varargin{:});
 Opt = ip.Results;
 varargin = {ip.Unmatched};
@@ -40,6 +41,16 @@ if ~isempty(Opt.subspaceComponents)
         error('If you provide subspaceComponents, you must also provide subspaceTimes.')
     end
     Opt.subspaceColors = cmocean(Opt.subspaceColors, size(Opt.subspaceComponents, 1));   
+    Opt.subspaceMaxActivity = max(Opt.subspaceComponents, [], 2);
+    sub = Opt.subspaceComponents;
+    sub = (sub - min(sub)) ./ (max(sub) - min(sub)); % normalize 0 - 1
+    Opt.subspaceComponents = sub;
+    if ~isempty(Opt.subspaceSmoothing) && Opt.subspaceSmoothing > 0
+        disp("Smoothing subspace components with " + num2str(Opt.subspaceSmoothing) + " window.")
+        for j = progress(1:size(Opt.subspaceComponents, 1))
+            Opt.subspaceComponents(j, :) = smooth(Opt.subspaceComponents(j, :), Opt.subspaceSmoothing);
+        end
+    end
 end
 
 if ~exist(Opt.saveFolder, 'dir')
@@ -143,16 +154,15 @@ for eventType = string(Opt.eventTypes)
             objs = [];
             for j = 1:size(Opt.subspaceComponents, 1)
                 color = Opt.subspaceColors(j, :);
-                sub = Opt.subspaceComponents(j, spike_count_inds);
+                sub   = Opt.subspaceComponents(j, spike_count_inds);
                 subplot(2, 1, 1);
-                sub = (sub - min(sub)) / (max(sub) - min(sub)) .* ...
-                    (max(ylim()) - min(ylim())) + min(ylim());
+                keyboard;
+                sub = (sub .* range(ylim())) + min(ylim());
                 hold on;
                 o1=plot(sub_times, sub, 'linewidth', 0.5, 'color', color)
                 % o3=fill(sub_times, sub, o1.Color, 'FaceAlpha', 0.1)
                 subplot(2, 1, 2);
-                sub = (sub - min(sub)) / (max(sub) - min(sub)) .* ...
-                    (max(ylim()) - min(ylim())) + min(ylim());
+                sub = (sub .* range(ylim())) + min(ylim());
                 hold on;
                 o2=plot(sub_times, sub, 'linewidth', 0.5, 'color', color)
                 % o4=fill(sub_times, sub, o2.Color, 'FaceAlpha', 0.1)

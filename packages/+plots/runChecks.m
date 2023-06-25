@@ -1,4 +1,4 @@
-function [] = runChecks(Option, Events, r, cellOfWindows)
+function [] = runChecks(Option, Events, Patterns, r, cellOfWindows)
 % Run checks on the data overall for raw
 % and processed data
 %
@@ -8,6 +8,8 @@ function [] = runChecks(Option, Events, r, cellOfWindows)
 %   Options for the analysis
 % Events: struct
 %   Events for the analysis
+% Patterns: struct
+%   Patterns for the analysis
 % r: struct
 %   Raw data
 % cellOfWindows: cell
@@ -28,11 +30,17 @@ c = @() plots.event.plotSingleEvents(cellOfWindows, Events, Option, r, ...
     'before', 0.5, 'after', 0.5, 'appendFigTitle', char(Option.animal), ...
     'eventTypes', ["theta", "delta", "ripple"], ...
     'displayType', 'heatmap');
+d = @() plots.event.plotSingleEvents(cellOfWindows, Events, Option, r, ...
+    'before', 0.5, 'after', 0.5, 'appendFigTitle', char(Option.animal), ...
+    'eventTypes', ["theta", "delta", "ripple"], ...
+    'displayType', 'raster');
+% figure
 % Run plots in parallel
-% a = parfeval(gcp, a, 0);
-% b = parfeval(gcp, b, 0);
-% c = parfeval(gcp, c, 0);
-% Wait for plots to finish
-% wait(a); wait(b); wait(c);
-a(); b(); c();
+a = parfeval(gcp, a, 0);
+b = parfeval(gcp, b, 0);
+c = parfeval(gcp, c, 0);
+d = parfeval(gcp, d, 0);
+Wait for plots to finish
+wait(a); wait(b); wait(c);
+% a(); b(); c();
 
