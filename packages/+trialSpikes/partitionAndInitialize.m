@@ -26,7 +26,7 @@ Patterns_overall = initPatternStruct();
 % ------------------------------
 % Place paritioned data properly
 % ------------------------------
-for iPartition = 1:Option.numPartition
+for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
 
     % Split cells into source and target areas
     % [s_hpc, s_pfc, t_hpc, t_pfc, s_hpc_index,...
@@ -43,7 +43,7 @@ for iPartition = 1:Option.numPartition
             sourcetarg = directionality.split('-');
             source = sourcetarg(1);
             target = sourcetarg(1);
-            s_dat = split_info.source;
+            s_dat = split_info.source{i};
             s_ind = split_info.source_index;
             t_dat = split_info.target{j, 1, i};
             t_ind = split_info.target_index(j, :);
@@ -66,20 +66,20 @@ for iPartition = 1:Option.numPartition
 
             if iPartition == 1
                 if source == "hpc"
-                    s_all = r.hpc.X;
-                    s_ind_all = 1:size(r.hpc.X, 2);
+                    s_all = r.hpc.X{i};
+                    s_ind_all = 1:size(s_all, 1);
                 elseif source == "pfc"
-                    s_all = r.pfc.X;
-                    s_ind_all = 1:size(r.pfc.X, 2);
+                    s_all = r.pfc.X{i};
+                    s_ind_all = 1:size(s_all, 1);
                 else
                     error('Source area not recognized')
                 end
                 if target == "hpc"
-                    t_all = r.hpc.X;
-                    t_ind_all = 1:size(r.hpc.X, 2);
+                    t_all = r.hpc.X{i};
+                    t_ind_all = 1:size(t_all, 1);
                 elseif target == "pfc"
-                    t_all = r.pfc.X;
-                    t_ind_all = 1:size(r.pfc.X, 2);
+                    t_all = r.pfc.X{i};
+                    t_ind_all = 1:size(t_all, 1);
                 else
                     error('Target area not recognized')
                 end
@@ -93,9 +93,9 @@ for iPartition = 1:Option.numPartition
                 Patterns_overall(j,i).directionality = directionality;
                 % Assign pattern name
                 try
-                    Patterns_overall(iPartition,j,i).name = Option.patternNames(i);
+                    Patterns_overall(j,i).name = Option.patternNames(i);
                 catch 
-                    Patterns_overall(iPartition,j,i).name = "Pattern " + i;
+                    Patterns_overall(j,i).name = "Pattern " + i;
                 end
             end
 
