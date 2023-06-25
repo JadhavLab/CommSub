@@ -1,4 +1,7 @@
 [core]
     autostage = true
+    remote = localremote
 ['remote "citadel"']
     url = ssh://ryoung@129.64.53.12:47822/volume/sharespace-commsub/CommunicationSubspace
+['remote "localremote"']
+    url = /Volumes/RY20-RY9-RY7-dlc-drive/commsubspace_dvc
