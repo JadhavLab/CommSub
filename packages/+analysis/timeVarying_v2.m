@@ -1,4 +1,4 @@
-function Out = timeVarying(Patterns, Option, r)
+function Out = timeVarying(Patterns, Option, r, varargin)
 % Components = timeVarying(Patterns, Option)
 %
 % This function takes the patterns and performs the time varying analysis
@@ -26,12 +26,13 @@ function Out = timeVarying(Patterns, Option, r)
 %   Components: struct with the critical components for each behavior and
 %   the subspaces for each behavior
 
-% ip = inputParser();
+ip = inputParser();
 % ip.addParameter('animal_behavior', []);
-% % ip.addParameter('unique_times', []);
-% % ip.addParameter('throwout_times', []);
-% ip.parse(varargin{:});
-% Option = ip.Results;
+% ip.addParameter('unique_times', []);
+% ip.addParameter('throwout_times', []);
+ip.addParameter('methods', {'prod'});
+ip.parse(varargin{:});
+Opt = ip.Results;
 
 disp("Running time varying analysis")
 tic
@@ -54,6 +55,7 @@ end
 clear Components
 Out= struct(...
     'rankRegress', [],...
+    'cca', [],...
     'target', []...
     );
 Out = repmat(Out, [Option.numPartition, Option.waysOfPartitions]);
@@ -75,10 +77,14 @@ for p = 1:min(Option.numPartition, size(Patterns, 1))
 
         % new method
         % ----------------
-        for method = {'prod', 'concat'}
+        for method = Opt.methods
             O.rankRegress.(method{1}) = analysis.temporal.match(P, Option, r,...
                         'method', method{1},...
                         'component_method', 'rankRegress'...
+                        );
+            O.cca.(method{1}) = analysis.temporal.match(P, Option, r,...
+                        'method', method{1},...
+                        'component_method', 'cca'...
                         );
         end
 

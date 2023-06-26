@@ -62,7 +62,13 @@ if strcmp(Opt.component_method, 'rankRegress')
     [u,~,v] = svd(B_);
     % sdiag = diag(s);
 elseif strcmp(Opt.component_method, 'cca')
-    error('Not implemented');
+    cca = Patterns.cca;
+    if isempty(cca)
+        warning('No cca found');
+        return % no cca
+    end
+    u = cca.u;
+    v = cca.v;
 else
     error('Unknown method');
 end
@@ -89,6 +95,8 @@ elseif strcmp(Opt.method, 'prod')
     activation_target = v(:,1:N)'*target;
     activities = activation_source .* activation_target;
     out.activities = activities;
+    out.activaties_source = activation_source;
+    out.activaties_target = activation_target;
 else
     error('Unknown method');
 end
