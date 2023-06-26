@@ -70,15 +70,15 @@ Default.dimCompAnalysis               = 5;
 Default.stablePerf                    = 0.9;
 
 % What to run?
-Default.generateH                = join(["fromSpectra","fromRipTimes"], "  ");
+Default.generateH                       = join(["fromSpectra","fromRipTimes"], "  ");
 Default.analysis.run_selected_genH      = false;
-Default.analysis.frChecks               = true;
+Default.analysis.checks                 = true;
 Default.analysis.rankRegress            = true;
 Default.analysis.factorAnalysis         = false; % took too long -- tend to not run this
 Default.analysis.singleNeuronPrediction = false;
 Default.analysis.timeVarying            = false; % rewrite
 Default.analysis.cca                    = false; % kim 2022
-Default.analysis.JPECC                  = false; % 
+Default.analysis.JPECC                  = false; %
 Default.analysis.reverse                = false; % commsubspace high -> network patterns
 % Default.generateH = "fromWpli " + " fromRipTimes";
 % Default.generateH = "fromCoherence "+" fromRipTimes";

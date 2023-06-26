@@ -122,9 +122,9 @@ disp("     Analysis           ")
 disp("------------------------")
 
 
-% Rank regression of network pattern windows of spiking activity
-% (Subspaces acquired here)
 if Option.analysis.rankRegress
+    % Rank regression of network pattern windows of spiking activity
+    % (Subspaces acquired here)
     % TODO: 
     % 1. fix Option.rankregress => Option.rankRegress                 
     % 2. most rankRegress.B_ are empty                                
@@ -132,17 +132,9 @@ if Option.analysis.rankRegress
     Patterns_overall = analysis.rankRegress(Patterns_overall, Option);
 end
 
-% How much spiking moment to moment is explained by subspace
-if Option.analysis.timeVarying
-    % ISSUE: hits a bug on line 4
-    % TODO: 1 .also return epochwise zscored neural firing matching
-    %       2. return timeseries of smoothed firing rate
-    Components = analysis.timeVarying(Patterns, Option);
-end
-
-% Factor analysis of network pattern windows of spiking activity
-% (Used to measure instrinsic dimensionality of network activity)
 if Option.analysis.factorAnalysis
+    % Factor analysis of network pattern windows of spiking activity
+    % (Used to measure instrinsic dimensionality of network activity)
     Patterns = analysis.factorAnalysis(Patterns, Option);
 end
 
@@ -151,11 +143,19 @@ if Option.analysis.cca
     Patterns_overall = analysis.cca(Patterns, Option);
 end
 
-% Plots regarding the raw and processed data (and sometimes
-% relation to processed Patterns struct)
-% TODO: Think about splitting this into checks involving
-%        versus not involving the Patterns struct
+if Option.analysis.timeVarying
+    % How much spiking moment to moment is explained by subspace
+    % ISSUE: hits a bug on line 4
+    % TODO: 1 .also return epochwise zscored neural firing matching
+    %       2. return timeseries of smoothed firing rate
+    Components = analysis.timeVarying(Patterns, Option);
+end
+
 if Option.analysis.checks
+    % Plots regarding the raw and processed data (and sometimes
+    % relation to processed Patterns struct)
+    % TODO: Think about splitting this into checks involving
+    %        versus not involving the Patterns struct
     plots.runChecks(Patterns, Option, r, cellOfWindows);
 end
 

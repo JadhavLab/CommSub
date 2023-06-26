@@ -1,4 +1,4 @@
-function [Patterns, Patterns_overall] = partition(r, Option) 
+function [Patterns, Patterns_overall] = partition(r, Option, varargin)
 % partition - Partition data into source and target areas
 % 
 % Parameters:
@@ -16,8 +16,15 @@ function [Patterns, Patterns_overall] = partition(r, Option)
 % when the partition is three-ways, direction==1 means same target/source pair
 % and direction==2 means diff target/source pair
 % ----------------------------
+
+ip = inputParser;
+ip.addParameter('test', false, @islogical); % test mode, use fewer partitions
+ip.parse(varargin{:});
+Opt = ip.Results;
+
 disp('Partitioning data...')
 tic
+const = option.constants();
  
 % Initialize the scaffold of the pattern struct
 Patterns         = initPatternStruct();
@@ -26,6 +33,9 @@ Patterns_overall = initPatternStruct();
 % ------------------------------
 % Place paritioned data properly
 % ------------------------------
+if Opt.test % test mode, use fewer partitions
+    Option.numPartition = 2;
+end
 for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
 % for iPartition = progress(1:2, 'Title', 'Partitioning data')
 
@@ -108,41 +118,42 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
 end
 
 % Add overall for ALL TIME
-areaPerNeuron = r.areaPerNeuron;
+last = numel(r.windowInfo.cellOfWindows) + 1;
+areaPerNeuron     = r.areaPerNeuron;
 sessionTypePerBin = r.sessionTypePerBin;
 for j = 1:numel(split_info.directionality)
-    if i == HPC
-        s_all = r.spikeRateMatrix(:, sessionTypePerBin == 1 & ... 
-            areaPerNeuron == "CA1");
+    if i == const.HPC
+        s_all = r.spikeRateMatrix(areaPerNeuron == "CA1", ... 
+            sessionTypePerBin == 1);
         t_all = s_all;
-        s_inds = r.celllookup(areaPerNeuron == "CA1").index_by_region;
+        s_inds = r.celllookup(areaPerNeuron == "CA1",:).index_by_region;
         t_inds = s_inds;
         source = "hpc";
         target = "hpc";
     else
-        s_all = r.spikeRateMatrix(:, sessionTypePerBin == 1 & ... 
-            areaPerNeuron == "CA1");
-        t_all = r.spikeRateMatrix(:, sessionTypePerBin == 1 & ... 
-            areaPerNeuron == "PFC")
-        s_inds = r.celllookup(areaPerNeuron == "CA1").index_by_region;
-        t_inds = r.celllookup(areaPerNeuron == "PFC").index_by_region;
+        s_all = r.spikeRateMatrix(areaPerNeuron == "CA1", ... 
+            sessionTypePerBin == 1);
+        t_all = r.spikeRateMatrix(areaPerNeuron == "PFC", ... 
+            sessionTypePerBin == 1);
+        s_inds = r.celllookup(areaPerNeuron == "CA1",:).index_by_region;
+        t_inds = r.celllookup(areaPerNeuron == "PFC",:).index_by_region;
         source = "hpc";
         target = "pfc";
     end
     % Assign x_source and x_target
-    Patterns_overall(j, end+1).X_source = s_all;
-    Patterns_overall(j, end).X_target = t_all;
+    Patterns_overall(j, last).X_source = s_all;
+    Patterns_overall(j, last).X_target = t_all;
     % Assign index_source and index_target
-    Patterns_overall(j, end).index_source = s_inds;
-    Patterns_overall(j, end).index_target = t_inds;
+    Patterns_overall(j, last).index_source = s_inds;
+    Patterns_overall(j, last).index_target = t_inds;
     % Assign directionality
-    Patterns_overall(j, end).directionality = directionality;
+    Patterns_overall(j, last).directionality = directionality;
     % Assign pattern name
-    Patterns_overall(j, end).name = "Overall";
+    Patterns_overall(j, last).name = "Overall";
     time = r.timeBinMidPoints(sessionTypePerBin == 1);
-    Patterns_overall(j, end).X_time = reshape(time',1,[]);
-    Patterns_overall(j, end).source = source;
-    Patterns_overall(j, end).target = target;
+    Patterns_overall(j, last).X_time = reshape(time',1,[]);
+    Patterns_overall(j, last).source = source;
+    Patterns_overall(j, last).target = target;
 end
 
 szCellOfWindows = squeeze(size(r.windowInfo.cellOfWindows));
@@ -155,5 +166,3 @@ Patterns = reshape(Patterns, ...
     size(r.windowInfo.cellOfWindows)]);
 
 disp(['Partitioning data took ', num2str(toc), ' seconds.'])
-
-

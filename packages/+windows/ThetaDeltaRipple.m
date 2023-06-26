@@ -34,9 +34,11 @@ function [cellOfWindows, cutoffs] = ThetaDeltaRipple(Events, Option)
 disp("Generating windows for events")
 tic;
 
-THETA  = 1;
-DELTA  = 2;
-RIPPLE = 3;
+const = option.constants();
+
+THETA  = const.THETA;
+DELTA  = const.DELTA;
+RIPPLE = const.RIPPLE;
 
 nPatterns = numel(Option.patternNames);
 
@@ -51,7 +53,8 @@ nPatterns = numel(Option.patternNames);
 %%----------------
 %% 1b :RIPPLES
 %%----------------
-if any(contains(Option.generateH, ["fromCoherence","fromWpli"]))
+coherent_patterns = any(contains(Option.generateH, ["fromCoherence","fromWpli"]));
+if coherent_patterns
     [cellOfWindows(RIPPLE), cutoffs(RIPPLE)] = windows.make(Events.times,...
         Option.quantileToMakeWindows,  Events.H(:,RIPPLE), Option,...
         'quantile', Events.Hvals(:,RIPPLE),'higherThanQuantile', true); % % RY: quantile needs to be hvals for ripple coherence/wpli threshold to be correct, but timesd computed from Events.H such that non-ripple times thrown out
@@ -100,7 +103,8 @@ end
 % -----------------------
 % Controls: RIPPLES
 % -----------------------
-if any(contains(Option.generateH, ["fromCoherence","fromWpli"]))
+coherent_patterns = any(contains(Option.generateH, ["fromCoherence","fromWpli"]));
+if coherent_patterns
     [Hc_cellOfWindows(RIPPLE), Hc_cutoffs(RIPPLE)] = windows.make(Events.times,...
         quantileControl,  Hc(:,RIPPLE), Option.winSize,...
         'quantile', Events.Hvals(:,RIPPLE),'higherThanQuantile', Option.oldControlBehavior);
@@ -110,7 +114,8 @@ else
             1,   Hc(:,RIPPLE), Option, 'threshold', 'raw','higherThanQuantile', true); %RY quantile won't work because these are raw
     else
         [Hc_cellOfWindows(RIPPLE), Hc_cutoffs(RIPPLE)] = windows.make(Events.times, ...
-            quantileControl,   Events.Hvals(:,RIPPLE), Option, 'threshold', 'quantile','higherThanQuantile', Option.oldControlBehavior); %RY quantile won't work because these are raw
+            quantileControl,   Events.Hvals(:,RIPPLE), Option, ...
+            'threshold', 'quantile','higherThanQuantile', Option.oldControlBehavior); %RY quantile won't work because these are raw
     end
 end
 
@@ -128,7 +133,9 @@ end
 % Merge many controls into 1 control?
 % -----------------------------------
 % % Merge into one
-cellOfWindows(length(cellOfWindows)+1:length(Hc_cellOfWindows)+length(cellOfWindows)) = Hc_cellOfWindows;
+control_start = length(cellOfWindows)+1;
+control_end = length(cellOfWindows)+length(cellOfWindows);
+cellOfWindows(control_start:control_end) = Hc_cellOfWindows;
 cutoffs = [cutoffs,Hc_cutoffs];
 
 % -------------------------------

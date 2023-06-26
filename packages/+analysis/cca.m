@@ -9,6 +9,9 @@ function [Patterns] = ccaAnalysis(Patterns, Option)
 %   Patterns - [1 x 1 struct] with additional fields:
 %       cca - [1 x 1 struct] see cca.core for fields
 
+disp('Running CCA analysis...');
+tic;
+
 % Iterate over each pattern and apply CCA
 for n = 1:numel(Patterns)
     p = Patterns(n);
@@ -23,3 +26,5 @@ for n = 1:numel(Patterns)
     % Assign the updated struct back to the original array
     Patterns = nd.set(Patterns, n, p);
 end
+
+disp(['CCA analysis completed in ' num2str(toc) ' s']);
