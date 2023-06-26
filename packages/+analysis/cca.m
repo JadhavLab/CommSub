@@ -23,4 +23,3 @@ for n = 1:numel(Patterns)
     % Assign the updated struct back to the original array
     Patterns = nd.set(Patterns, n, p);
 end
-

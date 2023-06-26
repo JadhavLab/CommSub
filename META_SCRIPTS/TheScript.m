@@ -111,7 +111,7 @@ r.spikeRateMatrix = spikeRateMatrix;
 r.spikeCountMatrix = spikeCountMatrix;
 
 %%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
-disp("------------------------")
+disp("------------------------"
 disp(" Subsampling partitions ")
 disp("------------------------")
 [Patterns, Patterns_overall] = trialSpikes.partitionAndInitialize(r, Option);

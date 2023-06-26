@@ -107,10 +107,53 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
     end
 end
 
+% Add overall for ALL TIME
+areaPerNeuron = r.areaPerNeuron;
+sessionTypePerBin = r.sessionTypePerBin;
+for j = 1:numel(split_info.directionality)
+    if i == HPC
+        s_all = r.spikeRateMatrix(:, sessionTypePerBin == 1 & ... 
+            areaPerNeuron == "CA1");
+        t_all = s_all;
+        s_inds = r.celllookup(areaPerNeuron == "CA1").index_by_region;
+        t_inds = s_inds;
+        source = "hpc";
+        target = "hpc";
+    else
+        s_all = r.spikeRateMatrix(:, sessionTypePerBin == 1 & ... 
+            areaPerNeuron == "CA1");
+        t_all = r.spikeRateMatrix(:, sessionTypePerBin == 1 & ... 
+            areaPerNeuron == "PFC")
+        s_inds = r.celllookup(areaPerNeuron == "CA1").index_by_region;
+        t_inds = r.celllookup(areaPerNeuron == "PFC").index_by_region;
+        source = "hpc";
+        target = "pfc";
+    end
+    % Assign x_source and x_target
+    Patterns_overall(j, end+1).X_source = s_all;
+    Patterns_overall(j, end).X_target = t_all;
+    % Assign index_source and index_target
+    Patterns_overall(j, end).index_source = s_inds;
+    Patterns_overall(j, end).index_target = t_inds;
+    % Assign directionality
+    Patterns_overall(j, end).directionality = directionality;
+    % Assign pattern name
+    Patterns_overall(j, end).name = "Overall";
+    time = r.timeBinMidPoints(sessionTypePerBin == 1);
+    Patterns_overall(j, end).X_time = reshape(time',1,[]);
+    Patterns_overall(j, end).source = source;
+    Patterns_overall(j, end).target = target;
+end
+
 szCellOfWindows = squeeze(size(r.windowInfo.cellOfWindows));
 if numel(szCellOfWindows) == 2 && szCellOfWindows(1) == 1
     szCellOfWindows = szCellOfWindows(2);
 end
-Patterns = reshape(Patterns, [Option.numPartition, numel(split_info.directionality), size(r.windowInfo.cellOfWindows)]);
+
+Patterns = reshape(Patterns, ...
+    [Option.numPartition, numel(split_info.directionality), ...
+    size(r.windowInfo.cellOfWindows)]);
 
 disp(['Partitioning data took ', num2str(toc), ' seconds.'])
+
+
