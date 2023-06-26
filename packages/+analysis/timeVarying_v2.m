@@ -67,7 +67,6 @@ for p = 1:min(Option.numPartition, size(Patterns, 1))
 
         O = Out(p, j);
         P = Patterns(p, j);
-
         O.target = Const.areanames(j);
 
         % old method

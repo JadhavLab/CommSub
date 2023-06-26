@@ -92,6 +92,7 @@ if Option.oldControlBehavior
 else
     Hc = Events.H;
 end
+
 [Hc_cellOfWindows, Hc_cutoffs] = ...
     windows.make(Events.times,  quantileControl,...  % add windows of control patterns
     Hc(:,THETA:DELTA), Option,... % Selects less than quantile

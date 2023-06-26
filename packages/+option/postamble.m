@@ -29,3 +29,14 @@ if ~any(contains(Option.patternNames,"control"))
     Option.patternNames = Option.patternNames(:)';
 end
 
+if any(contains(Option.generateH, "fromWpli"))
+    Option.patterNamesFull = Option.patternNames + "-wpli";
+    Option.genH_name = "wpli";
+elseif any(contains(Option.generateH, "fromCoherence"))
+    Option.patterNamesFull = Option.patternNames + "-coherence";
+    Option.genH_name = "coherence";
+else
+    Option.patterNamesFull = Option.patternNames + "-power";
+    Option.genH_name = "power";
+end
+
