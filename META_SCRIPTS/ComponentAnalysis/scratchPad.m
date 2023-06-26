@@ -15,7 +15,7 @@ B_ = rr.B_;
 [u,s,v] = svd(B_, 'full');
 sdiag = diag(s);
 
-dips("Size source: " + size(source))
+disp("Size source: " + size(source))
 disp("Size u: " + size(u))
 disp("Size target: " + size(target))
 disp("Size v: " + size(v))
@@ -48,6 +48,8 @@ for i = progress(1:size(activities,1))
 end
 out.activities = activities;
 out.smooth_activties = smooth_activties;
+
+% We're doing the above now in analysis.temporal.match()
 
 figure
 subplot(2,1,1)

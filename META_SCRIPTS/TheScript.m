@@ -140,7 +140,8 @@ end
 
 if Option.analysis.cca
     Patterns         = analysis.cca(Patterns, Option);
-    Patterns_overall = analysis.cca(Patterns, Option);
+    Patterns_overall = analysis.cca(Patterns_overall, Option);
+    % TODO : section that knocks off kim 2022 after these measurements
 end
 
 if Option.analysis.timeVarying
