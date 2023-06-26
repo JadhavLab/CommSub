@@ -1,4 +1,4 @@
-function out = match(Patterns, Option, r)
+function out = match(Patterns, Option, r, varargin)
 % MATCH Match source and target patterns with rank regressor
 % or canonical correlation analysis (CCA) components.
 %
@@ -28,7 +28,7 @@ function out = match(Patterns, Option, r)
 
 ip = inputParser();
 ip.addParameter('method', 'prod', @(x) ismember(x, {'prod', 'concat'}));
-ip.addParameter('component_method', 'rank', @(x) ismember(x, {'rank', 'cca'}));
+ip.addParameter('component_method', 'rankRegress', @(x) ismember(x, {'rankRegress', 'cca'}));
 ip.addParameter('n_components', 3, @isscalar);
 ip.addParameter('smoothing', 400); % samples or param to smooth()
 ip.addParameter('verbose', false, @islogical);
@@ -36,10 +36,15 @@ ip.parse(varargin{:});
 Opt = ip.Results;
 
 N = Opt.n_components;
+out.method = Opt.method;
+out.component_method = Opt.component_method;
+out.activities = [];
+out.smooth_activties = [];
+out.time = [];
 
-source = Patterns.X_source;
-target = Patterns.X_target;
-time   = Patterns.X_time;
+% source = Patterns.X_source;
+% target = Patterns.X_target;
+% time   = Patterns.X_time;
 source_index = Patterns.index_source;
 target_index = Patterns.index_target;
 source = r.spikeCountMatrix(source_index,:);
@@ -47,11 +52,15 @@ target = r.spikeCountMatrix(target_index,:);
 time = r.timeBinMidPoints;
 
 % Pull out rank regressor
-if strcmp(Opt.component_method, 'rank')
-    rr = Patterns.rankRegress
+if strcmp(Opt.component_method, 'rankRegress')
+    rr = Patterns.rankRegress;
     B_ = rr.B_;
-    [u,s,v] = svd(B_, 'full');
-    sdiag = diag(s);
+    if isempty(B_)
+        warning('No rank regressor found');
+        return % no rank regressor
+    end
+    [u,~,v] = svd(B_);
+    % sdiag = diag(s);
 elseif strcmp(Opt.component_method, 'cca')
     error('Not implemented');
 else
@@ -90,4 +99,4 @@ for i = progress(1:size(activities,1))
     smooth_activties(i,:) = smooth(activities(i,:), Opt.smoothing);
 end
 out.smooth_activties = smooth_activties;
-
+out.time = time;

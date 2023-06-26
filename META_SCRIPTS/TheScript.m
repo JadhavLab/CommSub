@@ -90,7 +90,7 @@ r.pfc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "PFC");
 r.hpc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "CA1");
 r.pfc.X = trialSpikes.separateSpikes(spikeSampleMatrix, areaPerNeuron, "PFC");
 r.hpc.X = trialSpikes.separateSpikes(spikeSampleMatrix, areaPerNeuron, "CA1");
-r.trialTimes = trialTimes
+r.trialTimes = trialTimes;
 
 %% Separate firing pattern into source and target
 [nPFCneurons,~,~] = size(r.pfc.X{1});
@@ -99,8 +99,8 @@ r.celllookup = cellInfo.getCellIdentities(Option.animal, cell_index,...
                                           areaPerNeuron);
 r.avgFR         = avgFR;
 r.areaPerNeuron = areaPerNeuron;
-r.pfc.nNeurons = nPFCneurons;
-r.hpc.nNeurons = nHPCneurons;
+r.pfc.nNeurons  = nPFCneurons;
+r.hpc.nNeurons  = nHPCneurons;
 r.windowInfo.cellOfWindows = cellOfWindows;
 r.windowInfo.nWindows      = cellfun(@(x) size(x, 1), cellOfWindows);
 r.nPattern = Option.nPatterns;
@@ -111,7 +111,7 @@ r.spikeRateMatrix = spikeRateMatrix;
 r.spikeCountMatrix = spikeCountMatrix;
 
 %%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
-disp("------------------------"
+disp("------------------------")
 disp(" Subsampling partitions ")
 disp("------------------------")
 [Patterns, Patterns_overall] = trialSpikes.partitionAndInitialize(r, Option);
@@ -149,7 +149,7 @@ if Option.analysis.timeVarying
     % ISSUE: hits a bug on line 4
     % TODO: 1 .also return epochwise zscored neural firing matching
     %       2. return timeseries of smoothed firing rate
-    Components = analysis.timeVarying(Patterns, Option);
+    Components = analysis.timeVarying_v2(Patterns, Option, r);
 end
 
 if Option.analysis.checks
