@@ -77,8 +77,8 @@ Hvals = Events.Hvals;
 interpActivities = interp1(time, smooth_activties', Htimes);
 
 % spearman correlation matrix between events and activities
-combined = [interpActivities, Hvals]
-corrMatrix = corr(, 'type', 'Spearman');
+combined = [interpActivities, Hvals];
+corrMatrix = corr(combined, 'type', 'Spearman');
 figure
 imagesc(corrMatrix)
 clim = [-1,1];

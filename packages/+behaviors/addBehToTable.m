@@ -1,13 +1,20 @@
-function [animal_behavior, unqiue_times] = addBehToTable(animal_behavior)
-%ADDBEHTOTABLE Summary of this function goes here
-% input: the animal behavioral table generated from the task file
-% output: the animal behavioral table with some more entries added
+function [animal_behavior, unique_times] = addBehToTable(animal_behavior)
+% [animal_behavior, unique_times] = addBehToTable(animal_behavior)
+%
+% ADDBEHTOTABLE add some more entries to the animal behavioral table
+%
+% input: 
+% - animal_behavior: the animal behavioral table
+%
+% output: 
+% - animal_behavior: the animal behavioral table with more entries
+% - unique_times: the unique times in the table
 
-[~, unqiue_times, ~] = unique(animal_behavior.time);
-animal_behavior = animal_behavior( unqiue_times,:);
+[~, unique_times, ~] = unique(animal_behavior.time);
+animal_behavior = animal_behavior( unique_times,:);
 
 %% identify the decision, error, reward times to the table
-animal_behavior.wellTimes = (animal_behavior.trajbound == 0 & animal_behavior.lindist > 0.99)...
+animal_behavior.wellTimes = (animal_behavior.trajbound == 0  & animal_behavior.lindist > 0.99)...
                             |(animal_behavior.trajbound == 1 & animal_behavior.lindist <0.01) ; %0.01 inbound
 animal_behavior.rewardTimes = animal_behavior.wellTimes & animal_behavior.rewarded ==1;
 animal_behavior.outBounderrorTimes = animal_behavior.wellTimes & animal_behavior.rewarded ==0;

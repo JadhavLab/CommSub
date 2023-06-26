@@ -150,7 +150,12 @@ if Option.analysis.timeVarying
     % ISSUE: hits a bug on line 4
     % TODO: 1 .also return epochwise zscored neural firing matching
     %       2. return timeseries of smoothed firing rate
+    running_times = r.timeBinMidPoints(r.sessionTypePerBin == 1);
+    [behavior, thrown_out_times] = table.behavior.lookup(Option.animal, ...
+                                                         running_times);
     Components = analysis.timeVarying_v2(Patterns, Option, r);
+    Components = plots.temporal.correlateSpectral(Components, Events, Option);
+    Components = plots.temporal.correlateBehavior(Components, Events, Option);
 end
 
 if Option.analysis.checks

@@ -1,6 +1,40 @@
-function [behavior, times_to_throwout] = lookup(animal, times, inds, varargin)
+function [behavior, times_to_throwout, unique_times_inds] = ...
+    lookup(animal, times, inds, varargin)
+% [behavior, times_to_throwout, unique_times] = ...
+%    lookup(animal, times, inds, varargin)
+%
 % Given a set of times, looks up everything relevant about the behavior and
 % outputs into table form for introspection with gramm
+%
+% Inputs
+% ------
+% animal : string
+%     Animal name
+% times : array
+%     Nx1 array of times to look up
+% inds : array
+%     Nx2 array of indices to look up
+% varargin : key/value pairs
+%     'valueOnly' : bool
+%         Whether to not return ccolumns that function as indices (time, traj, day, epoch)
+%     'scaleVars' : bool
+%         Whether to scale vars
+%     'throwOutSleep' : bool
+%         Whether to throw out sleep
+%     'throwOutThresh' : int
+%         If 2 seconds from nearest point, toss it
+%
+% Outputs
+% -------
+% behavior : table
+%     Table of behavior
+% times_to_throwout : array
+%     Times that were thrown out
+% unique_times : array
+%     Unique times that were looked up
+
+disp("Starting lookup for " + animal);
+tic;
 
 ip = inputParser;
 ip.addParameter('valueOnly',false); % Whether to not return ccolumns that function as indices (time, traj, day, epoch)
@@ -202,3 +236,33 @@ if Opt.scaleVars
         end
     end
 end
+
+% ------------------------------------
+%% Ziyi's addToBehavior function items
+% ------------------------------------
+[~, unique_times_inds, ~] = unique(behavior.time);
+behavior = behavior( unique_times_inds,:);
+
+%% identify the decision, error, reward times to the table
+behavior.wellTimes = (behavior.trajbound == 0  & behavior.lindist > 0.99) | ...
+                     (behavior.trajbound == 1 & behavior.lindist <0.01) ; %0.01 inbound
+behavior.rewardTimes = behavior.wellTimes & behavior.rewarded ==1;
+behavior.outBounderrorTimes = behavior.wellTimes & behavior.rewarded ==0;
+behavior.inBounderrorTimes = behavior.trajbound == 1 & behavior.lindist > 0.99  & behavior.rewarded ==0;
+behavior.errorTimes = behavior.outBounderrorTimes | behavior.inBounderrorTimes;
+
+behavior.outBoundChoiceTimes = behavior.trajbound == 0 & behavior.lindist >= 0.2 & behavior.lindist <= 0.4;
+behavior.inBoundChoiceTimes = behavior.trajbound == 1 & behavior.lindist >= 0.5 & behavior.lindist <= 0.6;
+
+%% interp the inbound and outbound performances to all times
+tperfInbound = (behavior.tperf_timewise(behavior.trajbound ==1));
+tperfOutbound = (behavior.tperf_timewise(behavior.trajbound ==0));
+
+behavior.tperfInbound = interp1(behavior.time(behavior.trajbound ==1),...
+               tperfInbound, behavior.time);
+           
+behavior.tperfOutbound = interp1(behavior.time(behavior.trajbound==0),...
+               tperfOutbound, behavior.time);
+
+disp("Done with addToBehavior ... took " + num2str(toc) + " seconds");
+

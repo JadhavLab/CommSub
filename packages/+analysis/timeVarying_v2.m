@@ -27,9 +27,6 @@ function Out = timeVarying(Patterns, Option, r, varargin)
 %   the subspaces for each behavior
 
 ip = inputParser();
-% ip.addParameter('animal_behavior', []);
-% ip.addParameter('unique_times', []);
-% ip.addParameter('throwout_times', []);
 ip.addParameter('methods', {'prod'});
 ip.parse(varargin{:});
 Opt = ip.Results;
@@ -42,15 +39,6 @@ if ~isfield(Patterns, 'rankRegress') || isempty(Patterns(1).rankRegress)
     error("Patterns must have the rankRegress field")
 end
 
-% %% Take the behavior table
-% if isempty(Option.animal_behavior)
-%     running_spikeTimes = r.timeBinMidPoints(r.sessionTypePerBin == 1);
-%     [animal_behavior, throwout_times] = table.behavior.lookup(Option.animal, ...
-%         running_spikeTimes);
-%     [animal_behavior, unique_times] = behaviors.addBehToTable(animal_behavior);
-% else
-%     animal_behavior = Option.animal_behavior;
-% end
 
 clear Components
 Out= struct(...
@@ -62,33 +50,36 @@ Out = repmat(Out, [Option.numPartition, Option.waysOfPartitions]);
 % Components = repmat(Components, ...
 %                     [Option.numPartition, Option.waysOfPartitions]);
 
-for p = 1:min(Option.numPartition, size(Patterns, 1))
-    for j = [Const.HPC, Const.PFC]
+for i = 1:numel(Patterns)
 
-        O = Out(p, j);
-        P = Patterns(p, j);
-        O.target = Const.areanames(j);
+    O = Out(i);
+    P = Patterns(i); 
+    O.directionality = P.directionality;
+    tmp = split(P.directionality, '-');
+    O.source = tmp{1};
+    O.target = tmp{2};
 
-        % old method
-        % ----------------
-        % old = analysis.temporal.oldMatching(p, Option, r, target, animal_behavior,...
-        %                               unique_times, throwout_times);
+    % old method
+    % ----------------
+    % old = analysis.temporal.oldMatching(p, Option, r, target, animal_behavior,...
+    %                               unique_times, throwout_times);
 
-        % new method
-        % ----------------
-        for method = Opt.methods
-            O.rankRegress.(method{1}) = analysis.temporal.match(P, Option, r,...
-                        'method', method{1},...
-                        'component_method', 'rankRegress'...
-                        );
-            O.cca.(method{1}) = analysis.temporal.match(P, Option, r,...
-                        'method', method{1},...
-                        'component_method', 'cca'...
-                        );
-        end
-
-        Out(p, j) = O;
+    % new method
+    % ----------------
+    for method = Opt.methods
+        O.rankRegress.(method{1}) = analysis.temporal.match(P, Option, r,...
+                    'method', method{1},...
+                    'component_method', 'rankRegress'...
+                    );
+        O.cca.(method{1}) = analysis.temporal.match(P, Option, r,...
+                    'method', method{1},...
+                    'component_method', 'cca'...
+                    );
     end
+
+    Out(i) = O;
 end
+
+Out = reshape(Out, size(Patterns));
 
 disp("Finished time varying analysis in " + string(toc) + " seconds")

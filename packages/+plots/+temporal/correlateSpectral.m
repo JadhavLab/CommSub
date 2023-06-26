@@ -15,6 +15,8 @@ for i = 1:numel(Components)
     Components(i).spec = singleCorrelateSpectral(Components(i), Events, Option, varargin{:});
 end
 
+% -------------------------------------------------------------------------
+
 function out = singleCorrelateSpectral(Components, Events, Option, varargin)
 % correlateSpectral(Components, Events, Option, varargin)
 %   Correlate spectral components with events
@@ -33,6 +35,8 @@ Opt = ip.Results;
 
 figAppend = Opt.animal + " " + Opt.figAppend;
 
+%% Get components
+
 if isempty(Opt.names)
     if isfield(Option, "patternNamesFull")
         Opt.names = Option.patternNamesFull;
@@ -49,6 +53,9 @@ else
     error("Invalid option for 'use': " + Opt.use);
 end
 time             = Components.time;
+
+
+%% Plots
 
 % -------------------------------------------------------------------------
 
