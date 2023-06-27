@@ -65,11 +65,12 @@ if Option.preProcess_FilterLowFR
     [spikeCountMatrix, spikeRateMatrix, avgFR, areaPerNeuron, cell_index]...
         = trialSpikes.filterFR(spikeCountMatrix, spikeRateMatrix, 0.1, ...
         timeBinStartEnd, areaPerNeuron, cell_index);
+    disp("Mean FR: " + sort(avgFR))
 end
 
 if Option.preProcess_gaussianFilter
     % Gaussian filter the spikeCountMatrix/spikeRateMatrix
-    gauss = gausswin(21);
+    gauss = gausswin(Option.preProcess_gaussianFilter);
     for i = progress(1:size(spikeRateMatrix, 1), 'Title', 'Gaussian filtering')
         spikeRateMatrix(i, :)  = conv(spikeRateMatrix(i, :), gauss, 'same');
         spikeCountMatrix(i, :) = conv(spikeCountMatrix(i, :), gauss, 'same');
@@ -92,7 +93,6 @@ disp("------------------------")
 [spikeSampleMatrix, spikeSampleTensor, trialTimes] = trialSpikes.generate(...
     spikeCountMatrix, timeBinMidPoints, cellOfWindows, ... 
     Option.timesPerTrial, Option.nPatternAndControl);
-
 
 % %%%%%%%%%%%%%%% SETUP RAW DATA STRUCTURE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Structure for separated data
@@ -137,7 +137,6 @@ disp("------------------------")
 disp("     Analysis           ")
 disp("------------------------")
 
-
 if Option.analysis.rankRegress
     % Rank regression of network pattern windows of spiking activity
     % (Subspaces acquired here)
@@ -146,6 +145,7 @@ if Option.analysis.rankRegress
     % 2. most rankRegress.B_ are empty                                
     Patterns         = analysis.rankRegress(Patterns, Option);        
     Patterns_overall = analysis.rankRegress(Patterns_overall, Option);
+    !pushover-cli "Rank regression done"
 end
 
 if Option.analysis.factorAnalysis
@@ -155,7 +155,9 @@ if Option.analysis.factorAnalysis
 end
 
 if Option.analysis.cca
-    % BUG: mismatch in size of source matrix and CCA u v matrices
+    % ISSUE: warnings emitted regarding full rank -- linear independence
+    % violation can be subtle problem or not a problem at all
+    % remedies (1) regularize (2) remove linearly dependent columns (PCA)
     Patterns         = analysis.cca(Patterns, Option);
     Patterns_overall = analysis.cca(Patterns_overall, Option);
     % TODO : section that knocks off kim 2022 after these measurements

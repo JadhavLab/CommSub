@@ -97,8 +97,18 @@ for iPattern = progress(1:numResult, 'Title', 'Patterns')
 
         trialTimes{iPattern}(i,:) = tq;
     end
+
     spikeSampleTensor{iPattern} = currTensor;
     temp = reshape(currTensor,[nNeurons,samplesPerTrial*nTrials]);
     temp(isnan(temp)) = 0;
+
+    disp("Checking for rank deficiency")
+    if rank(temp) < size(temp, 1)
+        disp("Rank deficient ... solving ...")
+        temp = clean.solveRankDeficient(temp);
+        spikeSampleTensor{iPattern} = reshape(temp, ...
+            [nNeurons, samplesPerTrial, nTrials]);
+    end
+        
     spikeSampleMatrix{iPattern} = temp;
 end

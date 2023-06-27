@@ -30,9 +30,6 @@ function [Patterns] = rankRegress(Patterns, Option)
 disp("rank regression")
 tic
 
-assert(mean(Patterns(1).X_source, 'all') < 1000*eps(), ...
-    'X_source must be mean-centered; consider using zscore');
-
 if Option.waysOfPartitions ~= 2
     nTarget = size(Patterns(1).X_target,1);
     nSource = min(size(Patterns(1).X_source,1),...
@@ -76,6 +73,12 @@ for n = progress(1:numel(Patterns), 'Title', 'RankRegress')
 
     nan_rows = any(isnan(curr_source), 2) | ...
                any(isnan(curr_target), 2); % setect
+
+    if(mean(curr_source, 'all') < 100*eps())
+        warning('centering...');
+        curr_source = curr_source - mean(curr_source, 2);
+        curr_target = curr_target - mean(curr_target, 2);
+    end
 
     [p.rankRegress.cvl, ...
      p.rankRegress.cvLoss, ...

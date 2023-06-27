@@ -12,8 +12,6 @@ function [Patterns] = ccaAnalysis(Patterns, Option)
 disp('Running CCA analysis...');
 tic;
 
-assert(mean(Patterns(1).X_source, 'all') < 1000*eps(), ...
-    'X_source must be mean-centered; consider using zscore');
 
 % Iterate over each pattern and apply CCA
 for n = 1:numel(Patterns)
@@ -21,6 +19,12 @@ for n = 1:numel(Patterns)
 
     curr_area1 = p.X_source;
     curr_area2 = p.X_target;
+
+    if(mean(curr_area1, 'all') < 100*eps())
+        warning('centering...');
+        curr_area1 = curr_area1 - mean(curr_area1, 2);
+        curr_area2 = curr_area2 - mean(curr_area2, 2);
+    end
     
     % Assuming cca.core function takes two arguments: X_area1 and X_area2
     result = analysis.cca.core(curr_area1, curr_area2);
