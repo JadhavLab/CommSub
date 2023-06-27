@@ -67,6 +67,22 @@ if Option.preProcess_FilterLowFR
         timeBinStartEnd, areaPerNeuron, cell_index);
 end
 
+if Option.preProcess_gaussianFilter
+    % Gaussian filter the spikeCountMatrix/spikeRateMatrix
+    gauss = gausswin(21);
+    for i = progress(1:size(spikeRateMatrix, 1), 'Title', 'Gaussian filtering')
+        spikeRateMatrix(i, :)  = conv(spikeRateMatrix(i, :), gauss, 'same');
+        spikeCountMatrix(i, :) = conv(spikeCountMatrix(i, :), gauss, 'same');
+    end
+end
+
+if Option.preProcess_zscore
+    % Z-score the spikeCountMatrix/spikeRateMatrix
+    disp(" Z-scoring ")
+    spikeRateMatrix  = zscore(spikeRateMatrix,  0, 2);
+    spikeCountMatrix = zscore(spikeCountMatrix, 0, 2);
+end
+
 
 %%%%%%%%%%%%%%%% ACQUIRE TRIALS FROM WINDOWS + SPIKES %%%%%%%%%%%%%%%%%%%
 % RYAN bug here .. timeBinStartEnd instead of timeBinMidPoints
