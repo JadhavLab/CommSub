@@ -30,6 +30,9 @@ function [Patterns] = rankRegress(Patterns, Option)
 disp("rank regression")
 tic
 
+assert(mean(Patterns(1).X_source, 'all') < 1000*eps(), ...
+    'X_source must be mean-centered; consider using zscore');
+
 if Option.waysOfPartitions ~= 2
     nTarget = size(Patterns(1).X_target,1);
     nSource = min(size(Patterns(1).X_source,1),...

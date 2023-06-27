@@ -12,6 +12,9 @@ function [Patterns] = ccaAnalysis(Patterns, Option)
 disp('Running CCA analysis...');
 tic;
 
+assert(mean(Patterns(1).X_source, 'all') < 1000*eps(), ...
+    'X_source must be mean-centered; consider using zscore');
+
 % Iterate over each pattern and apply CCA
 for n = 1:numel(Patterns)
     p = Patterns(n);
