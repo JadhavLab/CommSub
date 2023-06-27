@@ -39,7 +39,7 @@ N = Opt.n_components;
 out.method = Opt.method;
 out.component_method = Opt.component_method;
 out.activities = [];
-out.smooth_activties = [];
+out.smooth_activities = [];
 out.time = [];
 
 % source = Patterns.X_source;
@@ -102,9 +102,9 @@ else
 end
 
 % Smooth
-smooth_activties = zeros(size(activities));
+smooth_activities = zeros(size(activities));
 for i = progress(1:size(activities,1))
-    smooth_activties(i,:) = smooth(activities(i,:), Opt.smoothing);
+    smooth_activities(i,:) = smooth(activities(i,:), Opt.smoothing);
 end
-out.smooth_activties = smooth_activties;
+out.smooth_activities = smooth_activities;
 out.time = time;

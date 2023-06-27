@@ -41,19 +41,17 @@ end
 
 
 clear Components
-Out= struct(...
-    'rankRegress', [],...
-    'cca', [],...
-    'target', []...
-    );
-Out = repmat(Out, [Option.numPartition, Option.waysOfPartitions]);
 % Components = repmat(Components, ...
 %                     [Option.numPartition, Option.waysOfPartitions]);
 
 for i = 1:numel(Patterns)
 
-    O = Out(i);
     P = Patterns(i); 
+    if i > 1
+        O = Out(i);
+    else
+        O = struct();
+    end
     O.directionality = P.directionality;
     tmp = split(P.directionality, '-');
     O.source = tmp{1};
@@ -67,19 +65,23 @@ for i = 1:numel(Patterns)
     % new method
     % ----------------
     for method = Opt.methods
-        O.rankRegress.(method{1}) = analysis.temporal.match(P, Option, r,...
+        O.("rankRegress_"+method{1}) = analysis.temporal.match(P, ...
+                    Option, r,...
                     'method', method{1},...
                     'component_method', 'rankRegress'...
                     );
-        O.cca.(method{1}) = analysis.temporal.match(P, Option, r,...
+        O.("cca_"+method{1}) = analysis.temporal.match(P, ...
+                    Option, r,...
                     'method', method{1},...
                     'component_method', 'cca'...
                     );
     end
 
+    if i == 1
+        disp("Initializing output struct")
+        Out = repmat(nd.emptyLike(O), size(Patterns));
+    end
     Out(i) = O;
 end
-
-Out = reshape(Out, size(Patterns));
 
 disp("Finished time varying analysis in " + string(toc) + " seconds")
