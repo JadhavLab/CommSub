@@ -50,7 +50,7 @@ Default.thetadelta_outlierQuantile    = [0, 0.995];     % quantile to remove out
 % ---- TRIAL WINDOW -----
 % how long -- this will interpolate all to be timesPerTrial long
 Default.spikeShiftSize                = 0.010; % used to default Default.timesPerTrial - size of actual trial sample
-Default.timesPerTrial                 = ceil(range(Default.winSize)/Default.spikeShiftSize); % 
+Default.timesPerTrial                 = ceil((sum(Default.winSize))/Default.spikeShiftSize); % 
 assert(Default.timesPerTrial > 1);
 
 % About brain areas
