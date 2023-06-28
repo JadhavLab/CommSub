@@ -1,0 +1,6 @@
+outs:
+- md5: db199c76f40cbe68d9f32608aa4b36ec
+  size: 2690476
+  isexec: true
+  hash: md5
+  path: SemedoTest_ry.mlx

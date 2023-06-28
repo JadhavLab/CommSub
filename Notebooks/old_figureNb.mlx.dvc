@@ -1,0 +1,5 @@
+outs:
+- md5: 8a168d508c115babf6024aee7d3eeba7
+  size: 360110
+  hash: md5
+  path: old_figureNb.mlx
