@@ -13,3 +13,4 @@ DATA_TABLES
 *.vim
 figures
 SingleDayExpt
+*.mlx
