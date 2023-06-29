@@ -35,12 +35,13 @@ function Events = ThetaDeltaRipple(Option)
 %   Events.Hnanlocs : array of doubles
 %       Locations of the NaNs in the event matrix
 
-disp("Generating event matrix");
+disp("Generating event matrix for " + replace(Option.generateH," ",""));
 tic;
 
-RIPPLE = 3;
-DELTA  = 2;
-THETA  = 1;
+const  = option.constants();
+RIPPLE = const.RIPPLE;
+DELTA  = const.DELTA;
+THETA  = const.THETA;
 
 if contains(Option.generateH, "fromSpectra")
 

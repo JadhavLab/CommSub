@@ -15,3 +15,7 @@ summaryTable = summaryTable(:, newOrder);
 
 % Sort by timestamp
 summaryTable = sortrows(summaryTable, "timestamp");
+
+summaryTable = util.table.castefficient(summaryTable);
+
+end

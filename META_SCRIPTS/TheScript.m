@@ -66,7 +66,7 @@ end
 if Option.preProcess_gaussianFilter
     % Gaussian filter the spikeCountMatrix/spikeRateMatrix
     gauss = gausswin(Option.preProcess_gaussianFilter);
-    for i = progress(1:size(spikeRateMatrix, 1), 'Title', 'Gaussian filtering')
+    for i = progress(1:size(Spk.spikeRateMatrix, 1), 'Title', 'Gaussian filtering')
         Spk.spikeRateMatrix(i, :)  = conv(Spk.spikeRateMatrix(i, :), gauss, 'same');
         Spk.spikeCountMatrix(i, :) = conv(Spk.spikeCountMatrix(i, :), gauss, 'same');
     end
@@ -258,7 +258,7 @@ if Option.save
     thisFile = fullfile(codedefine, "hash", hash);
     disp("Saving ...");
     tic; save(thisFile, saveVars{:},'-v7.3');
-    disp("... " + toc " seconds");
+    disp("... " + toc + " seconds");
     % link most recent state
     recencyName = Option.animal + "_" + replace(Option.generateH," ", "") + ...
                     "_mostRecentState";
