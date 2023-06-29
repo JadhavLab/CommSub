@@ -154,7 +154,7 @@ if Option.analysis.checks
     % relation to processed Patterns struct)
     % TODO: Think about splitting this into checks involving
     %        versus not involving the Patterns struct
-    plots.runChecks(Patterns, Option, Spk, cellOfWindows);
+    plots.runChecks(Events, Spk, Patterns, Option);
 end
 
 % TODO: (1) plug in JPECC version of rankRegress here
