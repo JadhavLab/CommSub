@@ -1,4 +1,4 @@
-function [] = runChecks(Events, Spk, Patterns, Option)
+function [] = runChecks(Events, Spk, Patterns, Option, varargin)
 % Run checks on the data overall for raw
 % and processed data
 %
@@ -18,6 +18,12 @@ function [] = runChecks(Events, Spk, Patterns, Option)
 % Returns:
 % --------
 
+ip = inputParser();
+ip.addParameter('wait', true, @islogical);
+ip.addParameter('parallel', true, @islogical);
+ip.parse(varargin{:});
+Opt = ip.Results;
+
 cellOfWindows = Events.cellOfWindows;
 
 disp("Running checks")
@@ -32,17 +38,47 @@ c = @() plots.event.plotSingleEvents(cellOfWindows, Events, Option, Spk, ...
     'before', 0.5, 'after', 0.5, 'appendFigTitle', char(Option.animal), ...
     'eventTypes', ["theta", "delta", "ripple"], ...
     'displayType', 'heatmap');
-d = @() plots.event.plotSingleEvents(cellOfWindows, Events, Option, Spk, ...
-    'before', 0.5, 'after', 0.5, 'appendFigTitle', char(Option.animal), ...
-    'eventTypes', ["theta", "delta", "ripple"], ...
-    'displayType', 'raster');
+% d = @() plots.event.plotSingleEvents(cellOfWindows, Events, Option, Spk, ...
+%     'before', 0.5, 'after', 0.5, 'appendFigTitle', char(Option.animal), ...
+%     'eventTypes', ["theta", "delta", "ripple"], ...
+%     'displayType', 'raster');
 % figure
-% Run plots in parallel
-a = parfeval(gcp, a, 0);
-b = parfeval(gcp, b, 0);
-c = parfeval(gcp, c, 0);
-d = parfeval(gcp, d, 0);
-Wait for plots to finish
-wait(a); wait(b); wait(c);
-% a(); b(); c();
 
+if Opt.parallel
+    disp("Parallel processing - enabled")
+else
+    disp("Parallel processing - disabled")
+end
+
+func_list = {a, b, c};
+out_list = cell(1, length(func_list));
+func_names = cellfun(@func2str, func_list, 'UniformOutput', false);
+
+% Run plots in parallel
+for i = 1:length(func_list)
+    disp("Running " + func2str(func_list{i}));
+    if Opt.parallel
+        out_list{i} = parfeval(gcp, func_list{i}, 0);
+    else
+        out_list{i} = func_list{i}();
+    end
+end
+
+% Wait for plots to finish
+if Opt.parallel
+    if Opt.wait
+        for i = 1:length(func_list)
+            disp("Waiting for " + func2str(func_list{i}));
+            out_list{i}.wait();
+        end
+    end
+    % Print any error messages
+    disp("-------")
+    disp("Errors")
+    disp("-------")
+    for i = 1:length(func_list)
+        if ~isempty(out_list{i}.Error)
+            disp(func_names{i} + " errors: " + out_list{i}.Error.message);
+        end
+    end
+end

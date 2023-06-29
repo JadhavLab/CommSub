@@ -1,12 +1,12 @@
 function plotSingleEvents(cellOfWindows, ...
-                          Events, Option,  r, varargin)
-%   PLOTSINGLEEVENTS(CELLOFWINDOWS, EVENTS, OPTION, R, VARARGIN)
+                          Events, Option,  Spk, varargin)
+%   PLOTSINGLEEVENTS(CELLOFWINDOWS, EVENTS, OPTION, Spk, VARARGIN)
 %   Plots the events in CELLOFWINDOWS for the given EVENTTYPE.
 % Inputs:
 %   cellOfWindows   - Cell array of windows for each event type
 %   Events          - Events structure
 %   Option          - Option structure
-%   r               - Raster structure
+%   Spk               - Raster structure
 %   varargin        - 'displayType' - 'heatmap' or 'raster'
 %                   must be followed by the display type
 %                   Default == 'heatmap'
@@ -127,11 +127,11 @@ for eventType = string(Opt.eventTypes)
             case 'heatmap'
                 % Here you will plot your spike counts as a heatmap, depends on how you have them stored
                 cla(ax)
-                spike_count_times  = r.timeBinMidPoints;
+                spike_count_times  = Spk.timeBinMidPoints;
                 spike_count_inds = find(spike_count_times > boundary(1)...
                             & spike_count_times < boundary(2));
                 spikeCountTimes = spike_count_times(spike_count_inds);
-                spikeCounts = r.spikeCountMatrix(:, spike_count_inds);  % modify this according to your data
+                spikeCounts = Spk.spikeCountMatrix(:, spike_count_inds);  % modify this according to your data
                 plots.heatmapBinSpikes(spikeCounts, 'times', spikeCountTimes,...
                     'cmap', flipud(cmocean('solar')), 'colorbar', true, ...
                                        'background', 'white', 'ax', ax);

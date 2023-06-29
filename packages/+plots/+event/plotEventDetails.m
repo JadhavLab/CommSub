@@ -13,7 +13,7 @@ function plotEventDetails(Events, Option, varargin)
 %       'lowerQuantile': lower quantile to use for the window
 %       'upperQuantile': upper quantile to use for the window
 %       'logAxis': which axes to log
-%       'r': structure containing the spikes
+%       'Spk': structure containing the spikes
 %       'spikePlotStyle': 'heatmap' or 'raster' or 'heatmapBehind', 'rasterBehind'
 %           heatmap : heatmap of spike counts
 %           raster : raster plot of spikes
@@ -64,7 +64,7 @@ saveas(f, file + ".svg");
 % Plot the events in the time series
 f=fig("Time series of events" + Opt.appendFigTitle);
 set(f, 'Position', get(0, 'Screensize'));
-spikesGiven = ~isempty(Opt.r);
+spikesGiven = ~isempty(Opt.Spk);
 if spikesGiven && strcmp(Opt.spikePlotStyle, 'heatmap')
     tile = tiledlayout(nPatterns + 2, 1, ...
         'TileSpacing', 'compact', 'Padding', 'compact');
@@ -98,26 +98,26 @@ for i = 1:nPatterns
     end
     if Opt.spikePlotStyle == "heatmapBehind"
         hold on
-        plots.heatmapBinSpikes(Opt.r, 'colorCols', 1:3, 'ylim', ylim());
+        plots.heatmapBinSpikes(Opt.Spk, 'colorCols', 1:3, 'ylim', ylim());
     end
     if Opt.showMuaSC
         hold on
-        plots.plotMuaSC(Opt.r, 'ylim', ylim());
+        plots.plotMuaSC(Opt.Spk, 'ylim', ylim());
     end
     ylabel(Option.patternNames(i) + " magnitude" + append);
 end
 linkaxes(tile.Children, 'x');
 
-if ~isempty(Opt.r) && strcmp(Opt.spikePlotStyle, 'heatmap')
+if ~isempty(Opt.Spk) && strcmp(Opt.spikePlotStyle, 'heatmap')
 
-    scm = Opt.r.spikeCountMatrix;
-    hpc = Opt.r.celllookup.region == "CA1";
-    pfc = Opt.r.celllookup.region == "PFC";
+    scm = Opt.Spk.spikeCountMatrix;
+    hpc = Opt.Spk.celllookup.region == "CA1";
+    pfc = Opt.Spk.celllookup.region == "PFC";
     scm_hpc = scm(hpc, :);
     scm_pfc = scm(pfc, :);
     scm_hpc(scm_hpc == 0) = nan;
     scm_pfc(scm_pfc == 0) = nan;
-    scm_times = Opt.r.timeBinMidPoints;
+    scm_times = Opt.Spk.timeBinMidPoints;
 
     % ca1
     ax = nexttile();
@@ -146,10 +146,10 @@ if ~isempty(Opt.r) && strcmp(Opt.spikePlotStyle, 'heatmap')
     imagesc(scm_times, 1:size(scm_pfc, 1), scm_pfc);
     colormap(ax,cmap)
     colorbar();
-elseif ~isempty(Opt.r) && strcmp(Opt.spikePlotStyle, 'raster')
+elseif ~isempty(Opt.Spk) && strcmp(Opt.spikePlotStyle, 'raster')
     error("Not implemented");
     % ax = nexttile();
-    % plot(Opt.r);
+    % plot(Opt.Spk);
     % title("Spike raster");
     % xlabel("Time (s)");
     % ylabel("Cell");

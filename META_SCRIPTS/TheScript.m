@@ -154,7 +154,10 @@ if Option.analysis.checks
     % relation to processed Patterns struct)
     % TODO: Think about splitting this into checks involving
     %        versus not involving the Patterns struct
-    plots.runChecks(Events, Spk, Patterns, Option);
+    if strcmp(Option.animal, "JS21"); wait_state = true;
+    else; wait_state = false; end;
+    plots.runChecks(Events, Spk, Patterns, Option, ...
+                    'parallel', true, 'wait', wait_state);
 end
 
 % TODO: (1) plug in JPECC version of rankRegress here

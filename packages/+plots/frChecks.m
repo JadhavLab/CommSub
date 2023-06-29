@@ -1,10 +1,10 @@
 function [fig_smoothingthroughout, ...
-         fig_smoothingindividual] = plot_frchecks(r, varargin)
-% function plot_frchecks(r)
+         fig_smoothingindividual] = frchecks(Spk, varargin)
+% function plot_frchecks(Spk)
 % Plot the spike rates for each bin to observe time dynamic
 %
 % INPUTS:
-%   r: the raw data structure in TheScript.m
+%   Spk: the raw data structure in TheScript.m
 %
 % OUTPUTS:
 %   
@@ -32,11 +32,11 @@ if ~startsWith(Opt.appendFigTitle, ' ')
     Opt.appendFigTitle = [' ' Opt.appendFigTitle];
 end
 
-spikeRates = mean(r.spikeRateMatrix, 1);
+spikeRates = mean(Spk.spikeRateMatrix, 1);
 % Assuming your spike rate vector is stored in a variable called 'spikeRates'
 windowSize = 10000;
 smoothedSpikeRates = smooth(spikeRates, windowSize);
-st = r.sessionTypePerBin;
+st = Spk.sessionTypePerBin;
 
 
 % ------------------- Plotting -------------------

@@ -14,7 +14,7 @@ ip.addParameter('savePath', '', @(x) ischar(x) || isstring(x));
 ip.addParameter('lowerQuantile', 0.001, @isnumeric);
 ip.addParameter('upperQuantile', 0.975, @isnumeric);
 ip.addParameter('logAxis', [2], @isnumeric); % log delta axis
-ip.addParameter('r', [], @isstruct); % r structure -- if given, we plot the spikes
+ip.addParameter('Spk', [], @isstruct); % Spk structure -- if given, we plot the spikes
 ip.addParameter('spikePlotStyle', 'heatmapBehind', @ischar); 
 ip.addParameter('showMuaSC', true, @islogical); % show MUA spike counts
 ip.parse(varargin{:});
