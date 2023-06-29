@@ -1,4 +1,4 @@
-function [result]  = optimizeOptionsScript(Patterns, Raw, Options)
+function [result]  = getOptimizationStruct(Patterns, Events, Option)
 % this script evaluates how ideal an option struct is 
 % by variable result = corr (theta - speed) + corr(theta - ripple)
 %                      - avgperf(hpc-pfc)
@@ -8,20 +8,22 @@ function [result]  = optimizeOptionsScript(Patterns, Raw, Options)
 
 
 corrMatrix = params.getPatternSpeedCorr(Option.animal,...
-                                        Raw.Events.H,...
-                                        Raw.Events.Hvals,...
-                                        Raw.Events.Htimes);
+                                        Events.H,...
+                                        Events.Hvals,...
+                                        Events.times);
 
 theta_sp     = corrMatrix(2,1);
 theta_ripple = corrMatrix(4,2);
 
+nSource = mode(cellfun(@numel,{Patterns.index_source}));
+nTarget = mode(cellfun(@numel,{Patterns.index_target}));
 
 % Distribution of performance across partitions
 [full_model_performance, dist] = params.getPredictionPerf(Patterns, nTarget, nSource, Option.numPartition);
 
 % Visualize
 fig('params.getPredictionPerf')
-histogram(dst)
+histogram(dist)
 perf = sum(full_model_performance(2:2:end))/3;
 
 % Compute objective

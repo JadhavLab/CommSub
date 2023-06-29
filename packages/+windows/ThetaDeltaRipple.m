@@ -155,7 +155,7 @@ end
 
 % pick control pattern that actually contains controls, would break if all
 % three are empty...
-if Option.singleControl && warnedEmptyControls
+if Option.singleControl  &&warnedEmptyControls
     for iPossibleControl = nPatterns+1:nPatterns*2
         if ~isempty(cellOfWindows{iPossibleControl})
             cellOfWindows{nPatterns+1} = cellOfWindows{iPossibleControl};

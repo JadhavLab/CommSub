@@ -95,8 +95,8 @@ Spk = trialSpikes.generate(Spk, Events, Option);
 % Separate spikesSampleMatrix/Tensor by area that neurons are in PFC and
 % neurons that in HPC
 %% Separate firing pattern into source and target
-[nPFCneurons,~,~] = size(Spk.pfc.X{1});
-[nHPCneurons,~,~] = size(Spk.hpc.X{1});
+[Spk.nSource,~,~] = size(Spk.hpc.X{1});
+[Spk.nTarget,~,~] = size(Spk.pfc.X{1});
 Spk.celllookup = cellInfo.getCellIdentities(Option.animal, Spk.cell_index,...
                                             Spk.areaPerNeuron);
 
@@ -185,25 +185,8 @@ if Option.save
     if exist("DetailedRunsSummary.mat", 'file') 
         load("DetailedRunsSummary.mat");
     else
-        warning("no existing real table")
+        warning("no existing DetailedRunsSummary table")
         DetailedRunsSummary = [];
-    end
-
-    % Determine information to add to table
-    params.optimizeOptionsScript;
-    %Option = rmfield(Option, "animal");
-    Optiontable  = struct2table(Option, 'AsArray', true);
-    Patterntable = query.getPatternTable(Patterns);
-
-    % Check for singular results in factor analysis
-    factorAnalysisChecksum = sum(Patterntable.singularWarning) ...
-                             > 0.7 * size(Patterntable,1);
-    if factorAnalysisChecksum
-        warning("too many singular results in factor analysis")
-        choice = input ("proceed to store results?");
-        if choice == "no"
-            error ("unsuccessful run")
-        end
     end
 
     % Identifying information about this options set and date of run
@@ -211,9 +194,21 @@ if Option.save
     hash      = hash(1:7); % Take the first 7 letters of the hash
     hash      = string(hash);
     timestamp = string(date());
+
+    % Determine information to add to table
+    Optim=params.getOptimizationParams(Patterns,Events,Option);
+    Optimtable=struct2table(Optim);
+    Optimtable.timestamp = timestamp;
+    Optimtable.hash = hash;
+    Optimtable.numWindowsCut = numWindowsCut;
+    Optimtable.cutoffs = Events.cutoffs;
+
+    % Create a table of options and table of patterns
+    Optiontable  = struct2table(Option, 'AsArray', true);
+    Patterntable = query.getPatternTable(Patterns);
+
     % Combine option columns with hash and date
-    tablerow = [Optiontable, ...
-        table(timestamp, hash, numWindowsCut, cutoffs, optimizationResult)]; 
+    tablerow = [Optiontable, Optim];
     % Combine those with all rows of the pattern table
     tablecontent = [Patterntable, repmat(tablerow, height(Patterntable), 1)]; 
 
@@ -227,16 +222,20 @@ if Option.save
         disp("new results stored!")
     end
 
-    % append the new results
+    % --------------------------------------
+    % Append the new results and posrpocess
+    % --------------------------------------
     old_height = height(DetailedRunsSummary);
     if size(DetailedRunsSummary,2) ~= size(tablecontent,2)
         DetailedRunsSummary = table.addNewColumn(DetailedRunsSummary, tablecontent);
-        RunsSummary    = table.addNewColumn(RunsSummary, tablerow);
+        RunsSummary         = table.addNewColumn(RunsSummary, tablerow);
     else
         DetailedRunsSummary = [DetailedRunsSummary; tablecontent];
-        RunsSummary = [RunsSummary; tablerow];
+        RunsSummary         = [RunsSummary; tablerow];
     end
     assert(height(DetailedRunsSummary) > old_height, "not appending");
+    DetailedRunsSummary = table.postprocessSummaryTable(DetailedRunsSummary);
+    RunsSummary         = table.postprocessSummaryTable(RunsSummary);
 
     %% ------------- Save ----------------------------
     % save the tables
