@@ -1,0 +1,447 @@
+% ===========================================================================
+% -------------
+% Things to do
+% -------------
+% 1. optomize the lambda
+% 2. optomize L? (lower priority, seems to remove patterns on its own --
+% possibly speeds)
+% 3. Another animal
+%   a. Correlate
+%   b. W(animal_1) = W(animal_2) in terms of loading
+% 4. Spectral frequencies of a W?
+% ===========================================================================
+
+% Flags
+skipMaster = true;
+
+% -----------------------
+% Add animal data to path
+% ------------------------
+animal_list = {'JS12','JS13','JS14','JS15','JS21','ER1','KL8'};
+for animal = animal_list
+    animalToPath(animal{1});
+end
+
+%reached = 0;
+%for fields = {{'S1','S2','wpli', 'ca1SPpfcLFP_C', 'pfcSPca1LFP_C'}, {'S1','S2','wpli'},{'S1','S2','wpli','phi'}}
+%for fieldstr = {'traj','wPhi',''}
+%for timescale = [4,2,10]
+%for seqStyle = ["Events-based", "Parts-based", ""]
+% epoch_type = epoch_type{1};
+% figure_count = 0;
+% figure_count = figure_count + 1;
+% fieldstr=fieldstr{1};
+paramSets = {...
+    {'run', 10, 3, 'traj', "Events-based"}, ... 3 patterns at 10 sec
+    {'run', 10, 2, 'traj', ""}, ... Attempt linearized traj via seqnmf
+    {'run', 4,  5, 'traj', "Events-based"}, ... 5 patterns
+    {'run', 4,  9, 'trajNoWPLI', "Events-based"}, ... 8 patterns : can I keep finding past a "reasonable" point
+    {'sleep', 4,  8, 'standard', "Events-based"} ...
+    };
+
+%% Preamble
+diary(['~/Projects/deltacoherence/results/diary_' date])
+for param = progress( paramSets(4), 'Title', 'Parameter iteration')
+    
+
+    % Deal out each of the parameters into unique variables
+    [epoch_type, timescale, K, fieldstr, seqStyle] = deal( param{1}{:} );
+
+    % ----------------------------------------------------------
+    %     _                   _                _       _        
+    %    / \   ___ __ _ _   _(_)_ __ ___    __| | __ _| |_ __ _ 
+    %   / _ \ / __/ _` | | | | | '__/ _ \  / _` |/ _` | __/ _` |
+    %  / ___ \ (_| (_| | |_| | | | |  __/ | (_| | (_| | || (_| |
+    % /_/   \_\___\__, |\__,_|_|_|  \___|  \__,_|\__,_|\__\__,_|
+    %                |_|                                        
+    % ----------------------------------------------------------
+    % 
+    % Skip these?
+    %if isequal({timescale, seqStyle}, {10,""})
+    %    continue
+    %end
+
+    % Initialize folders and parameters
+    % ---------------------------------
+    seq.initialize('K', K, 'epoch_type', epoch_type,'timescale', timescale, 'fieldstr',...
+                    fieldstr, 'orthoName', seqStyle, 'skipList', {'K'}, 'maxiter', 350);
+    %eqnmf_kws{1}{end}=7; seqnmf_kws{1}{2} = 1e-4; seqnmf_kws{1}{6} = 4e-4; seqnmf_kws{1}{4} = 4e-4;
+    kws = seq.container2kws(seqnmf_kws);
+    folder = seqnmf_folder(fieldstr, kws{:}, 'timescale', timescale);
+
+    % Announce the folder and create it
+    % ---------------------------------
+    disp("Starting " + string(seqStyle) + " in folder " + string(folder))
+    disp(sprintf('epoch=%s timescale=%d K=%d fieldstr=%s seqstyle=%s', param{1}{:}))
+    assert(~(ismember('animal_overall', nmfs) && ismember('overall', nmfs)))
+    if ~exist(sprintf('~/Data/deltacoherence/%s', folder), 'dir')
+        mkdir(sprintf('~/Data/deltacoherence/%s', folder))
+    end
+    if ~exist(sprintf('~/Data/deltacoherence/%s/%s', folder, seqStyle), 'dir')
+        mkdir(sprintf('~/Data/deltacoherence/%s/%s', folder, seqStyle))
+    end
+
+    % ----------------------------------------
+    % Iterate each animal and run seqnmf logic
+    % ----------------------------------------
+    P = []; % for aggreagting pos
+    C = []; % for aggreagting pos
+    T = []; % for lregion
+    cnt = 0;
+    animal_cnt = 0;
+    offset = 0;
+    dayepoch_prev = [0 0];
+    for animal = animal_list
+        animal_cnt = animal_cnt + 1;
+
+
+        % Determine the days and epochs for the animal
+        animaldef_ = animaldef(animal{1});
+        task = loaddatastruct(animaldef_{2:3}, 'task');
+        search_results = cellfetch(task, 'environment');
+        switch epoch_type
+        case 'run'
+            epoch_filter = cellfun(@(x) isequal(x,'wtr1'), search_results.values);
+        case 'sleep'
+            epoch_filter = cellfun(@(x) isempty(x), search_results.values);
+        case 'all'
+            epoch_filter = ones(1,numel(search_results.values));
+        otherwise
+            error("Improper epoch type")
+        end
+        dayepochs = search_results.index(epoch_filter,:);
+        dayepochs
+
+
+        % Mode-specific behaviors
+        if ismember('animal_overall', nmfs)
+            disp('Clearing for next animal')
+            P = []; % for aggreagting pos
+            C = []; % for aggreagting pos
+            file = sprintf('~/Data/deltacoherence/%s/%s/%sseqnmf.mat', folder, seqStyle, animal{1});
+            if exist(file,'file')
+                disp('Continuing')
+                continue
+                fprintf('Redoing %s...\n', file);
+            else
+                fprintf('Working on %s...\n', file);
+            end
+        end
+
+        % ------------------------------
+        % Load up all data for an animal
+        % ------------------------------
+        for dayepoch = dayepochs'
+
+            day   = dayepoch(1);
+            epoch = dayepoch(2);
+            if sum(dayepoch - dayepoch_prev) < 0
+                load(prev_avgeeg_file)
+                avgeeg = ffend(avgeeg);
+                offset = offset  + avgeeg.endtime
+            end
+            % ------------------------
+            % -- load spectral info --
+            % ------------------------
+            if isequal(epoch_type,'run')
+                cgramfile = 'cgramcnew';
+            else
+                cgramfile = 'cgramc';
+            end
+            cgramc_file = [animal{1} cgramfile sprintf('-%02d-%02d.mat', dayepoch)];
+            if ~exist(cgramc_file, 'file')
+                disp('Continuing')
+                continue
+            else
+                disp("Processing")
+            end
+            load(cgramc_file)
+            cgramc = cgramcnew;
+            data = ffend(cgramc);
+            data.t = data.t + offset;
+            data.animalcnt = animal_cnt * ones(size(data.t));
+            data.epoch = epoch * ones(size(data.t));
+            %data.t = data.t - avgeeg.starttime;
+            % ------------------------
+            % -- load position info --
+            % ------------------------
+            try
+                C = [C; data];
+                if ~isequal(epoch_type, 'sleep')
+                    load([animal{1} 'pos' sprintf('%02d', day)])
+                    load([animal{1} 'lregion' sprintf('%02d', day)])
+                    p = pos{day}{epoch};
+                    p.data(:,1) = p.data(:,1) + offset;
+                    P = [P; repmat([animal_cnt, cnt],length(p.data),1), p.data];
+                    p = lregion{day}{epoch};
+                    p.time = p.time + offset;
+                    T = [T; repmat([animal_cnt,     cnt], length(p.time),1), p.time, p.TR, p.TB, p.lindist, p.lindist .* sign(p.TB(:,2)-0.5)]; % animal epoch time trial region rewarded trajbound lindist trajdist
+                end
+            catch ME
+                warning(sprintf('Skipping animal %s, day %d epoch %d\n', animal{1}, dayepoch));
+            end
+            L =  round(timescale/data.params.movingwin(2));
+
+            if ismember('epoch', nmfs)
+                kws = container2kws(seqnmf_kws);
+                data  = ry_run_seqnmf(data, fields, 'seqnmf_kws', {kws{:}, 'L', L, 'checkpoint', 200}, 'fieldpack_kws', fieldpack_kws);
+            end
+
+            prev_avgeeg_file = [animal{1} 'avgeeg' sprintf('%02d-%02d.mat', dayepoch)];
+            dayepoch_prev = dayepoch;
+        end
+    end
+
+    % -------------------------------------
+    %     _                _               
+    %    / \   _ __   __ _| |_   _ _______ 
+    %   / _ \ | '_ \ / _` | | | | |_  / _ \
+    %  / ___ \| | | | (_| | | |_| |/ /  __/
+    % /_/   \_\_| |_|\__,_|_|\__, /___\___|
+    %                        |___/         
+    % -------------------------------------
+    if ismember('overall', nmfs)
+
+            if isequal(epoch_type,'run')
+                % -----------------------------------------
+                % Convert pos and trial to common time
+                % -----------------------------------------
+                throwaway = ~ismember(P(:, 1:3), T(:, 1:3), 'rows');
+                P(throwaway,:) = [];
+                throwaway = ~ismember(T(:, 1:3), P(:, 1:3), 'rows');
+                T(throwaway,:) = [];
+                % Sort by animal epoch time
+                P = sortrows(P, [1,2,3]);
+                T = sortrows(T, [1,2,3]);
+                % -------------------------------
+                % Create convenience table arrays
+                % -------------------------------
+                assert(isequal(P(:,1:3),T(:,1:3)))
+                % Behavior dataset
+                P = num2cell(P,1);
+                P = table(P{:}, ...
+                'VariableNames', {'animal','epoch','time','x','y','dir','vel'});
+                T = num2cell(T(:,4:end),1);
+                T = table(T{:}, ...
+                'VariableNames', {'trial','region','traj','rew', 'lindist', 'trajdist'});
+                behavior = [P,T];
+                %data.T = [0 diff(data.t)];
+                %data.T(data.T<0) = 0;
+                %data.T = cumsum(data.T);
+                %behavior.time(:) = [0; diff(behavior.time(:))];
+                %behavior.time(behavior.time<0) = 0;
+                %behavior.time = cumsum(behavior.time);
+            end
+
+            % Main name of file for data (and figures directly related to seqnmf process)
+            file = sprintf('~/Data/deltacoherence/%s/%s/master_seqnmf.mat', folder, seqStyle); 
+            %--------------------------------------------------
+            %    / \   __ _  __ _ _ __ ___  __ _  __ _| |_ ___ 
+            %   / _ \ / _` |/ _` | '__/ _ \/ _` |/ _` | __/ _ \
+            %  / ___ \ (_| | (_| | | |  __/ (_| | (_| | ||  __/
+            % /_/   \_\__, |\__, |_|  \___|\__, |\__,_|\__\___|
+            %         |___/ |___/          |___/               
+            %--------------------------------------------------
+            % Time and frequency
+            data.t = cat(2, C.t);
+            data.f = C.f;
+            % Animal
+            %data.animal = cell(1,numel({C.t})); 
+            %cnt = 0;
+            %for t = {C.t}
+            %    cnt = cnt + 1;
+            %    data.animal{cnt} = cnt * ones(size(t{1}));
+            %end
+            data.animalcnt = cat(2, C.animalcnt);
+            data.epoch     = cat(2, C.epoch);
+
+            Dt = diff(data.t); 
+            Dt(Dt<0)=0;
+            Dt(Dt>10)=0;
+            disp(['Total seconds of data: ' num2str(sum(Dt))])
+            clear Dt
+            if any(contains(fields, 'velocity'))
+                inds = lookup(double(data.t), double(behavior.time));
+                data.velocity = log(behavior.vel(inds));
+                if onehotencoding
+                    data.orig_velocity    = data.velocity;
+                    data.velocity         = label2mat(data.velocity, 20, 'method', 'quantile')';
+                    data.velocity         = repelem(data.velocity, 1, 2);
+                    data.velocity_repelem = 3;
+                end
+            end
+            if any(contains(fields, 'trajdist'))
+                inds = lookup(double(data.t), double(behavior.time));
+                data.trajdist = behavior.trajdist(inds);
+                if onehotencoding
+                    data.orig_trajdist    = data.trajdist;
+                    data.trajdist         = label2mat(data.trajdist, 40)';
+                    data.trajdist         = repelem(data.trajdist, 1, 2);
+                    data.trajdist_repelem = 3;
+                end
+            end
+            if any(contains(fields, 'lindist'))
+                inds = lookup(double(data.t), double(behavior.time));
+                data.lindist = behavior.lindist(inds);
+                if onehotencoding
+                    data.orig_lindist    = data.lindist;
+                    data.lindist         = label2mat(data.lindist, 20)';
+                    R = 2;
+                    data.lindist         = repelem(data.lindist, 1, R);
+                    data.lindist_repelem = R;
+                end
+            end
+            if any(contains(fields, 'aglindist'))
+                inds = lookup(double(data.t), double(behavior.time));
+                data.aglindist = behavior.lindist(inds);
+                inbound = behavior.traj(inds) == 1;
+                data.aglindist(inbound) = -1*data.aglindist(inbound) + 1; % Map 1->0 traj to 0->1, like the outbound
+                if onehotencoding
+                    data.orig_aglindist    = data.aglindist;
+                    data.aglindist         = label2mat(data.aglindist, 10)';
+                    data.aglindist         = repelem(data.aglindist, 1, 3);
+                    data.aglindist_repelem = 3;
+                end
+            end
+            % Other fields
+            for field = fields
+                field
+                if isfield(C,field{1})
+                    data.(field{1}) = cat(1, C.(field{1}));
+                end
+            end
+            F = fields; % tmp fields for later, because phi maps to phi_cos and phi_sin
+            if any(contains(fields, 'phi'))
+                data.phi_sin = sin(data.phi);
+                data.phi_cos = cos(data.phi);
+                F{cellfun(@(x) isequal(x, 'phi'), F)} = 'phi_sin';
+                F = [F 'phi_cos'];
+            end
+            % Store potentially modified field list
+            data.fields = F;
+
+            % Pack fields
+            fieldpack_tmp = [fieldpack_kws, 'groups', data.animalcnt];
+            data.data = seq.packfields(data, F, fieldpack_tmp{:})';
+            % SUBSAMPLE
+            subsample = 0.06; % fraction of data to sample
+            disp('Before')
+            size(data.data)
+            data = seq.subsampleByGroup(data, fields, subsample);
+            disp('After')
+            size(data.data)
+            assert(numel(data) > 0);
+
+            % --------------------
+            %  ____  _   _ _   _ 
+            % |  _ \| | | | \ | |
+            % | |_) | | | |  \| |
+            % |  _ <| |_| | |\  |
+            % |_| \_\\___/|_| \_|
+            %                    
+            % --------------------
+            tic; fig_name = char("Live " + seqStyle + ": " + ...
+                            replace(folder, 'seqnmf_',''));
+            fig(fig_name)
+            reset(gpuDevice())
+            L =  round(timescale/data.params.movingwin(2))
+            %[W, H,cost, loadings, power] = seqNMF_gpu(data.data, ...
+            %    'L', L, 'lambdaL1W', 10, 'lambdaL1W', 10, 'maxiter', 10e3);
+            if timescale > 5 
+                reconstruct_gpu = 0;
+            else
+                reconstruct_gpu = 1;
+            end
+            {fieldstr, timescale, epoch_type}
+            [W, H, cost, loadings, power] = seqNMF_gpu(data.data, kws{:}, 'gpuReconstruct', reconstruct_gpu, 'L', L, 'fig_name', fig_name);
+            % Record parameters and results into data
+            data.W             = W;
+            data.H             = H;
+            data.L             = L;
+            data.K             = K
+            data.cost          = cost;
+            data.loadings      = loadings;
+            data.power         = power;
+            data.seqnmf_kws    = seqnmf_kws;
+            data.kws           = kws;
+            data.samprate      = 1500;
+            data.timescale     = timescale;
+            data.seqStyle      = seqStyle
+            data.fieldstr      = fieldstr
+            data.fieldpack_kws = fieldpack_kws;
+            data = seq.unpackfields(data, F);toc
+            % Save simpleplot computed during run
+            simple_plot = fig(fig_name);
+            SimpleWHPlot(W, H, data.data, 0);
+            saveas(simple_plot, sprintf('%s.%s', file, 'svg'))
+            saveas(simple_plot, sprintf('%s.%s', file, 'fig'))
+
+            %% MASTER DATASET
+            % Efizz dataset
+            M = matfile(file, 'Writable', true);
+            if ~skipMaster
+                D = {data.t', data.data'};
+                D = table(D{:}, 'VariableNames', {'time','data'});
+                % Master dataset
+                if isequal(epoch_type, 'run')
+                    inds = lookup(double(D.time), double(behavior.time));
+                    master = [behavior(inds,:), table(D.data,'VariableNames',{'data'})];
+                else
+                    master = D;
+                end
+                % Eliminate large time skips
+                master.time(:) = [0; diff(master.time(:))];
+                master.time(master.time(:) > 10) = 0;
+                master.time(:) = cumsum(master.time(:));
+                M.master = master;
+                clear D
+            end
+            M.behavior = behavior;
+            M.data = data;
+            clear M;
+
+            % -----------------------------
+            %  ____  _     ___ _____ ____  
+            % |  _ \| |   / _ \_   _/ ___| 
+            % | |_) | |  | | | || | \___ \ 
+            % |  __/| |__| |_| || |  ___) |
+            % |_|   |_____\___/ |_| |____/ 
+            % -----------------------------
+
+            if ~skipMaster
+                % RAW DATA
+                data_plot = fig('rawData'); clf
+                fstring = string(F);
+                file = sprintf('~/Data/deltacoherence/%s/data', epoch_type);
+                mkdir(fileparts(file))
+                characterize.rawData(master, epoch_type);
+                % Title
+                suptitle(sprintf('Data: ArgNum: %s, Timescale: %d, fields: %s', seqStyle, timescale, fstring.join('-')));
+                saveas(data_plot, sprintf('%s.%s', file, 'svg'))
+                try
+                    saveas(data_plot, sprintf('%s.%s', file, 'fig'))
+                catch ME
+                    save(sprintf('%s.%s', file, 'fig.mat'), 'data_plot', '-v7.3')
+                end
+            end
+
+        % LEARNED PATTERN
+        % ---------------
+        pattern_plot = fig(char(fullfile('~/Projects/deltacoherence/results', folder, seqStyle, 'learned pattern')));
+        fstring = string(F);
+        file = fullfile(folderfull, seqStyle, 'master_seqnmf');
+        %ry_WHPlot(W, H, data, 'plotAll', 0, 'ExtraMatrixToPlot', WH, 'plotWflat', 0);
+        [axP, axR, axisCenters] = labeler.wholeLabel(data,data.fields, 'downsample_specOnly', 20);
+        ry_WHPlot(data.W, data.H, data.data, 'plotAll', 0, 'ExtraMatrixToPlot', data.WH, 'plotWflat', 0, 'Fs', 1/median(diff(data.t)),...
+            'yaxis_centers', axisCenters, 'yaxis_axP', axP);
+        suptitle(sprintf('ArgNum: %s, Timescale: %d, fields: %s', seqStyle, timescale, fstring.join('-')));
+        saveas(pattern_plot, sprintf('%s.%s', file, 'svg'))
+        saveas(pattern_plot, sprintf('%s.%s', file, 'fig'))
+
+    end
+
+end
+%end % seqStyle
+%end % timescale
+%end % fields
+%end % epoch_type (run, sleep)
