@@ -28,6 +28,7 @@ ip.addParameter('level',[])
 ip.addParameter('sort',false);
 %ip.addParameter('indices',[]);
 ip.addParameter('singleSearchError',false);
+ip.addParameter('typeNotExistHandling','error');
 ip.parse(varargin{:});
 Opt = ip.Results;
 if ~isempty(Opt.level)
@@ -36,10 +37,34 @@ if ~isempty(Opt.level)
     end
 end
 
-if nargin < 3 || isempty(folder)
-    folder = pwd;
+if isstring(animalDatatype) && numel(animalDatatype) == 2
+    animal = animalDatatype(1);
+    datatype = animalDatatype(2);
+    animalDatatype = char(join(animalDatatype, ""));
+    typeExists = ndbFile.exist(animal, datatype);
+    if ~typeExists
+        if strcmp(Opt.typeNotExistHandling, 'error')
+            error('type=%s does not exist',datatype);
+        else
+            correctMatches = [];
+            return
+        end
+    end
+else
+    animal = [];
+    datatype = [];
 end
 
+if nargin < 2 
+    indexSearch = []; 
+end
+if nargin < 3 || isempty(folder)
+    if ~isempty(animal) && ~isempty(datatype)
+        folder = ndbFile.folder(animal, datatype);
+    else
+        folder = pwd;
+    end
+end
 
 if isempty(Opt.level)
     test = string(nan(2,1));
@@ -70,10 +95,12 @@ else % <<< ONE SEARCH >>>
     % Possible matchStyle names
     % -------------------
     if ~isempty(indexSearch)
-        idxStr = sprintf('%02d-', indexSearch(:));
+        idxStr = sprintf('%02d-', indexSearch(:)); % 1
         if ~isempty(Opt.level) && Opt.level > numel(indexSearch)
-            for i = 1:(Opt.level - numel(indexSearch))-1
-                idxStr = [idxStr repmat('*-', 1, Opt.level-numel(indexSearch))];
+            %for i = 1:(Opt.level - numel(indexSearch))-1 % 2 through N
+            for i = 1:(Opt.level - numel(indexSearch)) % 2 through N
+                %idxStr = [idxStr repmat('*-', 1, Opt.level-numel(indexSearch))];
+                idxStr = [idxStr repmat('*-', 1, 1)];
             end
         end
         idxStr = idxStr(1:end-1);
@@ -144,6 +171,6 @@ end
 
 % Generate an error if not found
 % ------------------------------
-if isempty(correctMatches)
-     error('None of ndbFile.files searches returns a file')
-end
+%if isempty(correctMatches)
+%     error('None of ndbFile.files searches returns a file')
+%end

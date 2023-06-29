@@ -5,11 +5,14 @@ function results = dimLabel(results, dims, dimlabels, dimvalues)
 if nargin == 2 && ...
         (iscellstr(dims) || isstring(dim))
     dimlabels = dims;
-    dims = 1:numel(dimlabels);
+    dims = uint32(1:numel(dimlabels));
 end
 
 indices = nd.indicesMatrixForm(results);
 dimlabels = string(dimlabels);
+if nargin >= 4 && iscellstr(dimvalues)
+    dimvalues = string(dimvalues);
+end
 
 d = 0;
 for dim = dims
@@ -23,7 +26,7 @@ for dim = dims
             if isstring(dimvalues)
                 dimval = dimvalues(indexCell{dim});
             else
-                dimval = dimvalues{indexCell{dim}};
+                dimval = dimvalues{dim}(indexCell{dim});
             end
         end
         if iscell(results)
@@ -31,7 +34,7 @@ for dim = dims
                 results{ indexCell{:} }.(dimlabel) = ...
                     repmat(dimval, height(results{indexCell{:}}), 1);
             else
-            results{ indexCell{:} }.(dimlabel) = dimval;
+                results{ indexCell{:} }.(dimlabel) = dimval;
             end
         else
             results(indexCell{:}).(dimlabel) = dimval;

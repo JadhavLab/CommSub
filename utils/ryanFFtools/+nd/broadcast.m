@@ -19,16 +19,18 @@ else
     illegalvars = false(size(sizes));
 end
 
-ndims = max(cellfun(@numel, struct2cell(sizes)));
+% Extend all current dimensions to maximal dimension we will work with
+max_ndims = max(cellfun(@numel, struct2cell(sizes)));
 for field = fieldnames(sizes)'
-    sizes.(field{1})(ndims+1) = 1;
+    field_ndims = numel(sizes.(field{1}))+1;
+    sizes.(field{1})(field_ndims:max_ndims+1) = 1;
 end
 
-% FIgure out the most common dimensions for each fields size dimensions
+% Figure out the most common dimensions for each fields size dimensions
 sizesCell = struct2cell(sizes);
 dimvalues = cat(1,sizesCell{:});
-modeDims = [1:ndims]';
-for ndim = 1:ndims
+modeDims = (1:max_ndims)';
+for ndim = 1:max_ndims
     DV = dimvalues(:,ndim);
     if ~opt.allow1 && ~all(DV==1)
         DV(DV == 1) = [];
@@ -44,9 +46,12 @@ for index = indices'
     for field = fields(~illegalvars)'
         I = num2cell(index);
         fieldSize = size(results(I{:}).(field));
+        if max_ndims-numel(fieldSize) > 0
+            fieldSize = [fieldSize, ones(1, max_ndims-numel(fieldSize))];
+        end
         % Broadcast?
         if all(ismember(fieldSize, acceptableDimensions))
-            broadcastInstruction = fieldSize(1:ndims) == modeDims(1:ndims,2)';
+            broadcastInstruction = fieldSize(1:max_ndims) == modeDims(1:max_ndims,2)';
             pullInstruction = broadcastInstruction == 0;
             broadcastInstruction = double(broadcastInstruction);
             broadcastInstruction(pullInstruction) = ...

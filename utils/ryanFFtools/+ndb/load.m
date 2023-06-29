@@ -54,7 +54,14 @@ else
         fCount = fCount + 1;
         if fCount  == 1
             res = load(string([file.folder filesep file.name]));
-            res = res.(datatype);
+            try
+                res = res.(datatype);
+            catch ME
+                fields = string(fieldnames(res));
+                if numel(fields) ==1
+                    res = res.(fields(1));
+                end
+            end
             indices = ndBranch.indicesMatrixForm(res);
             if ~isempty(Opt.indices)
                 if ~iscell(Opt.indices)

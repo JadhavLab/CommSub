@@ -4,6 +4,7 @@ function T = struct2GPUstruct(T, varargin)
 ip = inputParser;
 ip.KeepUnmatched = true;
 ip.addParameter('cast', []);
+ip.addParameter('recursive', false);
 ip.parse(varargin{:})
 Opt = ip.Results;
 
@@ -16,4 +17,8 @@ if ~isempty(Opt.cast)
 else
     fun = @gpuArray;
 end
-T = nd.apply(T, "*", fun);
+if ~Opt.recursive
+    T = nd.apply(T, "*", fun);
+else
+    T = nd.apply(T, "**", fun);
+end

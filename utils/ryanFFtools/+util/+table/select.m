@@ -18,7 +18,7 @@ end
 
 fields_not_present = setdiff(fields, fieldnames(T));
 if ~isempty(fields_not_present)
-    for field = fields_not_present
+    for field = string(fields_not_present(:))'
         T.(field) = nan(height(T), 1);
     end
 end

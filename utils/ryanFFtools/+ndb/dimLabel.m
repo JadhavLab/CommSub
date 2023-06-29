@@ -1,7 +1,9 @@
 function results = dimLabel(results, dims, dimlabels, dimvalues)
 % function results = dimLabel(results, dims, dimlabels, dimvalues)
+%
+% Optionally, just give labels, and we will assume dimensions 1..number of labels
+% 
 
-% Optionally, just give labels, and we will assume dimensions 1..number ofo labels
 if nargin == 2 && ...
         (iscellstr(dims) || isstring(dim))
     dimlabels = dims;
@@ -25,6 +27,11 @@ for index = progress(indices')
                 dimval = dimvalues(indexCell{dim});
             else
                 dimval = dimvalues{indexCell{dim}};
+                %if iscell
+                %    dimval = dimvalues{dim}{indexCell{dim}};
+                %else
+                %    dimval = dimvalues(indexCell{dim});
+                %end
             end
         end
         if istable(result)

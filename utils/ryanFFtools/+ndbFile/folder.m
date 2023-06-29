@@ -5,6 +5,9 @@ function F = folder(animal, datatype, varargin)
 DETERMINE = -1;
 YES = 1;
 NO = 0;
+if nargin < 2
+    datatype="";
+end
 
 ip = inputParser;
 ip.KeepUnmatched = true;
@@ -29,7 +32,7 @@ if ~isempty(datatype)
     switch datatype
         case {'cgramc','cgramcnew'}
             datatypeFolder = 'chronux_eeg';
-        case {'lfp','eeg','theta','delta','beta','gamma','eegref'}
+        case {'lfp','eeg','theta','delta','beta','gamma','eegref','ripple','rippleref','thetaref','deltaref'}
             datatypeFolder = 'EEG';
         case {'raw','mda','mdatab','deepinsight','deepinsightUnfilt'}
             datatypeFolder = 'RAW';
@@ -59,13 +62,12 @@ else
                 Opt.animalFolder = YES;
                 animalFolder = animalInfo{2};
             catch
-                warning("Tried animaldef but failed")
-                Opt.animalFolder = NO;
-                animalFolder = [];
+                error('Animal folder lookup failed');
             end
         else
-            Opt.animalFolder = NO;
-            animalFolder = [];
+            %Opt.animalFolder = NO;
+            %animalFolder = [];
+            error('Animal folder not found');
         end
     end
 

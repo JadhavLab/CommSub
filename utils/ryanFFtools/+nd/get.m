@@ -1,4 +1,7 @@
 function x = get(X,index,match)
+% Acquires data at index of X, where X is an ndimensional struct
+%
+% OPtionally will return only matching fieldnames
 
 index = num2cell(index);
 x = X(index{:});

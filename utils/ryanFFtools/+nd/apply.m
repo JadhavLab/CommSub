@@ -1,4 +1,5 @@
 function X = apply(X, varargin)
+% function X = apply(X, varargin)
 % Applies a funciton iteratively over an nd struct type
 %
 % The function can optionally be put into a recursive mode by "**"
@@ -12,6 +13,7 @@ function X = apply(X, varargin)
 % fieldmethod = "**" all fields and recursively apply if encounter an ndstruct
 % fieldmethod = set of fields, only apply to those fields
 % fieldmethod = x"-"y , apply to x and title the new result y
+% fieldmethod = x1,x2,x3,...,xn"-"y , apply to set of fields and title the new result y
 %
 
 ignoreEmpty = true;
@@ -72,8 +74,14 @@ if isstruct(X) || iscell(X)
         elseif contains(fieldmethod, "-") % NEW VAR ASSIGN MODE
             split = strsplit(fieldmethod, "-");
             to = split(1);
-            from = split(2);
-            x.(to) = lambda(x.(from));
+            if contains(from, ",")
+                from = split(2);
+                from = strsplit(from, ",");
+                x.(to) = lambda(x(:,from));
+            else
+                from = split(2);
+                x.(to) = lambda(x.(from));
+            end
         elseif strlength(fieldmethod) % SINGLE FIELD APPPLY
             x.(fieldmethod) = lambda(x.(fieldmethod));
         else % WHOLE STRUCT FUNCTION

@@ -4,7 +4,7 @@ levels = [];
 switch char(datatype)
 case 'cellinfo_table'
     levels = [];
-case {'DIO','dio','task','diotable','event','traj','events','events', 'cellinfo_table'}
+case {'DIO','dio','task','diotable','event','traj','events','events', 'cellinfo_table', 'behavior', 'egocentric'}
     levels = ["day","epoch"];
 case {'eeg','eegref','delta','theta','beta','gamma','ripple'}
     levels = ["day","epoch","tetrode"];

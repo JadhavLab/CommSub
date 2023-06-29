@@ -14,7 +14,7 @@ if ~isempty(Opt.cast)
         T = structfun(@(x) gather(x, Opt.cast), T,    'ToScalar', true, 'recurseCell', true);
     end
 else
-    T = nd.apply(T, "**", @gather, 'recurseCell', true);
+    T = nd.apply(T, "**", @gather, 'recurseCell', true, 'ignoreEmpty', false);
 end
 
 

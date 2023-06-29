@@ -1,15 +1,18 @@
-function E = exist(animID, datatype, level)
+function E = exist(animID, datatype, index)
 % True if a file with the animID, datatype, level exists
 
 if nargin < 3
-    level = [];
+    index = [];
+end
+if nargin < 2
+    datatype ="";
 end
 
 folder = ndbFile.folder(animID, datatype);
 
-if isempty(level)
+if isempty(index)
     E = ~isempty(dir(fullfile(folder, sprintf('%s%s*',animID,datatype))));
 else
-    error("Level not implemented yet");
+    E = ~isempty(ndbFile.files([string(animID), string(datatype)], index, [], 'typeNotExistHandling', 'empty'));
 end
 

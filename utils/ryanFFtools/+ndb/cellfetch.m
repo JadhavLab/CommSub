@@ -20,10 +20,25 @@ for index = indices'
     fcount = 0;
     for field = fields(:)'
         fcount = fcount + 1;
-
-        varargout{fcount}{icnt} = y.(field);
-        
+        if isfield(y, field)
+            varargout{fcount}{icnt} = y.(field);
+        end
     end
+end
+
+% Uniform types
+for v = 1:length(varargout)
+    V = varargout{v};
+    inds = ~cellfun(@isempty, V);
+    sensetype = V(inds);
+    types = cellfun(@(x) class(x), sensetype, 'UniformOutput', false);
+    [C,~,IC] = unique(types);
+    modeIC = mode(IC);
+    C = C(modeIC);
+    C = C{1};
+    inds = cellfun(@(x) isequal([],x), V);
+    V(inds) = {cast([], C)};
+    varargout{v} = V;
 end
 
 varargout{end+1} = indices;
