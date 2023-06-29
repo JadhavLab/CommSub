@@ -1,4 +1,4 @@
-function [cellOfWindows, cutoffs] = ThetaDeltaRipple(Events, Option)
+function Events = ThetaDeltaRipple(Events, Option)
 % [cellOfWindows, cutoffs] = ThetaDeltaRipple(Events, Option)
 %   Generates windows for theta, delta, and ripple events
 %   INPUTS:
@@ -170,6 +170,10 @@ end
 if any(cellfun(@isempty, cellOfWindows))
     error("A network pattern has no windows. Check your settings...")
 end
+
+Events.cellOfWindows = cellOfWindows;
+Events.cutoffs = cutoffs;
+Events.nWindows      = cellfun(@(x) size(x, 1), cellOfWindows);
 
 disp("")
 disp("Windows generated " + num2str(numWindowsCut) + " windows cut")

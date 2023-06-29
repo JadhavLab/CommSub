@@ -2,16 +2,14 @@ function celllookup = getCellIdentities(animal, cell_index, areaPerNeuron)
 
 cellinfo = ndb.load(animal,'cellinfo');
 inds = ndb.indicesMatrixForm(cellinfo);
-
-
 cellinfo = ndb.toNd(cellinfo);
 
 numCells = size(cell_index, 1);
 
-regionalIndex = zeros(1,numCells);
-regionalCsi = zeros(1,numCells);
+regionalIndex      = zeros(1,numCells);
+regionalCsi        = zeros(1,numCells);
 regionalSpikeWidth = zeros(1,numCells);
-regionalMeanrate = zeros(1,numCells);
+regionalMeanrate   = zeros(1,numCells);
 hpcIndex = 0;
 pfcIndex = 0;
 %%
@@ -49,8 +47,8 @@ for i = 1:numCells
         
     end
     
-    regionalCsi(i) = median(all_csi);
-    regionalMeanrate(i) = nanmedian(all_meanrate);
+    regionalCsi(i)        = median(all_csi);
+    regionalMeanrate(i)   = nanmedian(all_meanrate);
     regionalSpikeWidth(i) = nanmedian(all_spikewidth);
     
 end
@@ -58,7 +56,7 @@ end
 %% categorize the cells
 cellType = string.empty;
 for i = 1:numCells
-    if regionalMeanrate(i) >= 10 && regionalSpikeWidth(i)<0.4
+    if regionalMeanrate(i) >= 10  &&regionalSpikeWidth(i)<0.4
         cellType(i) = "int";
     else
         cellType(i) = "pyr";

@@ -6,7 +6,8 @@
 % Matlab uses startup.m to run startup code...
 % Put this in your startup.m so that the code for this is in path:
 %
-% addpath(genpath('/Volumes/MATLAB-Drive/')) % or wherever your CODE files are located
+% addpath(genpath('/Volumes/MATLAB-Drive/')) % or wherever your CODE files are
+% located
 % addpath(genpath('~/Data/Raw/')) % or wherever your DATA files are located
 
 % ===================================================
@@ -27,7 +28,7 @@ disp(Option);
 disp("------------------------")
 disp("    Obtaining events    ")
 disp("------------------------")
-[Events] = events.ThetaDeltaRipple(Option);
+Events = events.ThetaDeltaRipple(Option);
 % Documentation
 % Events is a struct with fields:
 % - .times : array of times of events
@@ -39,9 +40,7 @@ disp("------------------------")
 disp("------------------------")
 disp("    Cutting windows     ")
 disp("------------------------")
-[cellOfWindows, cutoffs] = windows.ThetaDeltaRipple(Events, Option);
-% Documentation
-% -  cellOfWindows: 1 x nPatterns cell array of windows
+Events = windows.ThetaDeltaRipple(Events, Option);
 % -  cutoffs:       nPatterns x 1 vector of cutoffs
 % TODO: modify to be able to include overall pattern and track patterns
 % PRIORITY; overall: medium, track: very low, overall can be included in
@@ -52,37 +51,35 @@ disp("------------------------")
 disp("------------------------")
 disp("    Getting spikes      ")
 disp("------------------------")
-[timeBinStartEnd, timeBinMidPoints, ~, spikeCountMatrix, spikeRateMatrix, ...
-    areaPerNeuron, cell_index, sessionTypePerBin] = ...
-    spikes.getSpikeTrain(Option.animal, ...
-            Option.spikeBinSize,  Option.samplingRate);
+Spk = spikes.getSpikeTrain(Option.animal, Option.spikeBinSize, ...
+                         Option.samplingRate);
 
 % filter the neurons whose firing rate is lower than specified threshold
 if Option.preProcess_FilterLowFR 
     disp("------------------------")
     disp("Filtering low FR neurons")
     disp("------------------------")
-    [spikeCountMatrix, spikeRateMatrix, avgFR, areaPerNeuron, cell_index]...
-        = trialSpikes.filterFR(spikeCountMatrix, spikeRateMatrix, 0.1, ...
-        timeBinStartEnd, areaPerNeuron, cell_index);
-    disp("Mean FR: " + sort(avgFR))
+    Spk = trialSpikes.filterFR(Spk, 0.1);
+    disp("Mean FR: " + sort(Spk.avgFR))
 end
 
 if Option.preProcess_gaussianFilter
     % Gaussian filter the spikeCountMatrix/spikeRateMatrix
     gauss = gausswin(Option.preProcess_gaussianFilter);
     for i = progress(1:size(spikeRateMatrix, 1), 'Title', 'Gaussian filtering')
-        spikeRateMatrix(i, :)  = conv(spikeRateMatrix(i, :), gauss, 'same');
-        spikeCountMatrix(i, :) = conv(spikeCountMatrix(i, :), gauss, 'same');
+        Spk.spikeRateMatrix(i, :)  = conv(Spk.spikeRateMatrix(i, :), gauss, 'same');
+        Spk.spikeCountMatrix(i, :) = conv(Spk.spikeCountMatrix(i, :), gauss, 'same');
     end
 end
 
 if Option.preProcess_zscore
     % Z-score the spikeCountMatrix/spikeRateMatrix
     disp(" Z-scoring ")
-    spikeRateMatrix  = zscore(spikeRateMatrix,  0, 2);
-    spikeCountMatrix = zscore(spikeCountMatrix, 0, 2);
+    Spk.spikeRateMatrix  = zscore(Spk.spikeRateMatrix,  0, 2);
+    Spk.spikeCountMatrix = zscore(Spk.spikeCountMatrix, 0, 2);
+    Spk.avgFR = mean(Spk.spikeRateMatrix, 2);
 end
+prewindow_copy = Spk;
 
 
 %%%%%%%%%%%%%%%% ACQUIRE TRIALS FROM WINDOWS + SPIKES %%%%%%%%%%%%%%%%%%%
@@ -90,47 +87,24 @@ end
 disp("------------------------")
 disp("   Windowing spikes     ")
 disp("------------------------")
-[spikeSampleMatrix, spikeSampleTensor, trialTimes] = trialSpikes.generate(...
-    spikeCountMatrix, timeBinMidPoints, cellOfWindows, ... 
-    Option.timesPerTrial, Option.nPatternAndControl);
+Spk = trialSpikes.generate(Spk, Events, Option);
 
 % %%%%%%%%%%%%%%% SETUP RAW DATA STRUCTURE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Structure for separated data
-r.hpc = struct;
-r.pfc = struct;
 %%%%%%%%%%%%%%%% SEPRATE BRAIN AREA DATASULT STRUCTURES %%%%%%%%%%%%%%%%%%
 % Separate spikesSampleMatrix/Tensor by area that neurons are in PFC and
 % neurons that in HPC
-[r.pfc.FR, r.hpc.FR] = trialSpikes.separateFiringRate(avgFR, areaPerNeuron);
-r.pfc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "PFC");
-r.hpc.T = trialSpikes.separateSpikes(spikeSampleTensor, areaPerNeuron, "CA1");
-r.pfc.X = trialSpikes.separateSpikes(spikeSampleMatrix, areaPerNeuron, "PFC");
-r.hpc.X = trialSpikes.separateSpikes(spikeSampleMatrix, areaPerNeuron, "CA1");
-r.trialTimes = trialTimes;
-
 %% Separate firing pattern into source and target
-[nPFCneurons,~,~] = size(r.pfc.X{1});
-[nHPCneurons,~,~] = size(r.hpc.X{1});
-r.celllookup = cellInfo.getCellIdentities(Option.animal, cell_index,...
-                                          areaPerNeuron);
-r.avgFR         = avgFR;
-r.areaPerNeuron = areaPerNeuron;
-r.pfc.nNeurons  = nPFCneurons;
-r.hpc.nNeurons  = nHPCneurons;
-r.windowInfo.cellOfWindows = cellOfWindows;
-r.windowInfo.nWindows      = cellfun(@(x) size(x, 1), cellOfWindows);
-r.nPattern = Option.nPatterns;
-r.nControl = Option.nPatternAndControl - r.nPattern;
-r.timeBinMidPoints = timeBinMidPoints;
-r.sessionTypePerBin = sessionTypePerBin;
-r.spikeRateMatrix = spikeRateMatrix;
-r.spikeCountMatrix = spikeCountMatrix;
+[nPFCneurons,~,~] = size(Spk.pfc.X{1});
+[nHPCneurons,~,~] = size(Spk.hpc.X{1});
+Spk.celllookup = cellInfo.getCellIdentities(Option.animal, Spk.cell_index,...
+                                            Spk.areaPerNeuron);
 
 %%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
 disp("------------------------")
 disp(" Subsampling partitions ")
 disp("------------------------")
-[Patterns, Patterns_overall] = trialSpikes.partitionAndInitialize(r, Option);
+[Patterns, Patterns_overall] = trialSpikes.partitionAndInitialize(Spk, Option);
 
 %%%%%%%%%%%%%%%% ANALYSIS SECTION    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp("------------------------")
@@ -145,7 +119,6 @@ if Option.analysis.rankRegress
     % 2. most rankRegress.B_ are empty                                
     Patterns         = analysis.rankRegress(Patterns, Option);        
     Patterns_overall = analysis.rankRegress(Patterns_overall, Option);
-    !pushover-cli "Rank regression done"
 end
 
 if Option.analysis.factorAnalysis
@@ -168,10 +141,10 @@ if Option.analysis.timeVarying
     % ISSUE: hits a bug on line 4
     % TODO: 1 .also return epochwise zscored neural firing matching
     %       2. return timeseries of smoothed firing rate
-    running_times = r.timeBinMidPoints(r.sessionTypePerBin == 1);
+    running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
     [behavior, thrown_out_times] = table.behavior.lookup(Option.animal, ...
                                                          running_times);
-    Components = analysis.timeVarying_v2(Patterns, Option, r);
+    Components = analysis.timeVarying_v2(Patterns, Option, Spk);
     Components = plots.temporal.correlateSpectral(Components, Events, Option);
     Components = plots.temporal.correlateBehavior(Components, Events, Option);
 end
@@ -181,7 +154,7 @@ if Option.analysis.checks
     % relation to processed Patterns struct)
     % TODO: Think about splitting this into checks involving
     %        versus not involving the Patterns struct
-    plots.runChecks(Patterns, Option, r, cellOfWindows);
+    plots.runChecks(Patterns, Option, Spk, cellOfWindows);
 end
 
 % TODO: (1) plug in JPECC version of rankRegress here
@@ -234,13 +207,15 @@ if Option.save
     end
 
     % Identifying information about this options set and date of run
-    hash = DataHash(Option);
-    hash = hash(1:7); % Take the first 7 letters of the hash
-    hash = string(hash);
+    hash      = DataHash(Option);
+    hash      = hash(1:7); % Take the first 7 letters of the hash
+    hash      = string(hash);
     timestamp = string(date());
+    % Combine option columns with hash and date
     tablerow = [Optiontable, ...
-        table(timestamp, hash, numWindowsCut, cutoffs, optimizationResult)]; % Combine option columns with hash and date
-    tablecontent = [Patterntable, repmat(tablerow, height(Patterntable), 1)]; % combine those with all rows of the pattern table
+        table(timestamp, hash, numWindowsCut, cutoffs, optimizationResult)]; 
+    % Combine those with all rows of the pattern table
+    tablecontent = [Patterntable, repmat(tablerow, height(Patterntable), 1)]; 
 
     %% Check and Hash
     if ~isempty('RunsSummary') && any(contains(RunsSummary.hash, hash))
@@ -268,28 +243,15 @@ if Option.save
     save("RunsSummary", "RunsSummary",'-v7.3');
     save("DetailedRunsSummary", "DetailedRunsSummary", '-v7.3');
     % save the results
-    save(fullfile(datadefine, "hash_forTesting", hash), ...
-        "Option", "Behaviors","celllookup",'-v7.3')
-    % most recent state
-    save(fullfile(datadefine, 'mostRecentState'))
-end
-
-% TODO: consider whether this is needed ... should be r isntead?
-if Option.saveRaw
-    Raw = struct();
-    kws = {'UniformOutput',false};
-    Raw.X_pfc = cellfun(@(x) cellfun(@(y) single(y), x, kws{:}), X_pfc, kws{:});
-    Raw.X_hpc = cellfun(@(x) cellfun(@(y) single(y), x, kws{:}), X_hpc, kws{:});
-    Raw.H = struct('H', H,...
-                   'Hvals', Hvals,...
-                   'Hnanlocs', Hnanlocs,...
-                   'Htimes', Htimes);
-    Raw.frequenciesPerPattern = frequenciesPerPattern;
-    Raw.cellOfWindows = cellOfWindows;
-    Raw.spikeSampleTensor = spikeSampleTensor;
-    Raw.patternNames = patternNames;
-    Raw.directionality = directionality;
-    Raw.celllookup = celllookup;
-    save(fullfile(datadefine, "hash_Raw", hash), ...
-        "Option", "Raw",'-v7.3')
+    thisFile = fullfile(codedefine, "hash", hash);
+    save(thisFile, ...
+        "Option", "Behaviors","Spk",'-v7.3')
+    % link most recent state
+    recentFile = fullfile(codedefine, 'mostRecentState');
+    system(['ln -sf', thisFile, ' ', recentFile]);
+    % save raw?
+    if Option.saveRaw
+        save(thisFile, "Spk",'-v7.3', '-append');
+    end
+    
 end

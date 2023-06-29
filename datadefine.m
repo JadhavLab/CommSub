@@ -13,7 +13,7 @@ elseif ismac
     folder(2) = "~/Data/commsubspace";
 elseif isunix
     disp('Defining data folder for Ryan''s linux machine');
-    folder = '~/Data/Raw/SingleDayExpt';
+    folder = fullfile(codedefine, 'SingleDayExpt');
 end
 
 disp("Folders =")

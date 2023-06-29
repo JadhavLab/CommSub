@@ -20,11 +20,17 @@ ip.addParameter('ploton',  true, @islogical);
 ip.parse(varargin{:});
 Opt = ip.Results;
 
+if iscolumn(source_FR)
+    source_FR = source_FR';
+end
+if iscolumn(target_FR)
+    target_FR = target_FR';
+end
 
 %% (1) sort the firing pattern matrices by firing rate so as to index neurons
 % source_FR = hpcFR; target_FR = pfcFR;
-numsource = size(source_FR, 2); % number of neurons in source region
-numtarget = size(target_FR, 2); % number of neurons in target region
+numsource = numel(source_FR); % number of neurons in source region
+numtarget = numel(target_FR); % number of neurons in target region
 
 % append index to firing rate table
 source_FR = [source_FR; 1:numsource]; % append index to firing rate table

@@ -1,5 +1,4 @@
-function [timeBinStartEnd, timeBinMidPoints, times_spiking, spikeCountMatrix, spikeRateMatrix, ...
-    areaPerNeuron, cell_index, sessionTypePerBin] = getSpikeTrain(animal, timebinSize, samplingRate)
+function out = getSpikeTrain(animal, timebinSize, samplingRate)
 % GETSPIKES Summary of this function goes here
 %
 % Input
@@ -239,5 +238,14 @@ for i = 1:numel(timeBinMidPoints)
         end
     end
 end
+
+out.spikeCountMatrix = spikeCountMatrix;
+out.spikeRateMatrix = spikeRateMatrix;
+out.timeBinStartEnd = timeBinStartEnd;
+out.timeBinMidPoints = timeBinMidPoints;
+out.times_spiking = times_spiking;
+out.areaPerNeuron = areaPerNeuron;
+out.cell_index = cell_index;
+out.sessionTypePerBin = sessionTypePerBin;
 
 disp("...done " + toc + " seconds")

@@ -1,8 +1,8 @@
-function [Patterns, Patterns_overall] = partition(r, Option, varargin)
+function [Patterns, Patterns_overall] = partition(Spk, Option, varargin)
 % partition - Partition data into source and target areas
 % 
 % Parameters:
-%   r - A struct containing raw and processed data
+%   Spk - A struct containing raw and processed data
 %   Option - A struct containing options for the partitioning
 % 
 % Returns:
@@ -42,10 +42,10 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
     % Split cells into source and target areas
     % [s_hpc, s_pfc, t_hpc, t_pfc, s_hpc_index,...
     %  s_pfc_index, t_hpc_index, t_pfc_index, directionality] = ...
-    %     trialSpikes.split.legacyRun(r, Option);
-    split_info = trialSpikes.split.run(r, Option);
+    %     trialSpikes.split.legacyRun(Spk, Option);
+    split_info = trialSpikes.split.run(Spk, Option);
 
-    for i = 1:numel(r.windowInfo.cellOfWindows)
+    for i = 1:Option.nPatternAndControl
         for j = 1:numel(split_info.directionality)
 
             
@@ -60,9 +60,13 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
             t_ind = split_info.target_index(j, :);
             
             % Assign x_source and x_target
+            assert(~clean.isRankDeficient(s_dat), ...
+                'Source data is rank deficient');
             Patterns(iPartition,j,i).X_source  = s_dat;
             Patterns(iPartition,j,i).X_target  = t_dat;
-            Patterns(iPartition,j,i).X_time    = reshape(r.trialTimes{i}',1,[]);
+            assert(all(size(s_dat) > 0), 'Source data is empty');
+            assert(all(size(t_dat) > 0), 'Source data is empty');
+            Patterns(iPartition,j,i).X_time    = reshape(Spk.trialTimes{i}',1,[]);
             % Assign index_source and index_target
             Patterns(iPartition,j,i).index_source = s_ind;
             Patterns(iPartition,j,i).index_target = t_ind;
@@ -77,19 +81,19 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
 
             if iPartition == 1
                 if source == "hpc"
-                    s_all = r.hpc.X{i};
+                    s_all = Spk.hpc.X{i};
                     s_ind_all = 1:size(s_all, 1);
                 elseif source == "pfc"
-                    s_all = r.pfc.X{i};
+                    s_all = Spk.pfc.X{i};
                     s_ind_all = 1:size(s_all, 1);
                 else
                     error('Source area not recognized')
                 end
                 if target == "hpc"
-                    t_all = r.hpc.X{i};
+                    t_all = Spk.hpc.X{i};
                     t_ind_all = 1:size(t_all, 1);
                 elseif target == "pfc"
-                    t_all = r.pfc.X{i};
+                    t_all = Spk.pfc.X{i};
                     t_ind_all = 1:size(t_all, 1);
                 else
                     error('Target area not recognized')
@@ -98,6 +102,7 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
                     assert(numel(s_ind_all) ~= numel(t_ind_all), 'Source and target areas are the same')
                 end
                 % Assign x_source and x_target
+                assert(~clean.isRankDeficient(s_all));
                 Patterns_overall(j,i).X_source = s_all;
                 Patterns_overall(j,i).X_target = t_all;
                 % Assign index_source and index_target
@@ -118,25 +123,25 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
 end
 
 % Add overall for ALL TIME
-last = numel(r.windowInfo.cellOfWindows) + 1;
-areaPerNeuron     = r.areaPerNeuron;
-sessionTypePerBin = r.sessionTypePerBin;
+last = Option.nPatternAndControl + 1;
+areaPerNeuron     = Spk.areaPerNeuron;
+sessionTypePerBin = Spk.sessionTypePerBin;
 for j = 1:numel(split_info.directionality)
     if i == const.HPC
-        s_all = r.spikeRateMatrix(areaPerNeuron == "CA1", ... 
+        s_all = Spk.spikeRateMatrix(areaPerNeuron == "CA1", ... 
             sessionTypePerBin == 1);
         t_all = s_all;
-        s_inds = r.celllookup(areaPerNeuron == "CA1",:).index_by_region;
+        s_inds = Spk.celllookup(areaPerNeuron == "CA1",:).index_by_region;
         t_inds = s_inds;
         source = "hpc";
         target = "hpc";
     else
-        s_all = r.spikeRateMatrix(areaPerNeuron == "CA1", ... 
+        s_all = Spk.spikeRateMatrix(areaPerNeuron == "CA1", ... 
             sessionTypePerBin == 1);
-        t_all = r.spikeRateMatrix(areaPerNeuron == "PFC", ... 
+        t_all = Spk.spikeRateMatrix(areaPerNeuron == "PFC", ... 
             sessionTypePerBin == 1);
-        s_inds = r.celllookup(areaPerNeuron == "CA1",:).index_by_region;
-        t_inds = r.celllookup(areaPerNeuron == "PFC",:).index_by_region;
+        s_inds = Spk.celllookup(areaPerNeuron == "CA1",:).index_by_region;
+        t_inds = Spk.celllookup(areaPerNeuron == "PFC",:).index_by_region;
         source = "hpc";
         target = "pfc";
     end
@@ -150,19 +155,19 @@ for j = 1:numel(split_info.directionality)
     Patterns_overall(j, last).directionality = directionality;
     % Assign pattern name
     Patterns_overall(j, last).name = "Overall";
-    time = r.timeBinMidPoints(sessionTypePerBin == 1);
+    time = Spk.timeBinMidPoints(sessionTypePerBin == 1);
     Patterns_overall(j, last).X_time = reshape(time',1,[]);
     Patterns_overall(j, last).source = source;
     Patterns_overall(j, last).target = target;
 end
 
-szCellOfWindows = squeeze(size(r.windowInfo.cellOfWindows));
-if numel(szCellOfWindows) == 2 && szCellOfWindows(1) == 1
+szCellOfWindows = squeeze(size(Spk.spikeSampleMatrix));
+if numel(szCellOfWindows) == 2  && szCellOfWindows(1) == 1
     szCellOfWindows = szCellOfWindows(2);
 end
 
 Patterns = reshape(Patterns, ...
     [Option.numPartition, numel(split_info.directionality), ...
-    size(r.windowInfo.cellOfWindows)]);
+        size(Spk.spikeSampleMatrix)]);
 
 disp(['Partitioning data took ', num2str(toc), ' seconds.'])

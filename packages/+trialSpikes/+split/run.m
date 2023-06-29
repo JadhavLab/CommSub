@@ -1,8 +1,8 @@
-function out = run(r, Option)
+function out = run(Spk, Option)
 % trialSpikes.split.run
 %
 % Input:
-%   r: trialSpikes object
+%   Spk: trialSpikes object
 %   Option: struct
 %       .binsToMatchFR: number of bins to match FR
 %       .sourceArea: 'hpc' or 'pfc'
@@ -19,20 +19,20 @@ function out = run(r, Option)
     out.sourceArea = Option.sourceArea;
 
     if strcmp(Option.sourceArea, "CA1")
-        source = r.hpc.X;
-        other_target = r.pfc.X;
+        source = Spk.hpc.X;
+        other_target = Spk.pfc.X;
         out.directionality = ["hpc-hpc", "hpc-pfc"];
     elseif strcmp(Option.sourceArea, "PFC")
-        source = r.pfc.X;
-        other_target = r.hpc.X;
+        source = Spk.pfc.X;
+        other_target = Spk.hpc.X;
         out.directionality = ["pfc-pfc", "pfc-hpc"];
     else
         error("Invalid source area");
     end
 
     [source, target, nSource, nTarget, source_index, target_index] ...
-        = trialSpikes.split.twoWayFRMatch(r.hpc.X, r.pfc.X, ...
-                      r.hpc.FR, r.pfc.FR, Option.binsToMatchFR);
+        = trialSpikes.split.twoWayFRMatch(Spk.hpc.X, Spk.pfc.X, ...
+                      Spk.hpc.FR, Spk.pfc.FR, Option.binsToMatchFR);
     out.source = source;
     out.target = target;
     out.nSource = nSource;

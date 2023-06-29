@@ -1,9 +1,5 @@
-function [spikeSampleMatrix, spikeSampleTensor, trialTimes] = ...
-    generate(spikeCountMatrix, timeAxis, cellOfWindows, samplesPerTrial,...
-    numResult)
-% function [spikeSampleMatrix, spikeSampleTensor] = ...
-%     generate(spikeCountMatrix, timeAxis, cellOfWindows, samplesPerTrial,...
-%     numResult)
+function Spk = generate(Spk, Events, Option)
+% function out = generate(Spk, Option)
 % Generate spike sample matrix and tensor
 % 
 % Input
@@ -26,6 +22,13 @@ function [spikeSampleMatrix, spikeSampleTensor, trialTimes] = ...
 % spikeSampleTensor : {neuron x time x trial per network pattern}
 %
 % Feb 16, 2021 modified to include trialTimes
+
+spikeCountMatrix = Spk.spikeCountMatrix;
+timeAxis         = Spk.timeBinMidPoints;
+cellOfWindows    = Events.cellOfWindows;
+samplesPerTrial  = Option.timesPerTrial;
+numResult        = Option.nPatternAndControl;
+
 disp('Generating spike sample matrix and tensor')
 
 [nNeurons,~]      = size(spikeCountMatrix);
@@ -33,6 +36,8 @@ spikeSampleTensor = cell(size(cellOfWindows));
 spikeSampleMatrix = cell(size(cellOfWindows));
 trialTimes        = cell(size(cellOfWindows));
 numResult         = numel(cellOfWindows);
+rowsRemoved       = cell(size(cellOfWindows));
+good_neurons       = cell(size(cellOfWindows));
 
 for iPattern = progress(1:numResult, 'Title', 'Patterns')
 
@@ -105,10 +110,60 @@ for iPattern = progress(1:numResult, 'Title', 'Patterns')
     disp("Checking for rank deficiency")
     if rank(temp) < size(temp, 1)
         disp("Rank deficient ... solving ...")
-        temp = clean.solveRankDeficient(temp);
-        spikeSampleTensor{iPattern} = reshape(temp, ...
-            [nNeurons, samplesPerTrial, nTrials]);
+        [~, good_neurons{iPattern}] = clean.solveRankDeficient(temp);
+    else
+        good_neurons{iPattern} = 1:size(temp, 1);
     end
         
     spikeSampleMatrix{iPattern} = temp;
+
+end
+
+% Unify good neurons across patterns
+gn = good_neurons{1};
+for iPattern = 2:numResult
+    gn = intersect(gn, good_neurons{iPattern});
+end
+good_neurons = gn;
+
+Spk.spikeSampleMatrix = spikeSampleMatrix;
+Spk.spikeSampleTensor = spikeSampleTensor;
+Spk.trialTimes        = trialTimes;
+Spk.rowsRemoved       = rowsRemoved;
+
+% Remove bad neurons from existing variables
+Spk.good_neurons_trialPhase      = good_neurons;
+Spk.hpc.X = {}; % spikeSampleMatrix
+Spk.hpc.T = {}; % spikeSampleTensor
+Spk.pfc.X = {};
+Spk.pfc.T = {};
+for iPattern = 1:numResult
+    % Assign spikeSampleMatrix and spikeSampleTensor neurons (rows)
+    % to hpc and pfc variables accounting for bad neurons
+    % per pattern, select proper areas using Spk.areaPerNeuron 
+    % and good_neurons{iPattern}
+    % hpc
+    hpc_neurons = Spk.areaPerNeuron == "CA1";
+    hpc_neurons = intersect(find(hpc_neurons),good_neurons);
+    Spk.hpc.X{iPattern} = Spk.spikeSampleMatrix{iPattern}(hpc_neurons, :);
+    Spk.hpc.T{iPattern} = Spk.spikeSampleTensor{iPattern}(hpc_neurons, :, :);
+    % pfc
+    pfc_neurons = Spk.areaPerNeuron == "PFC";
+    pfc_neurons = intersect(find(pfc_neurons),good_neurons);
+    Spk.pfc.X{iPattern} = Spk.spikeSampleMatrix{iPattern}(pfc_neurons, :);
+    Spk.pfc.T{iPattern} = Spk.spikeSampleTensor{iPattern}(pfc_neurons, :, :);
+end
+Spk.hpc.FR = Spk.avgFR(hpc_neurons);
+Spk.pfc.FR = Spk.avgFR(pfc_neurons);
+Spk.cell_index = Spk.cell_index(good_neurons,:);
+Spk.avgFR = Spk.avgFR(good_neurons);
+for iPattern = 1:numResult
+    Spk.spikeSampleMatrix{iPattern} = Spk.spikeSampleMatrix{iPattern}(good_neurons,:);
+    Spk.spikeSampleTensor{iPattern} = Spk.spikeSampleTensor{iPattern}(good_neurons,:,:);
+end
+Spk.spikeCountMatrix = Spk.spikeCountMatrix(good_neurons,:);
+Spk.spikeRateMatrix  = Spk.spikeRateMatrix(good_neurons,:);
+Spk.areaPerNeuron    = Spk.areaPerNeuron(good_neurons);
+
+
 end
