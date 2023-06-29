@@ -122,8 +122,8 @@ end
 % ERROR CHECK
 % Check for singular results in factor analysis
 % ------------------------------------------------
-factorAnalysisChecksum = sum(Patterntable.singularWarning) ...
-                         > 0.7 * size(Patterntable,1);
+factorAnalysisChecksum = sum(T.singularWarning) ...
+                         > 0.7 * size(T,1);
 if factorAnalysisChecksum
     warning("too many singular results in factor analysis")
     choice = input ("proceed to store results?");

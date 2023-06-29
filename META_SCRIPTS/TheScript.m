@@ -208,32 +208,38 @@ if Option.save
     Patterntable = query.getPatternTable(Patterns);
 
     % Combine option columns with hash and date
-    tablerow = [Optiontable, Optim];
+    tablerow = [Optiontable, Optimtable];
     % Combine those with all rows of the pattern table
-    tablecontent = [Patterntable, repmat(tablerow, height(Patterntable), 1)]; 
+    tablecontent = util.table.flexibleColumnCat(Patterntable, ...
+                        repmat(tablerow, height(Patterntable), 1));
 
     %% Check and Hash
-    if ~isempty('RunsSummary') && any(contains(RunsSummary.hash, hash))
+    if ~isempty(RunsSummary)  &&any(contains(RunsSummary.hash, hash))
         RunsSummary(contains(RunsSummary.hash, hash), :) = []; % Delete any rows that contain the current hash
         DetailedRunsSummary(contains(DetailedRunsSummary.hash, hash), :) = [];
         disp("already computed before, rehashing to the same location");
         % New options:    Append row
     else
-        disp("new results stored!")
+        disp("new results  --not in existing table")
     end
 
     % --------------------------------------
     % Append the new results and posrpocess
     % --------------------------------------
-    old_height = height(DetailedRunsSummary);
-    if size(DetailedRunsSummary,2) ~= size(tablecontent,2)
+    if istable(DetailedRunsSummary)
+        old_height = height(DetailedRunsSummary);
+    else
+        old_height = 0;
+    end
+    if  old_height ~= 0  && ...
+        size(DetailedRunsSummary,2) ~= size(tablecontent,2)
         DetailedRunsSummary = table.addNewColumn(DetailedRunsSummary, tablecontent);
         RunsSummary         = table.addNewColumn(RunsSummary, tablerow);
     else
         DetailedRunsSummary = [DetailedRunsSummary; tablecontent];
         RunsSummary         = [RunsSummary; tablerow];
     end
-    assert(height(DetailedRunsSummary) > old_height, "not appending");
+    assert(height(DetailedRunsSummary) > old_height, "appending failed!");
     DetailedRunsSummary = table.postprocessSummaryTable(DetailedRunsSummary);
     RunsSummary         = table.postprocessSummaryTable(RunsSummary);
 
@@ -242,15 +248,27 @@ if Option.save
     save("RunsSummary", "RunsSummary",'-v7.3');
     save("DetailedRunsSummary", "DetailedRunsSummary", '-v7.3');
     % save the results
+    saveVars = {'Option'};
+    if exist('Patterns','var')
+        saveVars = [saveVars, {'Patterns', 'Patterns_overall'}];
+    end
+    if exist('Components', 'var')
+        saveVars = [saveVars, {'Components', 'Components_overall'}];
+    end
     thisFile = fullfile(codedefine, "hash", hash);
-    save(thisFile, ...
-        "Option", "Behaviors","Spk",'-v7.3')
+    disp("Saving ...");
+    tic; save(thisFile, saveVars{:},'-v7.3');
+    disp("... " + toc " seconds");
     % link most recent state
-    recentFile = fullfile(codedefine, 'mostRecentState');
+    recencyName = Option.animal + "_" + replace(Option.generateH," ", "") + ...
+                    "_mostRecentState";
+    recencyFile = fullfile(codedefine, recencyName);
     system(['ln -sf', thisFile, ' ', recentFile]);
     % save raw?
     if Option.saveRaw
-        save(thisFile, "Spk",'-v7.3', '-append');
+        disp("Saving raw...");
+        tic; save(thisFile, "Events", "Spk",'-v7.3', '-append');
+        disp("... " + toc + " seconds");
     end
     
 end

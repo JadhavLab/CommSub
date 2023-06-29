@@ -1,4 +1,4 @@
-function [summaryTable] = postprocessSummaryTables(summaryTable)
+function [summaryTable] = postprocessSummaryTable(summaryTable)
 % POSTPROCESSSUMMARYTABLES Postprocess summary tables
 %
 % This first reorders the columns, so that timestamp and hash are first, and
