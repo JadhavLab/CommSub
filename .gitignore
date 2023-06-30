@@ -13,4 +13,4 @@ DATA_TABLES
 figures
 SingleDayExpt
 *.mlx
-hash
+hash/*.mat
