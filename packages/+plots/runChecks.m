@@ -1,6 +1,5 @@
 function [] = runChecks(Events, Spk, Patterns, Option, varargin)
-% Run checks on the data overall for raw
-% and processed data
+% Run checks on the data overall for raw and processed data
 %
 % Parameters:
 % -----------
@@ -67,6 +66,7 @@ end
 % Wait for plots to finish
 if Opt.parallel
     if Opt.wait
+        disp("Waiting for plots to finish")
         for i = 1:length(func_list)
             disp("Waiting for " + func2str(func_list{i}));
             out_list{i}.wait();
@@ -82,3 +82,5 @@ if Opt.parallel
         end
     end
 end
+
+

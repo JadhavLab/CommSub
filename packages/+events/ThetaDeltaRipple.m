@@ -38,7 +38,7 @@ function Events = ThetaDeltaRipple(Option)
 disp("Generating event matrix for " + replace(Option.generateH," ",""));
 tic;
 
-const  = option.constants();
+const  = Option.shortcut;
 RIPPLE = const.RIPPLE;
 DELTA  = const.DELTA;
 THETA  = const.THETA;

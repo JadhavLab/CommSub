@@ -1,3 +1,5 @@
 function path = hashdefine()
 
-path = fullfile(datadefine, 'hash');
+if isunix
+    path = '/Volumes/Ark/commsubspace/hash/';
+end

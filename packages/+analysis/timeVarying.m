@@ -17,7 +17,7 @@ function Components = timeVarying(Patterns, Option, r)
 disp("Running time varying analysis")
 tic
 
-const = option.constants();
+const = Option.shortcut;
 
 if ~isfield(Patterns, 'rankRegress') || isempty(Patterns(1).rankRegress)
     error("Patterns must have the rankRegress field")

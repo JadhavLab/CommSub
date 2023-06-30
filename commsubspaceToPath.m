@@ -1,7 +1,5 @@
-if ismac
-    cd('~/Data/Matlab-DRIVE/Shared')
+if ~exist('codedefine_to_path__', 'var') || ~codedefine_to_path__
+    addpath(genpath(fullfile(codedefine())));
+    cd(codedefine());
 end
-addpath(genpath(fullfile(codedefine())));
-if ismac
-    addpath(genpath('~/Code/Src_Matlab/ry_Utility/gramm'));
-end
+codedefine_to_path__ = true;

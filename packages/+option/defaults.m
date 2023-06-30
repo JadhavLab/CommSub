@@ -50,7 +50,7 @@ Default.thetadelta_outlierQuantile    = [0, 0.995];     % quantile to remove out
 % ---- TRIAL WINDOW -----
 % how long -- this will interpolate all to be timesPerTrial long
 Default.spikeShiftSize                = 0.010; % used to default Default.timesPerTrial - size of actual trial sample
-Default.timesPerTrial                 = ceil((sum(Default.winSize))/Default.spikeShiftSize); % 
+Default.timesPerTrial                 = ceil(range(Default.winSize)/Default.spikeShiftSize); % 
 assert(Default.timesPerTrial > 1);
 
 % About brain areas
@@ -81,7 +81,7 @@ Default.stablePerf                    = 0.9; % performance threshold for stable 
 % What to run?
 Default.generateH                       = join(["fromSpectra","fromRipTimes"], "  ");
 Default.analysis.run_selected_genH      = false; % 📜 this
-Default.analysis.checks                 = true;  % whether to run checks: FR, singleEvents, H
+Default.analysis.checks                 = false;  % whether to run checks: FR, singleEvents, H
 Default.analysis.rankRegress            = true;  % rank regression
 Default.analysis.factorAnalysis         = false; % took too long -- tend to not run this
 Default.analysis.singleNeuronPrediction = false; % single neuron prediction in RRR
@@ -99,6 +99,7 @@ Default.jpecc.cvnum = 4; % number of cross-validation folds
 
 Default.save    = true; % whether to save the results
 Default.saveRaw = false; % whether to save the raw data
+Default.tableAppend = "";
 
 
 %% --------- OPTIONS SPECIFIC TO SCRIPT TYPE ---------------------------------

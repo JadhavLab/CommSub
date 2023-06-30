@@ -135,7 +135,7 @@ for pattern = 1:length(cutoff)
         derstarts = interp1(times, 1:length(times), derstarts, 'nearest');
         derstops  = interp1(times, 1:length(times), derstops,  'nearest');
         derranges = [derstarts, derstops];
-        derranges = derranges(any(~isnan(derranges),2),:);
+        derranges = derranges(all(~isnan(derranges),2),:);
         correct_direction = false(size(derranges,1),1);
         for i = 1:size(derranges,1)
             % check if cumulative direction is positive 
