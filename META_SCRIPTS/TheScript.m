@@ -178,15 +178,17 @@ if Option.save
     end
 
     %% RunsSummary: Abbreviated summary of results for runs
-    if exist("RunsSummary.mat", 'file') 
-        load("RunsSummary.mat");
+    tableFolder = fullfile(string(codedefine()), "DATA_TABLES");
+    tabname     = @(x) fullfile(tableFolder, x);
+    if exist(tabname("RunsSummary" + Opt.tableAppend + ".mat"), 'file') 
+        load(tabname("RunsSummary" + Opt.tableAppend + ".mat"));
     else
         RunsSummary = [];
     end
 
     %% DetailedRunsSummary: Summary of information for runs
-    if exist("DetailedRunsSummary.mat", 'file') 
-        load("DetailedRunsSummary.mat");
+    if exist(tabname("DetailedRunsSummary" + Opt.tableAppend + ".mat"), 'file') 
+        load(tabname("DetailedRunsSummary" + Opt.tableAppend + ".mat"));
     else
         warning("no existing DetailedRunsSummary table")
         DetailedRunsSummary = [];
@@ -203,8 +205,8 @@ if Option.save
     Optimtable=struct2table(Optim);
     Optimtable.timestamp = timestamp;
     Optimtable.hash = hash;
-    Optimtable.numWindowsCut = numWindowsCut;
-    Optimtable.cutoffs = Events.cutoffs;
+    Optimtable.numWindowsCut = Events.nWindows
+    Optimtable.cutoffs       = Events.cutoffs;
 
     % Create a table of options and table of patterns
     Optiontable  = struct2table(Option, 'AsArray', true);
@@ -234,8 +236,9 @@ if Option.save
     else
         old_height = 0;
     end
-    if  old_height ~= 0  && ...
-        size(DetailedRunsSummary,2) ~= size(tablecontent,2)
+    fields_equal = isequal(fields(DetailedRunsSummary), fields(tablecontent))
+    if  old_height ~= 0 ||~fields_equal
+        ~isequal(fields(DetailedRunsSummary), fields(tablecontent))
         DetailedRunsSummary = table.addNewColumn(DetailedRunsSummary, tablecontent);
         RunsSummary         = table.addNewColumn(RunsSummary, tablerow);
     else
@@ -248,8 +251,8 @@ if Option.save
 
     %% ------------- Save ----------------------------
     % save the tables
-    save("RunsSummary", "RunsSummary",'-v7.3');
-    save("DetailedRunsSummary", "DetailedRunsSummary", '-v7.3');
+    save(tabname("RunsSummary" + Option.tableAppend),         "RunsSummary",         '-v7.3');
+    save(tabname("DetailedRunsSummary" + Option.tableAppend), "DetailedRunsSummary", '-v7.3');
     % save the results
     saveVars = {'Option'};
     if exist('Patterns','var')
@@ -258,15 +261,16 @@ if Option.save
     if exist('Components', 'var')
         saveVars = [saveVars, {'Components', 'Components_overall'}];
     end
-    thisFile = fullfile(codedefine, "hash", hash);
+    thisFile = fullfile(codedefine, "hash", hash + ".mat");
     disp("Saving ...");
     tic; save(thisFile, saveVars{:},'-v7.3');
     disp("... " + toc + " seconds");
     % link most recent state
+    pushd(hashdefine());
     recencyName = Option.animal + "_" + replace(Option.generateH," ", "") + ...
-                    "_mostRecentState";
-    recencyFile = fullfile(codedefine, recencyName);
-    system(['ln -sf', thisFile, ' ', recentFile]);
+                    "_mostRecentState.mat";
+    system("ln -sf " + hash + ".mat " + recencyName);
+    popd()
     % save raw?
     if Option.saveRaw
         disp("Saving raw...");

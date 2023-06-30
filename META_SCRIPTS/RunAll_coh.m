@@ -10,6 +10,7 @@ commsubspaceToPath
 
 %% Script parameters
 Option = option.defaults();
+Option.tableAppend = "_coh";
 
 animal_list = [...
                 "JS21",...
@@ -18,17 +19,17 @@ animal_list = [...
                 "JS13",...
                 "JS17",...
                 "ER1",...
-                "ZT2"...
+                 "ZT2"...
 ];
 
 h_methods = [  ...
-             ..."fromSpectra  fromRipTimes"   ...SPECTRAL POWER
-             ..."fromCoherence  fromRipTimes"... COHERENCE
-            "fromWpli  fromRipTimes", ...    WPLI
+            ..."fromSpectra  fromRipTimes"   ...SPECTRAL POWER
+            "fromCoherence  fromRipTimes"... COHERENCE
+            ..."fromWpli  fromRipTimes", ...    WPLI
             ];
 
 %  Load previous progress
-progress_file = fullfile(hashdefine(), "last_run.mat");
+progress_file = fullfile(hashdefine(), "last_run_coh.mat");
 if exist(progress_file, "file")
     load(progress_file, "last_run");
 else
