@@ -7,14 +7,15 @@ end
 addpath(path)
 
 addpath(genpath('utils')); % all folders in utils added, including semedo code
-%%
-% load
-multi_epoch = true;
+
+%% load
+multi_epoch = false;
 if multi_epoch
-    
-    load("Tablerow_multiEpoch.mat");
+    % load("Tablerow_multiEpoch.mat");
+    load("RunsSummary_multiEpoch.mat");
 else
-    load("Tablerow_3_FRfixed.mat");
+    % load("Tablerow_3_FRfixed.mat");
+    load("RunsSummary.mat");
 end
 % TABLE : ACQUIRE RUNS
 % ----------------------
@@ -22,16 +23,12 @@ end
 %   each item of the filtstring is a property to select. $x pulls the x
 %   column and applies the test shown
 filtstring = ["ismember($animal, [""JS21"",""ZT2"",""ER1"",""JS14"",""JS13"",""JS17""])",...
-    "$spikeBinSize==0.15",...
-    "$numPartition==50",...
-    "$quantileToMakeWindows == 0.85",...
-    "all(cat(1,$winSize{:})==[-0.15,0.15],2)"];
+                                   ..."$spikeBinSize==0.15",...
+                                   "$numPartition==50",...
+                                   "$quantileToMakeWindows == 0.85",...
+                                   "arrayfun(@(x)isequal($winSize(x,:), [0,0.3]), 1:size($winSize,1))'"];
 % Get the proper keys
-if ~multi_epoch
-    matching_runs = query.getHashed_stringFilt(Tablerow_3_FRfixed, filtstring)
-else
-    matching_runs = query.getHashed_stringFilt(Tablerow_multiEpoch, filtstring)
-end
+matching_runs = query.getHashed_stringFilt(RunsSummary, filtstring)
 %%
 
 %%
@@ -49,9 +46,12 @@ end
 %%
 
 % Load up combined pattern data
-if ispc
-    [Patterns, otherData] = query.combinePatterns(keys);
+servermode = false; % set to true to load from server
+if ~servermode
+    % Load locally
+    [Patterns, otherData] = query.combinePatterns(keys, RunsSummary);
 else
+    % Grab from server and load
     [Patterns, otherData] = query.pattern.tmpLoadAndCombine(keys);
 end
 %% 
@@ -63,7 +63,11 @@ end
 % 
 % Setup constants and aliases
 
-[nAnimal, nMethods, nPartition, ~, nResult] = size(Patterns)
+[nAnimal, nMethods, nPartition, ~, nResult] = size(Patterns);
+disp("nAnimal: " + nAnimal)
+disp("nMethods: " + nMethods)
+disp("nPartition: " + nPartition)
+disp("nResult: " + nResult)
 nPatterns = nResult/2;
 
 %%

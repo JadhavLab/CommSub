@@ -27,15 +27,12 @@
 % IV. Factors in $Q$ sane (in Factor Analysis)
 % 
 
-load("Megatable.mat");
+load("DetailedRunsSummary.mat");
 
 %%
 Options = table2array(queryresult(1,"Optiontable"));
-animal = table2array(Options (1,"animal"));
+animal  = table2array(Options (1,"animal"));
 
-% if loaded checkpoint.mat
-addpath(genpath("data" + filesep + animal)); % genpath enumerates every folder in inside the folder it's given
-addpath(genpath('utils')); % all folders in utils added, including semedo code
 %% Testing
 % I. Spike matrices $X_{hpc$ $X_{pfc}$ sane
 
