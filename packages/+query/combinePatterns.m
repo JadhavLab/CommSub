@@ -2,6 +2,7 @@ function [varargout] = combinePatterns(keys, varargin)
 % Takes a list of keys and loads into combined pattern across keys
 %
 % final shape : keyCount x partitions x direction x patterns
+
 disp('Adding multiEpoch to path');
 addpath('hash_FRfixed');
 
@@ -9,6 +10,7 @@ addpath('hash_FRfixed');
 ip = inputParser;
 ip.addParameter('fields', ["Patterns", "Behaviors", "Option"]);
 ip.addParameter('removeEmpty', false);
+ip.addParameter('RunsSummary', table(), @istable);
 ip.parse(varargin{:})
 Opt = ip.Results;
 fields = string(Opt.fields(:));
@@ -31,6 +33,16 @@ for key = progress(keys','Title','Loading keys')
     kCount = kCount + 1;
     if ~endsWith(key,".mat")
         key = key + ".mat";
+    end
+
+    if ~isempty(Opt.RunsSummary)
+        tbl = Opt.RunsSummary(Opt.RunsSummary.hash == replace(key,".mat",""),:);
+        disp("Loading " + key + " from " + tbl.animal + ...
+            " with hash " + tbl.hash + " and " + tbl.generateH + " patterns");
+    end
+    if ~exist(key,'file')
+        warning('File not found: %s', key);
+        continue
     end
 
     tmp = matfile(key);

@@ -1,17 +1,30 @@
-function [Patterns, otherData] = combinePatterns(keys)
+function varargout = combinePatterns(keys, tbl)
 % Takes a list of keys and loads into combined pattern across keys
 %
 % final shape : keyCount x partitions x direction x patterns
 
-kCount = 0;
-P = cell(1,numel(keys));
-otherData = cell(1,numel(keys));
-for key = progress(keys(:)','Title','Loading keys')
-    kCount = kCount + 1;
-    tmp = load(fullfile(datadefine, 'hash', key + ".mat"));
-    P{kCount} = tmp.Patterns;
-    tmp = rmfield(tmp,'Patterns');
-    otherData{kCount} = tmp;
-end
+varargout = query.combinePatterns(keys, tbl);
 
-Patterns = ndb.toNd(squeeze(P));
+% kCount = 0; % tracks the key number
+% mCount = 0; % tracks missing keys
+% P = cell(1,numel(keys));
+% otherData = cell(1,numel(keys));
+% for key = progress(keys(:)','Title','Loading keys')
+%     kCount = kCount + 1;
+%     file = fullfile(datadefine, 'hash', key + ".mat")
+%     if exist(file,'file')
+%         disp("Loading " + key)
+%         if nargin > 1
+%             disp(tbl(tbl.hash == key,["animal","date","generateH"]))
+%         end
+%         tmp = load(file);
+%         P{kCount} = tmp.Patterns;
+%         tmp = rmfield(tmp,'Patterns');
+%         otherData{kCount} = tmp;
+%     else
+%         mCount = mCount + 1;
+%         fprintf('Missing key %s\n', key);
+%     end
+% end
+%
+% Patterns = ndb.toNd(squeeze(P));
