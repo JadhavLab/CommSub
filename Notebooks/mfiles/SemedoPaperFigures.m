@@ -46,14 +46,21 @@ end
 %%
 
 % Load up combined pattern data
-servermode = false; % set to true to load from server
-if ~servermode
+localmode = true; % set to false to load from server
+if localmode
     % Load locally
-    [Patterns, otherData] = query.combinePatterns(keys, RunsSummary);
+    Out = query.combinePatterns(keys, ...
+    'RunsSummary', RunsSummary);
+    Patterns = Out.Patterns;
+    Option = Out.Option;
+    clear Out
 else
     % Grab from server and load
     [Patterns, otherData] = query.pattern.tmpLoadAndCombine(keys);
+    Option = otherData{1}.Option;
 end
+assert(~isempty(Option), "Data is empty -- downstream code will fail")
+
 %% 
 % by now, Patterns is 
 % 
@@ -76,7 +83,7 @@ for i = 1:nAnimal
         for p = 1:nPartition
             for d = 1:2
                 for n = 1:nResult
-                    Patterns(i,j,p,d,n).animal =  otherData{i}.Option.animal;
+                    Patterns(i,j,p,d,n).animal =  Option( i ).animal;
                 end
             end
         end
@@ -93,8 +100,7 @@ for a = 1:nAnimal
     numDimsUsedForPrediction{a} = 1:min(nSource(a), nTarget(a));
 end
 %%
-Option = otherData{1}.Option;
-if Option.sourceArea == "CA1"
+if Option(1).sourceArea == "CA1"
     source = "hpc";
     target = "pfc";
     hpc = 1;
@@ -123,6 +129,7 @@ nAnimalPartition = nAnimal * nPartition;
 patternnames = ["theta", "delta", "ripples"];
 %%
 T = query.getPatternTable(Patterns_AllAnimals);
+
 %% 
 % Figure 2A: Cofiring in source and target
 % 

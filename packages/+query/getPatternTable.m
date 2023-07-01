@@ -55,6 +55,10 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
    iPartition = pattern.iPartition;
     patternType = pattern.name;
     directionality = pattern.directionality;
+    if isempty(directionality)
+        disp("directionality not found in Pattern struct. ..");
+        continue
+    end
     if isfield(pattern,'generateH')
         generateH = string(pattern.generateH);
     else
@@ -65,6 +69,7 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
     target = names(2);
     nSource = size(pattern.X_source,1);
     nTarget = size(pattern.X_target,1);
+    animal = pattern.animal;
     %Output properties
     rrDim = pattern.rankRegress.optDimReducedRankRegress;
     if isfield(pattern,'factorAnalysis') && ~isempty(pattern.factorAnalysis) && isfield(pattern.factorAnalysis,'optDimFactorRegress')
@@ -97,7 +102,7 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
     [full_model_performance,pred_by_perf] = plotPredictiveDimensions...
          (numUsedForPrediction,pattern.rankRegress.cvLoss, "do_plot", false, "averaged", false);
         
-    row = table(generateH,epoch,iPartition, source, target, patternType, nSource, nTarget, ...
+    row = table(animal,generateH,epoch,iPartition, source, target, patternType, nSource, nTarget, ...
         directionality, rrDim, percMax_rrDim, qOpt,...
         percMax_faDim, full_model_performance, pred_by_perf(2),...
         singularWarning);

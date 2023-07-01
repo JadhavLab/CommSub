@@ -10,6 +10,7 @@ addpath('hash_FRfixed');
 ip = inputParser;
 ip.addParameter('fields', ["Patterns", "Behaviors", "Option"]);
 ip.addParameter('removeEmpty', false);
+ip.addParameter('as', 'struct'); % cell or struct
 ip.addParameter('RunsSummary', table(), @istable);
 ip.parse(varargin{:})
 Opt = ip.Results;
@@ -23,9 +24,16 @@ otherData = cell(1,numel(keys));
 keys = keys(:);
 
 fcnt = 0;
-for field = fields'
-    fcnt = fcnt + 1;
-    varargout{fcnt} = {};
+if strcmp(Opt.as,'struct')
+    for field = fields'
+        fcnt = fcnt + 1;
+        varargout{1}.(field) = {};
+    end
+elseif strcmp(Opt.as,'cell')
+    for field = fields'
+        fcnt = fcnt + 1;
+        varargout{fcnt} = {};
+    end
 end
 
 for key = progress(keys','Title','Loading keys')
@@ -51,7 +59,12 @@ for key = progress(keys','Title','Loading keys')
     for field  = fields'
         fcnt = fcnt + 1;
         if ismember(field, fieldnames(tmp))
-            varargout{fcnt}{kCount} = tmp.(field);
+            disp("Loading " + field + " from " + key);
+            if strcmp(Opt.as,'struct')
+                varargout{1}.(field){kCount} = tmp.(field);
+            elseif strcmp(Opt.as,'cell')
+                varargout{fcnt}{kCount} = tmp.(field);
+            end
         end
     end
 
@@ -62,12 +75,22 @@ end
 fcnt = 0;
 for field = fields'
     fcnt = fcnt + 1;
-    if Opt.removeEmpty
-        empty = cellfun(@isempty, varargout{fcnt});
-        varargout{fcnt}(empty) = [];
-    end
-    if ~isempty(varargout{fcnt})
-         varargout{fcnt} = ndb.toNd(squeeze(varargout{fcnt}));
+    if strcmp(Opt.as,'cell')
+        if Opt.removeEmpty
+            empty = cellfun(@isempty, varargout{fcnt});
+            varargout{fcnt}(empty) = [];
+        end
+        if ~isempty(varargout{fcnt})
+             varargout{fcnt} = ndb.toNd(squeeze(varargout{fcnt}));
+        end
+    elseif strcmp(Opt.as, 'struct')
+        if Opt.removeEmpty
+            empty = cellfun(@isempty, varargout{1}.(field));
+            varargout{1}.(field)(empty) = [];
+        end
+        if ~isempty(varargout{1}.(field))
+            varargout{1}.(field) = ndb.toNd(squeeze(varargout{1}.(field)));
+        end
     end
 end
 

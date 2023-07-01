@@ -1,9 +1,9 @@
-function varargout = combinePatterns(keys, tbl)
+function varargout = loadAndCombine(keys, varargin)
 % Takes a list of keys and loads into combined pattern across keys
 %
 % final shape : keyCount x partitions x direction x patterns
 
-varargout = query.combinePatterns(keys, tbl);
+varargout = query.combinePatterns(keys, varargin{:});
 
 % kCount = 0; % tracks the key number
 % mCount = 0; % tracks missing keys
