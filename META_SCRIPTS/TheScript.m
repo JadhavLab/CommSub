@@ -47,7 +47,7 @@ Events = windows.ThetaDeltaRipple(Events, Option);
 % cellOfWindows, whereas, track can be included as a separate output
 
 %%%%%%%%%%%%%%%% ACQUIRE SPIKES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Getting spikes
+% Getting spikes
 disp("------------------------")
 disp("    Getting spikes      ")
 disp("------------------------")
@@ -81,15 +81,14 @@ if Option.preProcess_zscore
 end
 prewindow_copy = Spk;
 
-
-%%%%%%%%%%%%%%%% ACQUIRE TRIALS FROM WINDOWS + SPIKES %%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%% ACQUIRE TRIALS FROM WINDOWS + SPIKES %%%%%%%%%%%%%%%%%%%
 % RYAN bug here .. timeBinStartEnd instead of timeBinMidPoints
 disp("------------------------")
 disp("   Windowing spikes     ")
 disp("------------------------")
 Spk = trialSpikes.generate(Spk, Events, Option);
 
-% %%%%%%%%%%%%%%% SETUP RAW DATA STRUCTURE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% SETUP RAW DATA STRUCTURE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Structure for separated data
 %%%%%%%%%%%%%%%% SEPRATE BRAIN AREA DATASULT STRUCTURES %%%%%%%%%%%%%%%%%%
 % Separate spikesSampleMatrix/Tensor by area that neurons are in PFC and
@@ -180,18 +179,18 @@ if Option.save
     %% RunsSummary: Abbreviated summary of results for runs
     tableFolder = fullfile(string(codedefine()), "DATA_TABLES");
     tabname     = @(x) fullfile(tableFolder, x);
-    if exist(tabname("RunsSummary" + Opt.tableAppend + ".mat"), 'file') 
-        load(tabname("RunsSummary" + Opt.tableAppend + ".mat"));
+    if exist(tabname("RunsSummary" + Option.tableAppend + ".mat"), 'file') 
+        load(tabname("RunsSummary" + Option.tableAppend + ".mat"));
     else
-        RunsSummary = [];
+        RunsSummary = table();
     end
 
     %% DetailedRunsSummary: Summary of information for runs
-    if exist(tabname("DetailedRunsSummary" + Opt.tableAppend + ".mat"), 'file') 
-        load(tabname("DetailedRunsSummary" + Opt.tableAppend + ".mat"));
+    if exist(tabname("DetailedRunsSummary" + Option.tableAppend + ".mat"), 'file') 
+        load(tabname("DetailedRunsSummary" + Option.tableAppend + ".mat"));
     else
         warning("no existing DetailedRunsSummary table")
-        DetailedRunsSummary = [];
+        DetailedRunsSummary = table();
     end
 
     % Identifying information about this options set and date of run
@@ -249,6 +248,7 @@ if Option.save
     DetailedRunsSummary = table.postprocessSummaryTable(DetailedRunsSummary);
     RunsSummary         = table.postprocessSummaryTable(RunsSummary);
 
+
     %% ------------- Save ----------------------------
     % save the tables
     save(tabname("RunsSummary" + Option.tableAppend),         "RunsSummary",         '-v7.3');
@@ -261,7 +261,7 @@ if Option.save
     if exist('Components', 'var')
         saveVars = [saveVars, {'Components', 'Components_overall'}];
     end
-    thisFile = fullfile(codedefine, "hash", hash + ".mat");
+    thisFile = fullfile(hashdefine(), hash + ".mat");
     disp("Saving ...");
     tic; save(thisFile, saveVars{:},'-v7.3');
     disp("... " + toc + " seconds");

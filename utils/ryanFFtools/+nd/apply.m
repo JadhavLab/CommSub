@@ -2,6 +2,12 @@ function X = apply(X, varargin)
 % function X = apply(X, varargin)
 % Applies a funciton iteratively over an nd struct type
 %
+% Inputs:
+% X - nd struct
+% lambda - function to apply (if 2 args, this is the second arg; if 2+ args, this is the third arg)
+% fieldmethod - how to apply the function to the fields of the struct (if 2+ args, this is the second arg)
+% varargin - optional arguments
+%
 % The function can optionally be put into a recursive mode by "**"
 %
 % In recursive mode, it can optionally also dive into cells looking for elements to
@@ -15,13 +21,16 @@ function X = apply(X, varargin)
 % fieldmethod = x"-"y , apply to x and title the new result y
 % fieldmethod = x1,x2,x3,...,xn"-"y , apply to set of fields and title the new result y
 %
+% if fieldmethod is empty, then the lambda is applied to the entire struct
+%
 
 ignoreEmpty = true;
 fieldmethod = "";
 lambda = [];
 
 V = varargin;
-if numel(varargin) == 1
+varg1_mode = numel(varargin) == 1;
+if varg1_mode
     lambda = varargin{1};
     varargin(1) = [];
 elseif numel(varargin) >= 2
@@ -45,7 +54,7 @@ end
 
 if isstruct(X) || iscell(X)
     inds = nd.indicesMatrixForm(X);
-    for ind = inds'
+    for ind = progress(inds', 'Title', 'apply')
 
         x = nd.get(X, ind);
 

@@ -1,22 +1,10 @@
 % paths
-if ispc
-    path = ("C:\Users\BrainMaker\commsubspace\hash_multiEpoch");
-elseif ismac
-    path = "~/Data/commsubspace/hash";
-end
-addpath(path)
-
-addpath(genpath('utils')); % all folders in utils added, including semedo code
+addpath(genpath(codedefine()))
+addpath(hashdefine())
 
 %% load
-multi_epoch = false;
-if multi_epoch
-    % load("Tablerow_multiEpoch.mat");
-    load("RunsSummary_multiEpoch.mat");
-else
-    % load("Tablerow_3_FRfixed.mat");
-    load("RunsSummary.mat");
-end
+multi_epoch = false; % usually first 3, last 3 epochs
+load("RunsSummary.mat");
 % TABLE : ACQUIRE RUNS
 % ----------------------
 % Determine keys to use : you can use this string to arbitrarily select rows
@@ -28,7 +16,9 @@ filtstring = ["ismember($animal, [""JS21"",""ZT2"",""ER1"",""JS14"",""JS13"",""J
                                    "$quantileToMakeWindows == 0.85",...
                                    "arrayfun(@(x)isequal($winSize(x,:), [0,0.3]), 1:size($winSize,1))'"];
 % Get the proper keys
-matching_runs = query.getHashed_stringFilt(RunsSummary, filtstring)
+matching_runs = query.getHashed_stringFilt(RunsSummary, filtstring);
+disp("Number of matches found: " + height(matching_runs))
+
 %%
 
 %%
@@ -43,8 +33,8 @@ if multi_epoch
 else
     keys = matching_runs.hash;
 end
-%%
 
+%% Load keyed save files from local or server
 % Load up combined pattern data
 localmode = true; % set to false to load from server
 if localmode
@@ -60,46 +50,21 @@ else
     Option = otherData{1}.Option;
 end
 assert(~isempty(Option), "Data is empty -- downstream code will fail")
-
-%% 
-% by now, Patterns is 
-% 
-% *(nAnimal * nMethods * nPartition * nDirection * nPattern+Control)*
-% 
-% 
-% 
-% Setup constants and aliases
-
-[nAnimal, nMethods, nPartition, ~, nResult] = size(Patterns);
-disp("nAnimal: " + nAnimal)
-disp("nMethods: " + nMethods)
-disp("nPartition: " + nPartition)
-disp("nResult: " + nResult)
+Patterns = nd.merge(Patterns, Option, 'only', {'animal', 'generateH'}, ...
+                                                'broadcastLike', true,...
+                                                 'overwrite', true);
+[nDataset, nPartition, ~, nResult] = size(Patterns)
 nPatterns = nResult/2;
 
-%%
-for i = 1:nAnimal
-    for j = 1:nMethods
-        for p = 1:nPartition
-            for d = 1:2
-                for n = 1:nResult
-                    Patterns(i,j,p,d,n).animal =  Option( i ).animal;
-                end
-            end
-        end
-    end
-end
-%%
-
-nSource = zeros(1,nAnimal);
-nTarget = zeros(1,nAnimal);
-numDimsUsedForPrediction = cell(1,nAnimal);
-for a = 1:nAnimal
+%% Setup constants
+nSource = zeros(1,nDataset);
+nTarget = zeros(1,nDataset);
+numDimsUsedForPrediction = cell(1,nDataset);
+for a = 1:nDataset
     nSource(a) = size(Patterns(a,1,1,1,1).X_source,1);
     nTarget(a) = size(Patterns(a,1,1,1,1).X_target,1);
     numDimsUsedForPrediction{a} = 1:min(nSource(a), nTarget(a));
 end
-%%
 if Option(1).sourceArea == "CA1"
     source = "hpc";
     target = "pfc";
@@ -112,22 +77,25 @@ else
     pfc = 1;
 end
 
-%% 
+Patterns = nd.apply(Patterns, "nSource-X_source", @(x) size(x,1) );
+Patterns = nd.apply(Patterns, "nTarget-X_target", @(x) size(x,1) );
+Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
+
+%%  
 % The different animals loaded will actually collapse into the partition
 % 
 % dimenion, segregated by the genH methods
 % 
 % *(nMethods * nPartiton * nDirection * nPatterns)*
 
-
 tempPatterns = permute(Patterns, [2,1,3,4,5]);
-newSize = size(tempPatterns);
-newSize = [newSize(1), prod(newSize(2:3)), newSize(4:end)];
+newSize      = size(tempPatterns);
+newSize      = [newSize(1), prod(newSize(2:3)), newSize(4:end)];
 Patterns_AllAnimals = reshape(tempPatterns, newSize);
+nDatasetPartition = nDataset * nPartition;
+patternnames = Option(1).patternNames(1:3);
 
-nAnimalPartition = nAnimal * nPartition;
-patternnames = ["theta", "delta", "ripples"];
-%%
+%% 
 T = query.getPatternTable(Patterns_AllAnimals);
 
 %% 

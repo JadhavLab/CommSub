@@ -22,7 +22,7 @@ if nargin > 1 && ~isempty(Option)
     end
     for field = string(fieldnames(Option))'
         if isempty(Option.(field))
-            Option.(field) = string("");
+            Option.(field) = "";
         end
         if length(Option.(field)) > 1
             Option = rmfield(Option, field);
@@ -64,11 +64,17 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
     else
         generateH = "";
     end
+    assert(~isempty(generateH), "generateH is empty")
     names = split(directionality, '-');
     source = names(1);
     target = names(2);
-    nSource = size(pattern.X_source,1);
-    nTarget = size(pattern.X_target,1);
+    if isfield(pattern, 'nSource') && isfield(pattern, 'nTarget')
+        nSource = pattern.nSource;
+        nTarget = pattern.nTarget;
+    else
+        nSource = size(pattern.X_source,1);
+        nTarget = size(pattern.X_target,1);
+    end
     animal = pattern.animal;
     %Output properties
     rrDim = pattern.rankRegress.optDimReducedRankRegress;
