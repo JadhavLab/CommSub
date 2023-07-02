@@ -77,6 +77,8 @@ else
     pfc = 1;
 end
 
+Patterns = util.type.castefficient(Patterns, ...
+            'compressReals', true, 'verbose',true);
 Patterns = nd.apply(Patterns, "nSource-X_source", @(x) size(x,1) );
 Patterns = nd.apply(Patterns, "nTarget-X_target", @(x) size(x,1) );
 Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
