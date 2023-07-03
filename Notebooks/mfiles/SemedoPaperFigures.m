@@ -56,7 +56,8 @@ Patterns = nd.merge(Patterns, Option, 'only', {'animal', 'generateH'}, ...
 [nDataset, nPartition, ~, nResult] = size(Patterns)
 nPatterns = nResult/2;
 
-%% Setup constants
+uAnimals = unique([Option.animal]);
+
 nSource = zeros(1,nDataset);
 nTarget = zeros(1,nDataset);
 numDimsUsedForPrediction = cell(1,nDataset);
@@ -65,20 +66,9 @@ for a = 1:nDataset
     nTarget(a) = size(Patterns(a,1,1,1,1).X_target,1);
     numDimsUsedForPrediction{a} = 1:min(nSource(a), nTarget(a));
 end
-if Option(1).sourceArea == "CA1"
-    source = "hpc";
-    target = "pfc";
-    hpc = 1;
-    pfc = 2;
-else
-    source = "pfc";
-    target = "hpc";
-    hpc = 2;
-    pfc = 1;
-end
 
 Patterns = util.type.castefficient(Patterns, ...
-            'compressReals', true, 'verbose',true);
+            'compressReals', true, 'verbose', false);
 Patterns = nd.apply(Patterns, "nSource-X_source", @(x) size(x,1) );
 Patterns = nd.apply(Patterns, "nTarget-X_target", @(x) size(x,1) );
 Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
@@ -90,17 +80,10 @@ Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
 % 
 % *(nMethods * nPartiton * nDirection * nPatterns)*
 
-tempPatterns = permute(Patterns, [2,1,3,4,5]);
-newSize      = size(tempPatterns);
-newSize      = [newSize(1), prod(newSize(2:3)), newSize(4:end)];
-Patterns_AllAnimals = reshape(tempPatterns, newSize);
-nDatasetPartition = nDataset * nPartition;
-patternnames = Option(1).patternNames(1:3);
-
 %% 
-T = query.getPatternTable(Patterns_AllAnimals);
+% ISSUE: what is `Var16`?
+T = query.getPatternTable(Patterns);
 
-%% 
 % Figure 2A: Cofiring in source and target
 % 
 % Figure 2B: Prediction Performance
@@ -118,13 +101,22 @@ T = query.getPatternTable(Patterns_AllAnimals);
 % A: How pairs of neuron in source/target co-fire
 % This is method insensitive. Just lump over animals
 
-% calculate co-firing across all animals
-cofiring
+%% 2A calculate co-firing across all animals
+Fig2 = struct();
+Fig2.all = plots.paper.cofiring(Patterns, Option);
+[spec, opt] = munge.getH(Patterns, Option, "spec");
+Fig2.spec = plots.paper.cofiring(spec, opt);
+[coh, opt] = munge.getH(Patterns, Option, "coh");
+Fig2.coh = plots.paper.cofiring(coh, opt);
+[wpli, opt] = munge.getH(Patterns, Option, "wpli");
+Fig2.wpli = plots.paper.cofiring(wpli, opt);
+
 %% 
 % The co-firing of hpc and pfc neurons during different activity patterns, with 
 % average plotted
 
 plotCofiring
+
 %% 
 % the difference in cofiring between hpc-hpc pairs and hpc-pfc pairs are significant 
 % for all the activity patterns
@@ -442,6 +434,7 @@ warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 % Now let's see how similar those curves are in dimension reduced space
 
 unstack(rt, '');
+
 %% Figure 7
 % 
 % A: Dominant dimension predicitions
