@@ -19,91 +19,103 @@ if ~exist('Option','var')
 else
     Option = option.setdefaults(Option);
 end
-
 %%%%%%%%%%%%%%%% DISPLAY OUR OPTIONS TO USER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp("Running with Option struct => ")
 disp(Option);
 
-%%%%%%%%%%%%%%%% OBTAIN EVENT MATRICES    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp("------------------------")
-disp("    Obtaining events    ")
-disp("------------------------")
-Events = events.ThetaDeltaRipple(Option);
-% Documentation
-% Events is a struct with fields:
-% - .times : array of times of events
-% - .H     : Event Matrix,    T x 3, and each column are theta, delta, ripple
-% - .Hvals : Event Matrix,    T x 3, values without nans
-% - .Hnanlocs : Event Matrix, T x 3, logicals of nans
+if Option.loadifexists  && exist(store.gethash(Option) + ".mat", 'file')
 
-%%%%%%%%%%%%%%%% CUT WINDOWS WITH EVENT MATRICES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp("------------------------")
-disp("    Cutting windows     ")
-disp("------------------------")
-Events = windows.ThetaDeltaRipple(Events, Option);
-% -  cutoffs:       nPatterns x 1 vector of cutoffs
-% TODO: modify to be able to include overall pattern and track patterns
-% PRIORITY; overall: medium, track: very low, overall can be included in
-% cellOfWindows, whereas, track can be included as a separate output
+    m = matfile(store.gethash(Option) + ".mat");
+    Events = util.matfile.getdefault(m, 'Events', []);
+    Spk    = util.matfile.getdefault(m, 'Spk', []);
+    Patterns = util.matfile.getdefault(m, 'Patterns', []);
+    Patterns_overall = util.matfile.getdefault(m, 'Patterns_overall', []);
+    Components = util.matfile.getdefault(m, 'Components', []);
+    Components_overall = util.matfile.getdefault(m, 'Components_overall', []);
 
-%%%%%%%%%%%%%%%% ACQUIRE SPIKES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Getting spikes
-disp("------------------------")
-disp("    Getting spikes      ")
-disp("------------------------")
-Spk = spikes.getSpikeTrain(Option.animal, Option.spikeBinSize, ...
-                         Option.samplingRate);
+else
 
-% filter the neurons whose firing rate is lower than specified threshold
-if Option.preProcess_FilterLowFR 
+    %%%%%%%%%%%%%%%% OBTAIN EVENT MATRICES    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     disp("------------------------")
-    disp("Filtering low FR neurons")
+    disp("    Obtaining events    ")
     disp("------------------------")
-    Spk = trialSpikes.filterFR(Spk, 0.1);
-    disp("Mean FR: " + sort(Spk.avgFR))
-end
+    Events = events.ThetaDeltaRipple(Option);
+    % Documentation
+    % Events is a struct with fields:
+    % - .times : array of times of events
+    % - .H     : Event Matrix,    T x 3, and each column are theta, delta, ripple
+    % - .Hvals : Event Matrix,    T x 3, values without nans
+    % - .Hnanlocs : Event Matrix, T x 3, logicals of nans
 
-if Option.preProcess_gaussianFilter
-    % Gaussian filter the spikeCountMatrix/spikeRateMatrix
-    gauss = gausswin(Option.preProcess_gaussianFilter);
-    for i = progress(1:size(Spk.spikeRateMatrix, 1), 'Title', 'Gaussian filtering')
-        Spk.spikeRateMatrix(i, :)  = conv(Spk.spikeRateMatrix(i, :), gauss, 'same');
-        Spk.spikeCountMatrix(i, :) = conv(Spk.spikeCountMatrix(i, :), gauss, 'same');
+    %%%%%%%%%%%%%%%% CUT WINDOWS WITH EVENT MATRICES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    disp("------------------------")
+    disp("    Cutting windows     ")
+    disp("------------------------")
+    Events = windows.ThetaDeltaRipple(Events, Option);
+    % -  cutoffs:       nPatterns x 1 vector of cutoffs
+    % TODO: modify to be able to include overall pattern and track patterns
+    % PRIORITY; overall: medium, track: very low, overall can be included in
+    % cellOfWindows, whereas, track can be included as a separate output
+
+    %%%%%%%%%%%%%%%% ACQUIRE SPIKES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Getting spikes
+    disp("------------------------")
+    disp("    Getting spikes      ")
+    disp("------------------------")
+    Spk = spikes.getSpikeTrain(Option.animal, Option.spikeBinSize, ...
+                             Option.samplingRate);
+
+    % filter the neurons whose firing rate is lower than specified threshold
+    if Option.preProcess_FilterLowFR 
+        disp("------------------------")
+        disp("Filtering low FR neurons")
+        disp("------------------------")
+        Spk = trialSpikes.filterFR(Spk, 0.1);
+        disp("Mean FR: " + sort(Spk.avgFR))
     end
+
+    if Option.preProcess_gaussianFilter
+        % Gaussian filter the spikeCountMatrix/spikeRateMatrix
+        gauss = gausswin(Option.preProcess_gaussianFilter);
+        for i = progress(1:size(Spk.spikeRateMatrix, 1), 'Title', 'Gaussian filtering')
+            Spk.spikeRateMatrix(i, :)  = conv(Spk.spikeRateMatrix(i, :), gauss, 'same');
+            Spk.spikeCountMatrix(i, :) = conv(Spk.spikeCountMatrix(i, :), gauss, 'same');
+        end
+    end
+
+    if Option.preProcess_zscore
+        % Z-score the spikeCountMatrix/spikeRateMatrix
+        disp(" Z-scoring ")
+        Spk.spikeRateMatrix  = zscore(Spk.spikeRateMatrix,  0, 2);
+        Spk.spikeCountMatrix = zscore(Spk.spikeCountMatrix, 0, 2);
+        Spk.avgFR = mean(Spk.spikeRateMatrix, 2);
+    end
+    prewindow_copy = Spk;
+
+    % %%%%%%%%%%%%%% ACQUIRE TRIALS FROM WINDOWS + SPIKES %%%%%%%%%%%%%%%%%%%
+    % RYAN bug here .. timeBinStartEnd instead of timeBinMidPoints
+    disp("------------------------")
+    disp("   Windowing spikes     ")
+    disp("------------------------")
+    Spk = trialSpikes.generate(Spk, Events, Option);
+
+    %%%%%%%%%%%%%%%%% SETUP RAW DATA STRUCTURE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Structure for separated data
+    %%%%%%%%%%%%%%%% SEPRATE BRAIN AREA DATASULT STRUCTURES %%%%%%%%%%%%%%%%%%
+    % Separate spikesSampleMatrix/Tensor by area that neurons are in PFC and
+    % neurons that in HPC
+    %% Separate firing pattern into source and target
+    [Spk.nSource,~,~] = size(Spk.hpc.X{1});
+    [Spk.nTarget,~,~] = size(Spk.pfc.X{1});
+    Spk.celllookup = cellInfo.getCellIdentities(Option.animal, Spk.cell_index,...
+                                                Spk.areaPerNeuron);
+
+    %%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
+    disp("------------------------")
+    disp(" Subsampling partitions ")
+    disp("------------------------")
+    [Patterns, Patterns_overall] = trialSpikes.partitionAndInitialize(Spk, Option);
 end
-
-if Option.preProcess_zscore
-    % Z-score the spikeCountMatrix/spikeRateMatrix
-    disp(" Z-scoring ")
-    Spk.spikeRateMatrix  = zscore(Spk.spikeRateMatrix,  0, 2);
-    Spk.spikeCountMatrix = zscore(Spk.spikeCountMatrix, 0, 2);
-    Spk.avgFR = mean(Spk.spikeRateMatrix, 2);
-end
-prewindow_copy = Spk;
-
-% %%%%%%%%%%%%%% ACQUIRE TRIALS FROM WINDOWS + SPIKES %%%%%%%%%%%%%%%%%%%
-% RYAN bug here .. timeBinStartEnd instead of timeBinMidPoints
-disp("------------------------")
-disp("   Windowing spikes     ")
-disp("------------------------")
-Spk = trialSpikes.generate(Spk, Events, Option);
-
-%%%%%%%%%%%%%%%%% SETUP RAW DATA STRUCTURE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Structure for separated data
-%%%%%%%%%%%%%%%% SEPRATE BRAIN AREA DATASULT STRUCTURES %%%%%%%%%%%%%%%%%%
-% Separate spikesSampleMatrix/Tensor by area that neurons are in PFC and
-% neurons that in HPC
-%% Separate firing pattern into source and target
-[Spk.nSource,~,~] = size(Spk.hpc.X{1});
-[Spk.nTarget,~,~] = size(Spk.pfc.X{1});
-Spk.celllookup = cellInfo.getCellIdentities(Option.animal, Spk.cell_index,...
-                                            Spk.areaPerNeuron);
-
-%%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
-disp("------------------------")
-disp(" Subsampling partitions ")
-disp("------------------------")
-[Patterns, Patterns_overall] = trialSpikes.partitionAndInitialize(Spk, Option);
 
 %%%%%%%%%%%%%%%% ANALYSIS SECTION    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp("------------------------")
@@ -166,116 +178,17 @@ end
 if Option.save
 
     disp("Saving results")
+    store.savetables(Events, Patterns, Option);
 
-    % Ready the path
-    table_folder = fullfile(codedefine(), 'DATA_TABLES');
-    if ~exist(table_folder, 'dir')
-        mkdir(table_folder);
-    end
-    if ~ismember(table_folder, path)
-        addpath(table_folder);
-    end
-
-    %% RunsSummary: Abbreviated summary of results for runs
-    tableFolder = fullfile(string(codedefine()), "DATA_TABLES");
-    tabname     = @(x) fullfile(tableFolder, x);
-    if exist(tabname("RunsSummary" + Option.tableAppend + ".mat"), 'file') 
-        load(tabname("RunsSummary" + Option.tableAppend + ".mat"));
-    else
-        RunsSummary = table();
-    end
-
-    %% DetailedRunsSummary: Summary of information for runs
-    if exist(tabname("DetailedRunsSummary" + Option.tableAppend + ".mat"), 'file') 
-        load(tabname("DetailedRunsSummary" + Option.tableAppend + ".mat"));
-    else
-        warning("no existing DetailedRunsSummary table")
-        DetailedRunsSummary = table();
-    end
-
-    % Identifying information about this options set and date of run
-    hash      = DataHash(Option);
-    hash      = hash(1:7); % Take the first 7 letters of the hash
-    hash      = string(hash);
-    timestamp = string(date());
-
-    % Determine information to add to table
-    Optim=params.getOptimizationParams(Patterns,Events,Option);
-    Optimtable=struct2table(Optim);
-    Optimtable.timestamp = timestamp;
-    Optimtable.hash = hash;
-    Optimtable.numWindowsCut = Events.nWindows
-    Optimtable.cutoffs       = Events.cutoffs;
-
-    % Create a table of options and table of patterns
-    Optiontable  = struct2table(Option, 'AsArray', true);
-    Patterntable = query.getPatternTable(Patterns);
-
-    % Combine option columns with hash and date
-    tablerow = [Optiontable, Optimtable];
-    % Combine those with all rows of the pattern table
-    tablecontent = util.table.flexibleColumnCat(Patterntable, ...
-                        repmat(tablerow, height(Patterntable), 1));
-
-    %% Check and Hash
-    if ~isempty(RunsSummary)  &&any(contains(RunsSummary.hash, hash))
-        RunsSummary(contains(RunsSummary.hash, hash), :) = []; % Delete any rows that contain the current hash
-        DetailedRunsSummary(contains(DetailedRunsSummary.hash, hash), :) = [];
-        disp("already computed before, rehashing to the same location");
-        % New options:    Append row
-    else
-        disp("new results  --not in existing table")
-    end
-
-    % --------------------------------------
-    % Append the new results and posrpocess
-    % --------------------------------------
-    if istable(DetailedRunsSummary)
-        old_height = height(DetailedRunsSummary);
-    else
-        old_height = 0;
-    end
-    fields_equal = isequal(fields(DetailedRunsSummary), fields(tablecontent))
-    if  old_height ~= 0 ||~fields_equal
-        ~isequal(fields(DetailedRunsSummary), fields(tablecontent))
-        DetailedRunsSummary = table.addNewColumn(DetailedRunsSummary, tablecontent);
-        RunsSummary         = table.addNewColumn(RunsSummary, tablerow);
-    else
-        DetailedRunsSummary = [DetailedRunsSummary; tablecontent];
-        RunsSummary         = [RunsSummary; tablerow];
-    end
-    assert(height(DetailedRunsSummary) > old_height, "appending failed!");
-    DetailedRunsSummary = table.postprocessSummaryTable(DetailedRunsSummary);
-    RunsSummary         = table.postprocessSummaryTable(RunsSummary);
-
-
-    %% ------------- Save ----------------------------
-    % save the tables
-    save(tabname("RunsSummary" + Option.tableAppend),         "RunsSummary",         '-v7.3');
-    save(tabname("DetailedRunsSummary" + Option.tableAppend), "DetailedRunsSummary", '-v7.3');
-    % save the results
-    saveVars = {'Option'};
+    saveVars = {};
     if exist('Patterns','var')
-        saveVars = [saveVars, {'Patterns', 'Patterns_overall'}];
+        saveVars = [saveVars, {'Patterns', Patterns, ...
+                               'Patterns_overall', Patterns_overall}];
     end
     if exist('Components', 'var')
-        saveVars = [saveVars, {'Components', 'Components_overall'}];
+        saveVars = [saveVars, {'Components', Components, ...
+                               'Components_overall', Components_overall}];
     end
-    thisFile = fullfile(hashdefine(), hash + ".mat");
-    disp("Saving ...");
-    tic; save(thisFile, saveVars{:},'-v7.3');
-    disp("... " + toc + " seconds");
-    % link most recent state
-    pushd(hashdefine());
-    recencyName = Option.animal + "_" + replace(Option.generateH," ", "") + ...
-                    "_mostRecentState.mat";
-    system("ln -sf " + hash + ".mat " + recencyName);
-    popd()
-    % save raw?
-    if Option.saveRaw
-        disp("Saving raw...");
-        tic; save(thisFile, "Events", "Spk",'-v7.3', '-append');
-        disp("... " + toc + " seconds");
-    end
+    store.savevars(Option, Event, Spk, saveVars{:});
     
 end
