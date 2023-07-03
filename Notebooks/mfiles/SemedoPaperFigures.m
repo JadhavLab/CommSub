@@ -124,19 +124,34 @@ dump.Fig2 = Fig2;
 % 3. Check standard coherence w/ fresh chronux
 % 4. Show ranges with quantile plot
 
-Fig2.all  = plots.cf.plotCofiring(Fig2.all, Option, 'figAppend', 'all');
-Fig2.spec = plots.cf.plotCofiring(Fig2.spec,Option, 'figAppend', 'spec');
-Fig2.coh  = plots.cf.plotCofiring(Fig2.coh, Option, 'figAppend', 'coh');
-Fig2.wp   = plots.cf.plotCofiring(Fig2.wpli,Option, 'figAppend', 'wp');
+Fig2.a.all  = plots.cf.plotCofiring(Fig2.a.all, Option, 'figAppend', 'all');
+Fig2.a.spec = plots.cf.plotCofiring(Fig2.a.spec,Option, 'figAppend', 'spec');
+Fig2.a.coh  = plots.cf.plotCofiring(Fig2.a.coh, Option, 'figAppend', 'coh');
+Fig2.a.wp   = plots.cf.plotCofiring(Fig2.a.wpli,Option, 'figAppend', 'wp');
 
-plots.cf.plotCofiring(Fig2.all, Option, 'Normalization', 'probability', 'figAppend', 'all');
-plots.cf.plotCofiring(Fig2.spec,Option, 'Normalization', 'probability', 'figAppend', 'spec');
-plots.cf.plotCofiring(Fig2.coh, Option, 'Normalization', 'probability', 'figAppend', 'coh');
-plots.cf.plotCofiring(Fig2.wpli,Option, 'Normalization', 'probability', 'figAppend', 'wp');
+plots.cf.plotCofiring(Fig2.a.all, Option, 'Normalization', 'probability', 'figAppend', 'all');
+plots.cf.plotCofiring(Fig2.a.spec,Option, 'Normalization', 'probability', 'figAppend', 'spec');
+plots.cf.plotCofiring(Fig2.a.coh, Option, 'Normalization', 'probability', 'figAppend', 'coh');
+plots.cf.plotCofiring(Fig2.a.wpli,Option, 'Normalization', 'probability', 'figAppend', 'wp');
 
 %% 
-% the difference in cofiring between hpc-hpc pairs and hpc-pfc pairs are significant 
-% for all the activity patterns
+% Example 
+% the difference in cofiring between hpc-hpc pairs and hpc-pfc pairs
+% are significant for all the activity patterns
+
+plots.cf.plotCfExampByDirection(Fig2.a.all,  Patterns, Option, "figAppend", 'all');
+plots.cf.plotCfExampByDirection(Fig2.a.spec, Patterns, Option, "figAppend", 'spec');
+plots.cf.plotCfExampByDirection(Fig2.a.coh,  Patterns, Option, "figAppend", 'coh');
+plots.cf.plotCfExampByDirection(Fig2.a.wpli, Patterns, Option, "figAppend", 'wp');
+
+plots.cf.plotCfExampByDirection(Fig2.a.all,  Patterns, Option, "figAppend", 'all', 'Normalization', 'probability');
+plots.cf.plotCfExampByDirection(Fig2.a.spec, Patterns, Option, "figAppend", 'spec', 'Normalization', 'probability');
+plots.cf.plotCfExampByDirection(Fig2.a.coh,  Patterns, Option, "figAppend", 'coh', 'Normalization', 'probability');
+plots.cf.plotCfExampByDirection(Fig2.a.wpli, Patterns, Option, "figAppend", 'wp', 'Normalization', 'probability');
+
+%%
+
+dump.Fig2 = Fig2;
 
 %% 
 % _"These weak correlations indicate that only a small fraction of a neuron’s 
@@ -145,8 +160,8 @@ plots.cf.plotCofiring(Fig2.wpli,Option, 'Normalization', 'probability', 'figAppe
 % _can be explained by another individual neuron"_
 % 
 % B: Explained Variance
+Fig2.b = regionalVarExplained(Patterns, Option);
 
-regionalVarExplained;
 %%
 clf;plotVarExplained;
 %% 
@@ -154,8 +169,9 @@ clf;plotVarExplained;
 
 
 %%
-[h_hpc, p_hpc] = kstest2(meanpred_hpc, mean_withhpccorr_pattern)
-[h_pfc, p_pfc] = kstest2(meanpred_pfc, mean_withpfccorr_pattern)
+[h_hpc, p_hpc] = kstest2(meanpred_hpc, mean_withhpccorr_pattern);
+[h_pfc, p_pfc] = kstest2(meanpred_pfc, mean_withpfccorr_pattern);
+
 %%
 mean_withhpc = mean(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc))));
 std_withhpc  = std(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc))));

@@ -115,7 +115,8 @@ for animal = animalList
             load(prev_avgeeg_file)
             avgeeg = ffend(avgeeg);
             if opt.debug
-                offset = offset  + avgeeg.endtime
+                offset = offset  + avgeeg.endtime;
+                disp("Offsetting by " + avgeeg.endtime)
             end
         end
         % ------------------------
@@ -123,13 +124,13 @@ for animal = animalList
         % ------------------------
         if isequal(opt.epochType,'run')
             if isNew
-                cgramfile = "cgramcnew"
+                cgramfile = "cgramcnew";
             else
                 cgramfile = 'cgramc';
             end
         else
            if isNew
-                cgramfile = "cgramcnew"
+                cgramfile = "cgramcnew";
            else
                 cgramfile = 'cgramc';
             end

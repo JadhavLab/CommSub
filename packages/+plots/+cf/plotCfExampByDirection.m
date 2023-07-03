@@ -1,4 +1,4 @@
-function [h_corrdiff,p_corrdiff] = plotCfByDirection(FigDat, Patterns, varargin)
+function [h_corrdiff,p_corrdiff] = plotCfByDirection(FigDat, Patterns, Option, varargin)
 
 ip = inputParser;
 ip.addParameter('figAppend', '', @(x) ischar(x) || isstring(x));
@@ -11,7 +11,7 @@ Opt = ip.Results;
 fig 'Overall directional correlation'
 subplot(2,1,1)
 ax1 = nexttile;
-hist_withpfc = histogram(all_pairs_withhpc, 'Normalization',Opt.normalization);
+hist_withpfc = histogram(FigDat.all_pairs_withhpc, 'Normalization',Opt.normalization);
 ylabel("Pairs")
 title ("HPC-HPC")
 example_mean_corr_withhpc = FigDat.mean_corrwithhpc(Opt.example);
@@ -26,7 +26,7 @@ lineObject.LineWidth = 2;  % Thicken the line
 lineObject.Color = 'black'; % Color it black
 subplot(2,1,2)
 ax2 = nexttile;
-hist_hp = histogram(all_pairs_withpfc,'Normalization',Opt.normalization);
+hist_hp = histogram(FigDat.all_pairs_withpfc,'Normalization',Opt.normalization);
 ylabel("Pairs")
 title ("HPC-PFC")
 example_mean_corr_withpfc = FigDat.mean_corrwithpfc(Opt.example);
@@ -40,16 +40,18 @@ lineObject.LineWidth = 2;  % Thicken the line
 lineObject.Color = 'black'; % Color it black
 xlabel("Pairwise correlation")
 linkaxes([ax1,ax2],'x');
-[h_corrdiff,p_corrdiff] = kstest2(all_pairs_withpfc,all_pairs_withhpc);
+[h_corrdiff,p_corrdiff] = kstest2(FigDat.all_pairs_withpfc,...
+    FigDat.all_pairs_withhpc);
 %%
 % print stats
 formatSpec1 = "%s: %0.3f±%0.3f";
 
-sprintf(formatSpec1,Patterns(1,1).directionality,mean(mean_corrwithhpc),mean(std_corrwithhpc))
-sprintf(formatSpec1,Patterns(2,1).directionality,mean(mean_corrwithpfc),mean(std_corrwithpfc))
+% ISSUE: un-hard code this
+sprintf(formatSpec1, "hpc-hpc", mean(FigDat.mean_corrwithhpc),mean(FigDat.std_corrwithhpc))
+sprintf(formatSpec1, "hpc-pfc", mean(FigDat.mean_corrwithpfc),mean(FigDat.std_corrwithpfc))
 disp(p_corrdiff)
 
-examp_str = sprintf("Example %d, %s ", Opt.example, Option(1).patternNamesFull(Opt.example));
+examp_str = sprintf("Example %d, %s ", Opt.example, Option(1).patterNamesFull(Opt.example));
 fullfigname = fullfile(codedefine,'figures', 'new','cofire',...
     examp_str + string(Opt.normalization) + "cofiring per pattern" + Opt.figAppend);
 saveas(gcf, fullfigname + ".png")

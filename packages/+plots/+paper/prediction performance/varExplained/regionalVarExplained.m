@@ -1,9 +1,17 @@
+function out = calculateRegionalPrediction(Patterns)
+% this function calculates the regional firing prediction of all patterns
+% across methods
+% input: Patterns - a struct containing all the patterns
+% output: out - a struct containing the regional firing prediction of all
+% patterns across methods
+
+Patterns = munge.reshapeByLabels(Patterns, 1, Option.generateH);
+
 % this script calculates the regional firing predicition of all patterns
 % across methods
 %% initialize data sturctures
-r_withhpc_patterns = cell(nMethods, nPatterns, nAnimalPartition);
-r_withpfc_patterns = cell(nMethods, nPatterns, nAnimalPartition);
-
+r_withhpc_patterns   = cell(nMethods, nPatterns, nAnimalPartition);
+r_withpfc_patterns   = cell(nMethods, nPatterns, nAnimalPartition);
 single_pred_with_hpc = cell(nMethods, nPatterns, nAnimalPartition);
 single_pred_with_pfc = cell(nMethods, nPatterns, nAnimalPartition);
 
@@ -20,12 +28,12 @@ for m = 1:nMethods
             r_withhpc_patterns{m}{i}{p} = zeros(1,nCurrTarget);
             r_withpfc_patterns{m}{i}{p} = zeros(1,nCurrTarget);
             
-            curr_source = (Patterns_AllAnimals(m,p,1,i).X_source)';
-            curr_targethpc = (Patterns_AllAnimals(m,p,hpc,i).X_target)';
-            curr_targetpfc = (Patterns_AllAnimals(m,p,pfc,i).X_target)';
+            curr_source = (Patterns(m,p,1,i).X_source)';
+            curr_targethpc = (Patterns(m,p,hpc,i).X_target)';
+            curr_targetpfc = (Patterns(m,p,pfc,i).X_target)';
             
-            curr_B_hpc = Patterns_AllAnimals(m,p,hpc,i).rankRegress.B;
-            curr_B_pfc = Patterns_AllAnimals(m,p,pfc,i).rankRegress.B;
+            curr_B_hpc = Patterns(m,p,hpc,i).rankRegress.B;
+            curr_B_pfc = Patterns(m,p,pfc,i).rankRegress.B;
             
             [patternhpc, meanhpc, ~] = calculateVarianceExplained...
                                       (curr_source, curr_targethpc, curr_B_hpc);
@@ -41,7 +49,7 @@ for m = 1:nMethods
             
             
 %             for k = 1:nCurrSource
-%                 curr_singleB = Patterns_AllAnimals...
+%                 curr_singleB = Patterns...
 %                                (m,p,1,i).rankRegress.singlesource_B{k};
 %                 if ~isempty(curr_singleB)
 %                      curr_singlesource = curr_source(:,k);
@@ -57,4 +65,13 @@ for m = 1:nMethods
 %             end
         end
     end
+end
+
+out.r_withhpc_patterns = r_withhpc_patterns;
+out.r_withpfc_patterns = r_withpfc_patterns;
+out.single_pred_with_hpc = single_pred_with_hpc;
+out.single_pred_with_pfc = single_pred_with_pfc;
+out.patternVarExplained_hpc = patternVarExplained_hpc;
+out.patternVarExplained_pfc = patternVarExplained_pfc;
+
 end
