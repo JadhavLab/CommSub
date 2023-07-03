@@ -5,7 +5,14 @@ function out = regionalexplained(Patterns, Option)
 % output: out - a struct containing the regional firing prediction of all
 % patterns across methods
 
+Option = munge.reshapeByLabels(Option,     1, [Option.generateH]);
 Patterns = munge.reshapeByLabels(Patterns, 1, [Option.generateH]);
+genH = nd.fieldGet(Option, 'genH_name');
+keyboard
+
+hpc = Option(1).shortcut.HPC;
+pfc = Option(1).shortcut.PFC;
+
 szPatterns       = size(Patterns);
 nMethods         = szPatterns(1);
 nAnimalPartition = szPatterns(2);
@@ -18,13 +25,16 @@ r_withhpc_patterns   = cell(nMethods, nPatterns, nAnimalPartition);
 r_withpfc_patterns   = cell(nMethods, nPatterns, nAnimalPartition);
 single_pred_with_hpc = cell(nMethods, nPatterns, nAnimalPartition);
 single_pred_with_pfc = cell(nMethods, nPatterns, nAnimalPartition);
+patternVarExplained_hpc = zeros(nMethods, nPatterns, nAnimalPartition);
+patternVarExplained_pfc = zeros(nMethods, nPatterns, nAnimalPartition);
 
 %% loop
 for m = 1:nMethods
     for i = 1:nPatterns
         for p = 1:nAnimalPartition
+
             % nCurrSource = Patterns(m,p,1,i).nSource;
-            nCurrTarget = Patterns(m,p,1,i).nTarget;
+            nCurrTarget = size(Patterns(m,p,2,i).X_target,1);
             % animalNo = floor(p/(nPartition+1)+1);
             % nCurrSource = nSource(animalNo);
             single_pred_with_hpc{m}{i}{p} = [];
@@ -40,10 +50,10 @@ for m = 1:nMethods
             curr_B_hpc = Patterns(m,p,hpc,i).rankRegress.B;
             curr_B_pfc = Patterns(m,p,pfc,i).rankRegress.B;
             
-            [patternhpc, meanhpc, ~] = calculateVarianceExplained...
-                                      (curr_source, curr_targethpc, curr_B_hpc);
-            [patternpfc, meanpfc, ~] = calculateVarianceExplained...
-                                      (curr_source, curr_targetpfc, curr_B_pfc);
+            [patternhpc, meanhpc, ~] = ...
+                plots.pred.var.explained(curr_source, curr_targethpc, curr_B_hpc);
+            [patternpfc, meanpfc, ~] = ...
+                plots.pred.var.explained(curr_source, curr_targetpfc, curr_B_pfc);
             
             patternVarExplained_hpc(m,i,p) = meanhpc;
             patternVarExplained_pfc(m,i,p) = meanpfc;
@@ -51,7 +61,9 @@ for m = 1:nMethods
             r_withpfc_patterns{m}{i}{p} = patternpfc;
          
             r_withhpc_patterns{m}{i}{p} = patternhpc;
-            
+
+            out.genH = genH(i,m);
+            out.pattern = Option(m, i).pattern(i);
 
         end
     end

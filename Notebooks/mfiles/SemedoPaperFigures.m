@@ -74,7 +74,6 @@ Patterns = nd.apply(Patterns, "nTarget-X_target", @(x) size(x,1) );
 Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
 dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
-
 %%  
 % The different animals loaded will actually collapse into the partition
 % 
@@ -166,7 +165,6 @@ Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, 'figAppend', 'all');
 %% 
 % Predicition Performance
 
-
 %%
 [h_hpc, p_hpc] = kstest2(meanpred_hpc, mean_withhpccorr_pattern);
 [h_pfc, p_pfc] = kstest2(meanpred_pfc, mean_withpfccorr_pattern);
@@ -209,6 +207,7 @@ lineObject.Color = 'black'; % Color it black
 lineObject2 = line([median_singlehp,median_singlehp],[0 max(hist_hp.Values)]);
 lineObject2.LineWidth = 3;  % Thicken the line
 lineObject2.Color = 'blue'; % Color it black
+
 %%
 figure(601)
 clf

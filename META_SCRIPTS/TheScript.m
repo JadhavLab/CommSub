@@ -9,7 +9,6 @@
 % addpath(genpath('/Volumes/MATLAB-Drive/')) % or wherever your CODE files are
 % located
 % addpath(genpath('~/Data/Raw/')) % or wherever your DATA files are located
-
 % ===================================================
 % OPTION STRUCT encoding properties of the script run
 % ===================================================
@@ -20,11 +19,11 @@ else
     Option = option.setdefaults(Option);
 end
 %%%%%%%%%%%%%%%% DISPLAY OUR OPTIONS TO USER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp("Running with Option struct => ")
+disp("Running with Option struct => ");
 disp(Option);
-
-if Option.loadifexists  && exist(store.gethash(Option) + ".mat", 'file')
+if isequal(Option.loadifexists, false) && exist(store.gethash(Option) + ".mat", 'file')
     m = matfile(store.gethash(Option) + ".mat");
+    % m = matfile("bef0923.mat");
     Events             = util.matfile.getdefault(m, 'Events', []);
     Spk                = util.matfile.getdefault(m, 'Spk', []);
     Patterns           = util.matfile.getdefault(m, 'Patterns', []);
@@ -144,6 +143,7 @@ if Option.analysis.cca
     Patterns         = analysis.cca(Patterns, Option);
     Patterns_overall = analysis.cca(Patterns_overall, Option);
     % TODO : section that knocks off kim 2022 after these measurements
+    Components.cca   = analysis.match2overall(Patterns_overall, Events, Option);
 end
 
 if Option.analysis.timeVarying
@@ -154,9 +154,9 @@ if Option.analysis.timeVarying
     running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
     [behavior, thrown_out_times] = table.behavior.lookup(Option.animal, ...
                                                          running_times);
-    Components = analysis.timeVarying_v2(Patterns, Option, Spk);
-    Components = plots.temporal.correlateSpectral(Components, Events, Option);
-    Components = plots.temporal.correlateBehavior(Components, Events, Option);
+    Components.rrr = analysis.timeVarying_v2(Patterns, Option, Spk);
+    Components.rrr = plots.temporal.correlateSpectral(Components.rrr, Events, Option);
+    Components.rrr = plots.temporal.correlateBehavior(Components., Events, Option);
 end
 
 if Option.analysis.checks

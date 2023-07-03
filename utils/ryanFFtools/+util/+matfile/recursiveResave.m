@@ -63,21 +63,25 @@ try
     for m = progress(1:numel(M), 'Title', 'Converting mat files')
         
         filename = M(m).name;
+        disp("Checking file " + string(filename));
 
         if any(contains(filename,Opt.contain_exclude))
+            disp("...skipping file...");
             continue;
         end
         if regex_mode
             for e = 1:numel(Opt.exclude)
                 if regexp(filename,Opt.exclude{e})
+                    disp("...skipping file...");
                     continue;
                 end
             end
         elseif any(strcmp(filename,Opt.exclude))
+            disp("...skipping file...");
             continue;
         end
 
-        fprintf(' Converting %s\n',filename);
+        fprintf(' Loading %s\n',filename);
         dat = load(filename);
 
         if ~isempty(Opt.lambda)
@@ -91,10 +95,16 @@ try
         end
 
         try
-            save(filename, '-struct', 'dat', Opt.saveFlags{:});
+            disp("...saving file...");
+            initialFileSize = dir(filename).bytes;
+            save(filename + "-tmp.mat", '-struct', 'dat', Opt.saveFlags{:});
+            movefile(filename + "-tmp.mat", filename, 'f');
+            finalFileSize = dir(filename).bytes;
+            disp("...previous size was " + string(initialFileSize) + " bytes, new size is " + string(finalFileSize) + " bytes...");
         catch e % if file is too big to be uncompressed, then go ahead and recompress it into v7.3
+            keyboard;
             disp("Caught exception while saving file");
-            disp(e.identifier);
+            dConvertingisp(e.identifier);
             disp(e.message);
             warning("Could not save file " + string(filename) + " with flags " + join(Opt.saveFlags, ", ") + ".");
         end
