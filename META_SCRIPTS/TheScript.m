@@ -24,15 +24,14 @@ disp("Running with Option struct => ")
 disp(Option);
 
 if Option.loadifexists  && exist(store.gethash(Option) + ".mat", 'file')
-
     m = matfile(store.gethash(Option) + ".mat");
-    Events = util.matfile.getdefault(m, 'Events', []);
-    Spk    = util.matfile.getdefault(m, 'Spk', []);
-    Patterns = util.matfile.getdefault(m, 'Patterns', []);
-    Patterns_overall = util.matfile.getdefault(m, 'Patterns_overall', []);
-    Components = util.matfile.getdefault(m, 'Components', []);
+    Events             = util.matfile.getdefault(m, 'Events', []);
+    Spk                = util.matfile.getdefault(m, 'Spk', []);
+    Patterns           = util.matfile.getdefault(m, 'Patterns', []);
+    Patterns_overall   = util.matfile.getdefault(m, 'Patterns_overall', []);
+    Components         = util.matfile.getdefault(m, 'Components', []);
     Components_overall = util.matfile.getdefault(m, 'Components_overall', []);
-
+    clear m
 else
 
     %%%%%%%%%%%%%%%% OBTAIN EVENT MATRICES    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
