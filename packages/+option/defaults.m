@@ -99,6 +99,7 @@ Default.jpecc.cvnum = 4; % number of cross-validation folds
 
 Default.save    = true; % whether to save the results
 Default.saveRaw = false; % whether to save the raw data
+Default.loadifexists = true; % whether to load if the file exists
 Default.tableAppend = "";
 
 

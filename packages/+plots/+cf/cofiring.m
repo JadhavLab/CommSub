@@ -8,11 +8,12 @@ function out = calculatePatternCofiring(Patterns, Option)
 
 Patterns = munge.resh12(Patterns);
 
-short = Option(1).shortcuts;
+short = Option(1).shortcut;
 hpc = short.HPC;
 pfc = short.PFC;
 
-
+nPatterns = size(Patterns,3);
+nAnimalPartition = size(Patterns,1);
 
 %% allocate
 withpfc_pairs = cell(3,1);
@@ -38,13 +39,13 @@ for i = progress(1:nPatterns)
     withpfc_pairs{i} = [];
     for p = progress(1:nAnimalPartition)
         % pick the source/target population
-        curr_source = Patterns(1,p,1,i).X_source';
-        curr_HPC    = Patterns(1,p,hpc,i).X_target';
-        curr_PFC    = Patterns(1,p,pfc,i).X_target';
+        curr_source = Patterns(p,1,i).X_source';
+        curr_HPC    = Patterns(p,hpc,i).X_target';
+        curr_PFC    = Patterns(p,pfc,i).X_target';
         
         % calcualte co-firing of source and two target populations
-        linearized_withhpc = calculatePatternCofiring(curr_source, curr_HPC);
-        linearized_withpfc = calculatePatternCofiring(curr_source, curr_PFC);
+        linearized_withhpc = plots.cf.calculatePatternCofiring(curr_source, curr_HPC);
+        linearized_withpfc = plots.cf.calculatePatternCofiring(curr_source, curr_PFC);
         
         % append to all
         all_pairs_withhpc = [all_pairs_withhpc, linearized_withhpc];

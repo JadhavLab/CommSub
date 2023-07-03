@@ -72,6 +72,8 @@ Patterns = util.type.castefficient(Patterns, ...
 Patterns = nd.apply(Patterns, "nSource-X_source", @(x) size(x,1) );
 Patterns = nd.apply(Patterns, "nTarget-X_target", @(x) size(x,1) );
 Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
+dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
+
 
 %%  
 % The different animals loaded will actually collapse into the partition
@@ -103,61 +105,39 @@ T = query.getPatternTable(Patterns);
 
 %% 2A calculate co-firing across all animals
 Fig2 = struct();
-Fig2.all = plots.paper.cofiring(Patterns, Option);
+Fig2.all = plots.cf.cofiring(Patterns, Option);
 [spec, opt] = munge.getH(Patterns, Option, "spec");
-Fig2.spec = plots.paper.cofiring(spec, opt);
+Fig2.spec = plots.cf.cofiring(spec, opt);
 [coh, opt] = munge.getH(Patterns, Option, "coh");
-Fig2.coh = plots.paper.cofiring(coh, opt);
+Fig2.coh = plots.cf.cofiring(coh, opt);
 [wpli, opt] = munge.getH(Patterns, Option, "wpli");
-Fig2.wpli = plots.paper.cofiring(wpli, opt);
+Fig2.wpli = plots.cf.cofiring(wpli, opt);
+dump.Fig2 = Fig2;
 
 %% 
 % The co-firing of hpc and pfc neurons during different activity patterns, with 
 % average plotted
 
-plotCofiring
+% TODO:
+% 1. Add sig to figs
+% 2. Redo with different normalization
+% 3. Check standard coherence w/ fresh chronux
+% 4. Show ranges with quantile plot
+
+Fig2.all  = plots.cf.plotCofiring(Fig2.all, Option, 'figAppend', 'all');
+Fig2.spec = plots.cf.plotCofiring(Fig2.spec,Option, 'figAppend', 'spec');
+Fig2.coh  = plots.cf.plotCofiring(Fig2.coh, Option, 'figAppend', 'coh');
+Fig2.wp   = plots.cf.plotCofiring(Fig2.wpli,Option, 'figAppend', 'wp');
+
+plots.cf.plotCofiring(Fig2.all, Option, 'Normalization', 'probability', 'figAppend', 'all');
+plots.cf.plotCofiring(Fig2.spec,Option, 'Normalization', 'probability', 'figAppend', 'spec');
+plots.cf.plotCofiring(Fig2.coh, Option, 'Normalization', 'probability', 'figAppend', 'coh');
+plots.cf.plotCofiring(Fig2.wpli,Option, 'Normalization', 'probability', 'figAppend', 'wp');
 
 %% 
 % the difference in cofiring between hpc-hpc pairs and hpc-pfc pairs are significant 
 % for all the activity patterns
 
-% How about just put all the patterns together?
-fig 'Overall directional correlation'
-subplot(2,1,1)
-ax1 = nexttile;
-hist_withpfc = histogram(all_pairs_withhpc)
-ylabel("Pairs")
-title ("HPC-HPC")
-example_mean_corr_withhpc = mean_corrwithhpc(1);
-example_std_corr_withhpc = std_corrwithhpc(1);
-
-hold on
-lineObject=line([example_mean_corr_withhpc,example_mean_corr_withhpc],[0 max(hist_withpfc.Values)]);
-lineObject.LineStyle = ':'; % Make line dotted
-lineObject.LineWidth = 2;  % Thicken the line
-lineObject.Color = 'black'; % Color it black
-subplot(2,1,2)
-ax2 = nexttile;
-hist_hp = histogram(all_pairs_withpfc)
-ylabel("Pairs")
-title ("HPC-PFC")
-example_mean_corr_withpfc = mean_corrwithpfc(1);
-example_std_corr_withpfc = std_corrwithpfc(1);
-
-lineObject=line([example_mean_corr_withpfc,example_mean_corr_withpfc],[0 max(hist_hp.Values)]);
-lineObject.LineStyle = ':'; % Make line dotted
-lineObject.LineWidth = 2;  % Thicken the line
-lineObject.Color = 'black'; % Color it black
-xlabel("Pairwise correlation")
-linkaxes([ax1,ax2],'x');
-[h_corrdiff,p_corrdiff] = kstest2(all_pairs_withpfc,all_pairs_withhpc);
-%%
-% print stats
-formatSpec1 = "%s: %0.3f±%0.3f";
-
-sprintf(formatSpec1,Patterns(1,1).directionality,mean(mean_corrwithhpc),mean(std_corrwithhpc))
-sprintf(formatSpec1,Patterns(2,1).directionality,mean(mean_corrwithpfc),mean(std_corrwithpfc))
-disp(p_corrdiff)
 %% 
 % _"These weak correlations indicate that only a small fraction of a neuron’s 
 % response variability_
