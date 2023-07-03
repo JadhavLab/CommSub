@@ -1,9 +1,9 @@
 function recursiveResave(folder, varargin)
 % recursiveResave(folder)
 %
-%   Recursively walks through a folder and all subfolders converting all
-%   mat files to the latest version of mat file format.  This can be used
-%   to compress mat files that have been saved in the v7.3 format to the
+%   Recursively walks through a folder and all subfolders reseaving all
+%   mat files in the folder with special flags.  This can be used, for
+%   compressing mat files that have been saved in the v7.3 format to the
 %   uncompressed v7.3 format.  Or can be used to convert mat files from
 %   v6 to v7.3.
 %
@@ -35,7 +35,10 @@ ip.addParameter('saveFlags', {'-v7.3', '-nocompression'});
 ip.addParameter('exclude', {}, @iscellstr);
 ip.addParameter('contain_exclude', {}, ...
     @(x) iscellstr(x) || ischar(x) || isstring(x));
+ip.addParameter('castefficient', true, @islogical); % cast to most efficient type
+ip.addParameter('castefficient_args', {'compressReals',true}); % cast to most efficient type arguments
 ip.addParameter('lambda', []); % lambda function
+ip.addParameter('lambda_args', {}); % lambda function arguments
 ip.parse(varargin{:});
 Opt = ip.Results;
 
@@ -76,9 +79,15 @@ try
 
         fprintf(' Converting %s\n',filename);
         dat = load(filename);
+
         if ~isempty(Opt.lambda)
             disp("...running lambda function...");
             dat = lambda(dat);
+        end
+
+        if Opt.castefficient
+            disp("...casting to most efficient type...");
+            dat = util.type.castefficient(dat, Opt.castefficient_args{:});
         end
 
         try

@@ -23,6 +23,12 @@ if iscell(X)
     end
 elseif istable(X)
     X = util.table.castefficient(X, varargin{:});
+elseif isa(X, 'matlab.io.MatFile')
+    fields = fieldnames(X);
+    fields = setdiff(fields, {'Properties', 'Writable', 'Filename'});
+    for i = 1:numel(fields)
+        X.(fields{i}) = util.type.castefficient(X.(fields{i}), varargin{:});
+    end
 elseif isstruct(X) && ~isscalar(X)
     if Opt.verbose; disp("...iterating struct"); end
     for i = 1:numel(X)
