@@ -160,10 +160,9 @@ dump.Fig2 = Fig2;
 % _can be explained by another individual neuron"_
 % 
 % B: Explained Variance
-Fig2.b = regionalVarExplained(Patterns, Option);
+Fig2.b = plots.pred.var.regionalexplained(Patterns, Option);
+Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, 'figAppend', 'all');
 
-%%
-clf;plotVarExplained;
 %% 
 % Predicition Performance
 
@@ -181,7 +180,7 @@ std_withpfc = std(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_
 
 subplot(2,1,1)
 ax1 = nexttile;
-hist_withpfc = histogram(r_square_withhpc,25)
+hist_withpfc = histogram(r_square_withhpc,25);
 ylabel("Data Sets")
 title ("source predicting HPC targets")
 lineObject=line([mean_withhpc,mean_withhpc],[0 max(hist_withpfc.Values)]);
@@ -196,7 +195,7 @@ lineObject2.Color = 'blue';
 
 subplot(2,1,2)
 ax2 = nexttile;
-hist_hp = histogram(r_square_withpfc,25)
+hist_hp = histogram(r_square_withpfc,25);
 % prediction performance from hpc to pfc cells
 ylabel("Data Sets")
 title ("source predicting PFC targets")

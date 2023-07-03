@@ -1,6 +1,17 @@
-function [h_pred,p_pred,meanpred_hpc,meanpred_pfc] = plotPredictionPerPattern(FigDat, Option)
+function [h_pred,p_pred,meanpred_hpc,meanpred_pfc] = plotVarExplained(FigDat, Option, varargin)
+% plotPredictionPerPattern plots the prediction per pattern for the
+% different methods and compares them with a KS-test to see if they are
+% significantly different.
+
+ip = inputParser;
+ip.addParameter('figAppend', '', @(x) ischar(x) || isstring(x));
+ip.parse(varargin{:});
+Opt = ip.Results;
+
 fig("predicition per pattern");
 clf
+
+[nMethods, nPatterns, ~] = size(FigDat.r_withhpc_patterns);
 
 h_pred       = zeros(nMethods,nPatterns);
 p_pred       = zeros(nMethods,nPatterns);
@@ -68,6 +79,11 @@ for m = 1:1
         
     end
 end
+
+folder = fullfile(codedefine, 'figures', 'new', '2b-prediction');
+savefig(strcat("Fig2b, prediction", Opt.figAppend, ".fig"))
+saveas(gcf, fullfile(folder, strcat("Fig2b, prediction", Opt.figAppend, ".png")))
+saveas(gcf, fullfile(folder, strcat("Fig2b, prediction", Opt.figAppend, ".pdf")))
 
 FigDat.h_pred = h_pred;
 FigDat.p_pred = p_pred;
