@@ -1,4 +1,9 @@
-function out = calculatePatternCofiring(Patterns, Option)
+function out = calculatePatternCofiring(Patterns, Option, varargin)
+
+ip = inputParser();
+ip.addParameter('appendAttributes', {}, @(x) iscellstr(x) || isstring(x));
+ip.parse(varargin{:});
+Opt = ip.Results;
 
 %% initialize data structures
 %Patterns = permute(Patterns,[2 1 3 4 5]);
@@ -31,6 +36,14 @@ mean_withpfccorr_pattern = zeros(1,nPatterns);
 std_corrwithhpc = [];
 std_corrwithpfc = [];
 
+prophpc = struct();
+proppfc = struct();
+for prop = Opt.appendAttributes
+    disp("init " + prop{1})
+    prophpc.(prop{1}) = [];
+    proppfc.(prop{1}) = [];
+end
+
 
 %% loop 
 % and obtain the degree of co-firing within each and all patterns
@@ -42,6 +55,11 @@ for i = progress(1:nPatterns)
         curr_source = Patterns(p,1,i).X_source';
         curr_HPC    = Patterns(p,hpc,i).X_target';
         curr_PFC    = Patterns(p,pfc,i).X_target';
+
+        for prop = Opt.appendAttributes
+            prophpc.(prop{1}) = [prophpc.(prop{1}), Patterns(p,hpc,i).(prop{1})];
+            proppfc.(prop{1}) = [proppfc.(prop{1}), Patterns(p,pfc,i).(prop{1})];
+        end
         
         % calcualte co-firing of source and two target populations
         linearized_withhpc = plots.cf.calculatePatternCofiring(curr_source, curr_HPC);
@@ -71,14 +89,19 @@ for i = progress(1:nPatterns)
     std_corrwithpfc = [std_corrwithpfc, cur_mean_withpfc];
 end
 
+% Output documentation
+% .withhpc_pairs: cell array of size nPatterns, each cell contains a vector
 
-out.withhpc_pairs = withhpc_pairs;
-out.withpfc_pairs = withpfc_pairs;
-out.all_pairs_withhpc = all_pairs_withhpc;
-out.all_pairs_withpfc = all_pairs_withpfc;
-out.mean_corrwithhpc = mean_corrwithhpc;
-out.mean_corrwithpfc = mean_corrwithpfc;
-out.std_corrwithhpc = std_corrwithhpc;
-out.std_corrwithpfc = std_corrwithpfc;
-out.mean_withhpccorr_pattern = mean_withhpccorr_pattern;
-out.mean_withpfccorr_pattern = mean_withpfccorr_pattern;
+out.withhpc_pairs = withhpc_pairs; % literally list of correlations between source and target=hpc
+out.withpfc_pairs = withpfc_pairs; % literally list of correlations between source and target=pfc, but separable for each batch
+out.all_pairs_withhpc = all_pairs_withhpc; % same as above, but all in one vector
+out.all_pairs_withpfc = all_pairs_withpfc; % same as above, but all in one vector
+out.mean_corrwithhpc = mean_corrwithhpc; % mean of all_pairs_withhpc
+out.mean_corrwithpfc = mean_corrwithpfc; % mean of all_pairs_withpfc
+out.std_corrwithhpc = std_corrwithhpc; % std of all_pairs_withhpc
+out.std_corrwithpfc = std_corrwithpfc; % std of all_pairs_withpfc
+out.mean_withhpccorr_pattern = mean_withhpccorr_pattern; % mean of withhpc_pairs
+out.mean_withpfccorr_pattern = mean_withpfccorr_pattern; % mean of withpfc_pairs
+out.prophpc = prophpc; % properties of hpc
+out.proppfc = proppfc;
+

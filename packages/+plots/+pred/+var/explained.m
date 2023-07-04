@@ -11,21 +11,22 @@ catch
     keyboard % error in prediction
 end
 
+    keyboard
+
 var_explained = [];
 
 for j = 1:nTarget
-    unaccounted_variance =sum((yhat(:,j)-X_target(:,j)).^2);
-    total_variance = sum((mean(X_target(:,j))-X_target(:,j)).^2);
-    temp_r_square = 1-unaccounted_variance/total_variance;
+    unaccounted_variance = nansum((yhat(:,j)-X_target(:,j)).^2);
+    total_variance       = nansum((nanmean(X_target(:,j))-X_target(:,j)).^2);
+    temp_r_square = 1 - unaccounted_variance/total_variance;
     var_explained = [var_explained temp_r_square];
 end
 
 nan_indices = find(isnan(var_explained));
-
-indices = intersect(find(var_explained>0), find(~isnan(var_explained)));
+indices     = intersect(find(var_explained>0), find(~isnan(var_explained)));
 
 % only take the non -Inf and non nan performances
-mean_var_explained = mean(var_explained(indices));
+mean_var_explained = nanmean(var_explained(indices));
 
 end
 

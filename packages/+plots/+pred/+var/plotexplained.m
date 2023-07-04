@@ -94,7 +94,9 @@ for m = 1:nMethods
         [h_pred(m,i),p_pred(m,i)] = kstest2(curr1(indices1), curr2(indices2));
         ylabel("data sets")
         xlabel("performance")
-        title(Option(m,i).patternNames(i) + " " + Option(m,i).genH_name)
+        pattern = FigDat.prophpc(m,i).name;
+        genH = shortcut.generateH(FigDat.prophpc(m,i).generateH);
+        title(pattern + " " + genH);
         if Opt.xlim ~= "auto"
             xlim(Opt.xlim) 
         end
@@ -114,6 +116,8 @@ folder = fullfile(codedefine, 'figures', 'new', '2b-prediction');
 if ~exist(folder, 'dir')
     mkdir(folder)
 end
+
+set(gcf, 'Position', get(0, 'Screensize'));
 savefig(strcat("Fig2b, prediction", Opt.figAppend, ".fig"))
 saveas(gcf, fullfile(folder, strcat("Fig2b, prediction", Opt.figAppend, ".png")))
 saveas(gcf, fullfile(folder, strcat("Fig2b, prediction", Opt.figAppend, ".pdf")))

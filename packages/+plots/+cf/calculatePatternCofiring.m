@@ -1,6 +1,8 @@
 function cofiring = calculatePatternCofiring(pattern1, pattern2)
 % return a linear representation of the co-firing stats between pattern 1 and
 % pattern 2
+% literally grabs the interaction correlations between two fr vectors/matrices
+% nPattern actually is the number of cells in the pattern
     
     [~,nPattern1] = size(pattern1);
     [~,nPattern2] = size(pattern2);

@@ -50,7 +50,7 @@ else
     Option = otherData{1}.Option;
 end
 assert(~isempty(Option), "Data is empty -- downstream code will fail")
-Patterns = nd.merge(Patterns, Option, 'only', {'animal', 'generateH'}, ...
+Patterns = nd.merge(Patterns, Option, 'only', {'animal', 'generateH', 'genH_name'}, ...
                                                 'broadcastLike', true,...
                                                  'overwrite', true);
 [nDataset, nPartition, ~, nResult] = size(Patterns)
@@ -71,7 +71,15 @@ Patterns = util.type.castefficient(Patterns, ...
             'compressReals', true, 'verbose', false);
 Patterns = nd.apply(Patterns, "nSource-X_source", @(x) size(x,1) );
 Patterns = nd.apply(Patterns, "nTarget-X_target", @(x) size(x,1) );
-Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
+
+% little check
+[[Patterns(:, 1,1,1,1,1,1).animal]', [Option(:,1,1,1,1,1).animal]']
+[[Patterns(:, 1,1,1,1,1,1).generateH]', [Option(:,1,1,1,1,1).generateH]']
+P = munge.reshapeByLabels(Patterns, 1, [Option.generateH],  'checksumSplitField', 'animal');
+O   = munge.reshapeByLabels(Option, 1,   [Option.generateH], 'checksumSplitField', 'animal');
+
+
+% Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
 dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
 %%  
@@ -104,14 +112,29 @@ T = query.getPatternTable(Patterns);
 
 %% 2A calculate co-firing across all animals
 Fig2 = struct();
-Fig2.all = plots.cf.cofiring(Patterns, Option);
+Fig2.a.all = plots.cf.cofiring(Patterns, Option, 'appendAttributes', {'animal', 'generateH'});
 [spec, opt] = munge.getH(Patterns, Option, "spec");
-Fig2.spec = plots.cf.cofiring(spec, opt);
+Fig2.a.spec = plots.cf.cofiring(spec, opt, 'appendAttributes', {'animal', 'generateH'});
 [coh, opt] = munge.getH(Patterns, Option, "coh");
-Fig2.coh = plots.cf.cofiring(coh, opt);
+Fig2.a.coh = plots.cf.cofiring(coh, opt);
 [wpli, opt] = munge.getH(Patterns, Option, "wpli");
-Fig2.wpli = plots.cf.cofiring(wpli, opt);
+Fig2.a.wpli = plots.cf.cofiring(wpli, opt, 'appendAttributes', {'animal', 'generateH'});
 dump.Fig2 = Fig2;
+
+% ----------------
+% Fields created:
+% ----------------
+%.withhpc_pairs            ; % literally list of correlations between source and target=hpc
+%.withpfc_pairs            ; % literally list of correlations between source and target=pfc, but separable for each batch
+%.all_pairs_withhpc        ; % same as above, but all in one vector
+%.all_pairs_withpfc        ; % same as above, but all in one vector
+%.mean_corrwithhpc         ; % mean of all_pairs_withhpc
+%.mean_corrwithpfc         ; % mean of all_pairs_withpfc
+%.std_corrwithhpc          ; % std of all_pairs_withhpc
+%.std_corrwithpfc          ; % std of all_pairs_withpfc
+%.mean_withhpccorr_pattern ; % mean of withhpc_pairs
+%.mean_withpfccorr_pattern ; % mean of withpfc_pairs
+%.prophpc                  ; % properties of hpc
 
 %% 
 % The co-firing of hpc and pfc neurons during different activity patterns, with 
@@ -133,6 +156,12 @@ plots.cf.plotCofiring(Fig2.a.spec,Option, 'Normalization', 'probability', 'figAp
 plots.cf.plotCofiring(Fig2.a.coh, Option, 'Normalization', 'probability', 'figAppend', 'coh');
 plots.cf.plotCofiring(Fig2.a.wpli,Option, 'Normalization', 'probability', 'figAppend', 'wp');
 
+plots.cf.plotCofiring(Fig2.a.all, Option, 'Normalization', 'cdf', 'figAppend', 'all');
+plots.cf.plotCofiring(Fig2.a.spec,Option, 'Normalization', 'cdf', 'figAppend', 'spec');
+plots.cf.plotCofiring(Fig2.a.coh, Option, 'Normalization', 'cdf', 'figAppend', 'coh');
+plots.cf.plotCofiring(Fig2.a.wpli,Option, 'Normalization', 'cdf', 'figAppend', 'wp');
+
+
 %% 
 % Example 
 % the difference in cofiring between hpc-hpc pairs and hpc-pfc pairs
@@ -143,38 +172,51 @@ plots.cf.plotCfExampByDirection(Fig2.a.spec, Patterns, Option, "figAppend", 'spe
 plots.cf.plotCfExampByDirection(Fig2.a.coh,  Patterns, Option, "figAppend", 'coh');
 plots.cf.plotCfExampByDirection(Fig2.a.wpli, Patterns, Option, "figAppend", 'wp');
 
-plots.cf.plotCfExampByDirection(Fig2.a.all,  Patterns, Option, "figAppend", 'all', 'Normalization', 'probability');
+plots.cf.plotCfExampByDirection(Fig2.a.all,  Patterns, Option, "figAppend", 'all',  'Normalization', 'probability');
 plots.cf.plotCfExampByDirection(Fig2.a.spec, Patterns, Option, "figAppend", 'spec', 'Normalization', 'probability');
-plots.cf.plotCfExampByDirection(Fig2.a.coh,  Patterns, Option, "figAppend", 'coh', 'Normalization', 'probability');
-plots.cf.plotCfExampByDirection(Fig2.a.wpli, Patterns, Option, "figAppend", 'wp', 'Normalization', 'probability');
+plots.cf.plotCfExampByDirection(Fig2.a.coh,  Patterns, Option, "figAppend", 'coh',  'Normalization', 'probability');
+plots.cf.plotCfExampByDirection(Fig2.a.wpli, Patterns, Option, "figAppend", 'wp',   'Normalization', 'probability');
 
 %%
 
 dump.Fig2 = Fig2;
 
 %% 
-% _"These weak correlations indicate that only a small fraction of a neuron’s 
-% response variability_
-% 
-% _can be explained by another individual neuron"_
+% "These weak correlations indicate that only a small fraction of a neuron’s 
+% response variability can be explained by another individual neuron"
 % 
 % B: Explained Variance
-Fig2.b = plots.pred.var.regionalexplained(Patterns, Option);
-Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, 'figAppend', 'all');
+Fig2.b = plots.pred.var.regionalexplained(Patterns, Option, ...
+                        'appendAttributes', {'animal', 'generateH','name'});
+Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
+                        'figAppend', 'all');
+Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
+                        'figAppend', 'all-log',...
+                        'yscale', 'log');
+
+% Fieldss created:
+% ----------------
+% .r_withhpc_patterns; % firing prediction with hpc
+% .r_withpfc_patterns; % firing prediction with pfc
+% .single_pred_with_hpc; % single neuron firing prediction with hpc
+% .single_pred_with_pfc; % single neuron firing prediction with pfc
+% .patternVarExplained_hpc; % variance explained with hpc
+% .patternVarExplained_pfc; % variance explained with pfc
 
 %% 
 % Predicition Performance
 
 %%
-[h_hpc, p_hpc] = kstest2(meanpred_hpc, mean_withhpccorr_pattern);
-[h_pfc, p_pfc] = kstest2(meanpred_pfc, mean_withpfccorr_pattern);
+% Check how dist of corr differs from dist of pred score 
+[h_hpc, p_hpc] = kstest2(Fig2.b.meanpred_hpc, Fig2.a.all.mean_withhpccorr_pattern);
+[h_pfc, p_pfc] = kstest2(Fig2.b.meanpred_pfc, Fig2.a.all.mean_withpfccorr_pattern);
 
 %%
 mean_withhpc = mean(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc))));
 std_withhpc  = std(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc))));
 
 mean_withpfc = mean(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_square_withpfc))));
-std_withpfc = std(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_square_withpfc))));
+std_withpfc  = std(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_square_withpfc))));
 
 subplot(2,1,1)
 ax1 = nexttile;
