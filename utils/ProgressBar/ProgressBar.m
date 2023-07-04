@@ -435,8 +435,10 @@ methods (Access = protected)
             pause(0.1);
         end
 
-        % RYAN - custom code
-        system("pushover-cli '" + obj.Title + " complete'");
+        % RYAN - custom code, if time more than 1 minute, send pushover notification
+        if toc(obj.TicObject) > 60
+            system("pushover-cli '" + obj.Title + " complete'");
+        end
 
     end
 end
