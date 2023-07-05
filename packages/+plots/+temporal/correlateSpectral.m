@@ -57,9 +57,6 @@ time             = Components.time;
 
 %% Plots
 
-% -------------------------------------------------------------------------
-
-% PLOT: correlation with events
 Htimes = Events.times;
 Hvals  = Events.Hvals;
 interpActivities = interp1(time, activities', Htimes);
