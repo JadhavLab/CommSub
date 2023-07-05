@@ -1,7 +1,7 @@
-function x = figuredefine()
+function x = figuredefine(varargin)
 
-x = string(fullfile(codedefine,'figures'));
+x = string(fullfile(codedefine,'figures', varargin{:}));
 
-disp("figuredefine: " + x)
+% disp("figuredefine: " + x)
 
 end
