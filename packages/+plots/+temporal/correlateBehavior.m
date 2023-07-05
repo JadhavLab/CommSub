@@ -1,4 +1,4 @@
-function correlateBehavior(Components, Behavior, varargin)
+function correlateBehavior(Components, Option, behavior, varargin)
 % correlateBehavior(Components, Behavior, varargin)
 %
 %   Correlate the behavior with the components of the model.
@@ -12,21 +12,34 @@ ip.addParameter('throwout_times', []);
 ip.addParameter('use', 'smooth');
 ip.addParameter('names', []);
 ip.addParameter('figAppend', "", @(x) isstring(x) || ischar(x));
+ip.addParameter('behaviors', ...
+    ["time", "vel", "lindist", "rewarded", "traj", "Y", ...
+     "outBoundChoiceTimes", "inBoundChoiceTimes", "outBoundChoiceTimes", ...
+     "rewardTimes", "errorTimes", "wellTimes", ...
+     "pastRewarded", "pastLeftRight", "futureRewarded", "futureLeftRight", ...
+     ],...
+    @(x) iscellstr(x) || isstring(x));
 ip.parse(varargin{:});
 Opt = ip.Results;
-if ~isemtpy(Opt.figAppend) && ~endsWith(Opt.figAppend,"_")
+if ~isempty(Opt.figAppend) && ~endsWith(Opt.figAppend,"_")
     Opt.figAppend = Opt.figAppend + "_";
-end
 end
 figAppend = Opt.figAppend + Option.animal;
 
+% Determine columns of behavior that are logicals
+logical_cols = arrayfun(@(x) islogical(behavior.(x)), Opt.behaviors);
+logical_vars = Opt.behaviors(logical_cols);
+% Determine columns of behavior with discrete, but not continuous values
+discrete_cols = arrayfun(@(x) isnumeric(behavior.(x)) && ...
+                    length(unique(behavior.(x))) < 10, Opt.behaviors);
+discrete_vars = Opt.behaviors(discrete_cols);
+
+
 %% Get the behavior
-if isempty(Opt.behavior)
+if isempty(behavior)
     running_times = r.timeBinMidPoints(r.sessionTypePerBin == 1);
     [behavior, throwout_times] = table.behavior.lookup(Option.animal, ...
         running_times);
-else
-    behavior = Opt.behavior;
 end
 
 %% Get the components
@@ -50,4 +63,8 @@ time           = Components.time;
 
 
 %% Plots
+
+
+
+
 

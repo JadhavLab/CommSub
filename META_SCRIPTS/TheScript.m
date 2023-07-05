@@ -107,6 +107,7 @@ else
     [Spk.nTarget,~,~] = size(Spk.pfc.X{1});
     Spk.celllookup = cellInfo.getCellIdentities(Option.animal, Spk.cell_index,...
                                                 Spk.areaPerNeuron);
+    system("pushover-cli 'Finished munging data for analysis'");
 
     %%%%%%%%%%%%%%%% SETUP PARTITIONS AND RESULT STRUCTURES %%%%%%%%%%%%%%%%%%
     disp("------------------------")
@@ -156,7 +157,7 @@ if Option.analysis.timeVarying
                                                          running_times);
     Components.rrr = analysis.timeVarying_v2(Patterns, Option, Spk);
     Components.rrr = plots.temporal.correlateSpectral(Components.rrr, Events, Option);
-    Components.rrr = plots.temporal.correlateBehavior(Components., Events, Option);
+    Components.rrr = plots.temporal.correlateBehavior(Components.rrr, Events, Option);
 end
 
 if Option.analysis.checks

@@ -1,8 +1,12 @@
 function [var_explained, mean_var_explained, nan_indices] = ...
-                   calculateVarianceExplained(X_source, X_target, B)
+                   explained(X_source, X_target, B)
 % calculate the predictive performance of source firing to target firing
 % outputs the performance and the mean performance or each neuron
 % predicting the other 
+
+X_source = double(X_source);
+X_target = double(X_target);
+B = double(B);
 
 [~,nTarget] = size(X_target);
 try
@@ -10,8 +14,6 @@ try
 catch
     keyboard % error in prediction
 end
-
-    keyboard
 
 var_explained = [];
 

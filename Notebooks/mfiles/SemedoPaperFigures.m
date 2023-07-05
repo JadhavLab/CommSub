@@ -1,3 +1,7 @@
+% TODO:
+% 1. Animal-wise version of this 
+% 2.
+%
 % paths
 addpath(genpath(codedefine()))
 addpath(hashdefine())
@@ -206,8 +210,13 @@ Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
 %% 
 % Predicition Performance
 
+% TODO: Series of heatmaps to examine corr and pred
+
 %%
 % Check how dist of corr differs from dist of pred score 
+
+r_withhpc_patterns = [Fig2.b.r_withhpc_patterns{:}];
+
 [h_hpc, p_hpc] = kstest2(Fig2.b.meanpred_hpc, Fig2.a.all.mean_withhpccorr_pattern);
 [h_pfc, p_pfc] = kstest2(Fig2.b.meanpred_pfc, Fig2.a.all.mean_withpfccorr_pattern);
 

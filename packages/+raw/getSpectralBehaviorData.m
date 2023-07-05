@@ -1,7 +1,7 @@
 function data = getSpectralBehaviorData(animalList, varargin)
-% GETSPECTRALDATA not a particularly pretty function but fetches spectral and positional data
-% in one large data struct. I wrote it for SeqNMF stuff, but have since adapted it into
-% a function for more general use.
+% GETSPECTRALDATA not a particularly pretty function but fetches spectral and
+% positional data in one large data struct. I wrote it for SeqNMF stuff, but
+% have since adapted it into a function for more general use.
 %
 % Inputs
 % ------
@@ -234,9 +234,9 @@ torig      = arrayfun(@(x) x.orig.t, C, 'UniformOutput', false);
 data.efizz.f     = C.f;
 clear torig;
 % Animal
-data.efizz.animalcnt = cat(2, C.animalcnt);
+data.efizz.animalcnt   = cat(2, C.animalcnt);
 data.efizz.animalnames = string(animalList);
-data.efizz.epoch     = cat(2, C.epoch);
+data.efizz.epoch       = cat(2, C.epoch);
 % Other fields
 for field = opt.fields
     if isfield(C,field{1})
