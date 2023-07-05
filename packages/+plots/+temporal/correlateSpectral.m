@@ -36,9 +36,12 @@ Opt = ip.Results;
 if Opt.figAppend ~= ""
     Opt.figAppend = "_" + Opt.figAppend;
 end
+figAppend = Option.animal + Components.name + Components.directionality + Opt.figAppend;
 Components = Components.(Opt.componentMethod);
 folder="corrSpectral";
-figAppend = Option.animal + Components.name + Opt.figAppend;
+if ~exist(figuredefine(folder), 'dir')
+    mkdir(figuredefine(folder))
+end
 
 %% Get components
 if isempty(Opt.names)
@@ -65,7 +68,7 @@ Htimes = Events.times;
 Hvals  = Events.Hvals;
 interpActivities = interp1(time, activities', Htimes);
 labels = ["comp1", "comp2", "comp3", Opt.names];
-
+deltaT = median(diff(Htimes));
 % -------------------------------------------------------------------------
 
 % PLOT: spearman correlation matrix between events and activities
@@ -80,9 +83,9 @@ yticklabels(labels)
 colormap(cmocean('balance'))
 colorbar
 out.spectral_correlation = corrMatrix;
-savefig(gcf, fullfile(folder),"spectral correlation matrix" + figAppend + ".fig"))
-saveas(gcf, fullfile(folder), "spectral correlation matrix" + figAppend + ".png"))
-saveas(gcf, fullfile(folder), "spectral correlation matrix" + figAppend + ".svg"))
+savefig(gcf, fullfile(figuredefine(folder),"spectral_correlation_matrix" + figAppend + ".fig"))
+saveas(gcf, fullfile(figuredefine(folder), "spectral_correlation_matrix" + figAppend + ".png"))
+saveas(gcf, fullfile(figuredefine(folder), "spectral_correlation_matrix" + figAppend + ".svg"))
 
 % -------------------------------------------------------------------------
 
@@ -91,7 +94,6 @@ saveas(gcf, fullfile(folder), "spectral correlation matrix" + figAppend + ".svg"
 % % for each event, compute the cross-covariance between the event and each
 % % activity component
 % combined = [interpActivities, Hvals];
-% deltaT = median(diff(Htimes));
 % fig('Cross-correlation between each event and activity components');clf
 % ta = tiledlayout(size(combined,2), size(combined,2), 'TileSpacing', 'compact', 'Padding', 'compact');
 % for i = 1:size(combined,2)
@@ -162,7 +164,7 @@ disp("Computing mean and confidence interval")
 ci = Opt.ci;
 means = cellfun(@(x) mean(x,2), results, 'UniformOutput', false);
 ci_lower = cellfun(@(x) prctile(x, ci/2, 2), results, 'UniformOutput', false);
-ci_upper = cellfun(@(x) prctile(x, 1-(ci/2), 2), results, 'UniformOutput', false);
+ci_upper = cellfun(@(x) prctile(x, (1-ci)/2, 2), results, 'UniformOutput', false);
 for i = progress(1:size(combined,2), 'Title', 'Plotting means and confidence intervals')
     for j = 1:size(combined,2)
         ax = subplot(size(combined,2), size(combined,2), ...
@@ -179,9 +181,9 @@ out.cross_corr          = results;
 out.cross_corr_mean     = means;
 out.cross_corr_ci_lower = ci_lower;
 out.cross_corr_ci_upper = ci_upper;
-saveas(gcf, fullfile(folder), "cross_corr_" + figAppend + ".fig"))
-saveas(gcf, fullfile(folder), "cross_corr_" + figAppend + ".png"))
-saveas(gcf, fullfile(folder), "cross_corr_" + figAppend + ".svg"))
+saveas(gcf, fullfile(figuredefine(folder), "cross_corr_" + figAppend + ".fig"))
+saveas(gcf, fullfile(figuredefine(folder), "cross_corr_" + figAppend + ".png"))
+saveas(gcf, fullfile(figuredefine(folder), "cross_corr_" + figAppend + ".svg"))
 
 % -------------------------------------------------------------------------
 
@@ -250,6 +252,6 @@ out.cross_xcov          = results;
 out.cross_xcov_mean     = means;
 out.cross_xcov_ci_lower = ci_lower;
 out.cross_xcov_ci_upper = ci_upper;
-saveas(gcf, fullfile(folder), "cross_xcov_" + figAppend + ".fig"))
-saveas(gcf, fullfile(folder), "cross_xcov_" + figAppend + ".png"))
-saveas(gcf, fullfile(folder), "cross_xcov_" + figAppend + ".svg"))
+saveas(gcf, fullfile(figuredefine(folder), "cross_xcov_" + figAppend + ".fig"))
+saveas(gcf, fullfile(figuredefine(folder), "cross_xcov_" + figAppend + ".png"))
+saveas(gcf, fullfile(figuredefine(folder), "cross_xcov_" + figAppend + ".svg"))
