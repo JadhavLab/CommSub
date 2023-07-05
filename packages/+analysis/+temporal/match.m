@@ -103,7 +103,7 @@ end
 
 % Smooth
 smooth_activities = zeros(size(activities));
-for i = progress(1:size(activities,1))
+for i = 1:size(activities,1)
     smooth_activities(i,:) = smooth(activities(i,:), Opt.smoothing);
 end
 out.smooth_activities = smooth_activities;

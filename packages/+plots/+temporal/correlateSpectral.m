@@ -30,13 +30,17 @@ ip.addParameter('use', 'smooth', @(x) ischar(x) || isstring(x)); % 'smooth' or '
 ip.addParameter('ci', 68, @(x) isscalar(x) && x > 0 && x < 100);
 ip.addParameter('samples', 500, @(x) isscalar(x) && x > 0);
 ip.addParameter('figAppend', "", @(x) ischar(x) || isstring(x));
+ip.addParameter('componentMethod', 'rrr', @(x) ischar(x) || isstring(x));
 ip.parse(varargin{:});
 Opt = ip.Results;
-
-figAppend = Opt.animal + " " + Opt.figAppend;
+if Opt.figAppend ~= ""
+    Opt.figAppend = "_" + Opt.figAppend;
+end
+Components = Components.(Opt.componentMethod);
+folder="corrSpectral";
+figAppend = Option.animal + Components.name + Opt.figAppend;
 
 %% Get components
-
 if isempty(Opt.names)
     if isfield(Option, "patternNamesFull")
         Opt.names = Option.patternNamesFull;
@@ -60,6 +64,7 @@ time             = Components.time;
 Htimes = Events.times;
 Hvals  = Events.Hvals;
 interpActivities = interp1(time, activities', Htimes);
+labels = ["comp1", "comp2", "comp3", Opt.names];
 
 % -------------------------------------------------------------------------
 
@@ -70,22 +75,22 @@ fig('spearman correlation matrix between events and activities')
 imagesc(corrMatrix)
 clim = [-1,1];
 caxis(clim)
-xticklabels(["comp1", "comp2", "comp3", Opt.names])
-yticklabels(["comp1", "comp2", "comp3", Opt.names])
+xticklabels(labels)
+yticklabels(labels)
 colormap(cmocean('balance'))
 colorbar
 out.spectral_correlation = corrMatrix;
-savefig(gcf, fullfile(figuredefine(),"spectral correlation matrix" + figAppend + ".fig"))
-saveas(gcf, fullfile(figuredefine(), "spectral correlation matrix" + figAppend + ".png"))
-saveas(gcf, fullfile(figuredefine(), "spectral correlation matrix" + figAppend + ".svg"))
+savefig(gcf, fullfile(folder),"spectral correlation matrix" + figAppend + ".fig"))
+saveas(gcf, fullfile(folder), "spectral correlation matrix" + figAppend + ".png"))
+saveas(gcf, fullfile(folder), "spectral correlation matrix" + figAppend + ".svg"))
 
 % -------------------------------------------------------------------------
+
 
 % % PLOT: Cross-correlation between each event and activity
 % % for each event, compute the cross-covariance between the event and each
 % % activity component
 % combined = [interpActivities, Hvals];
-% labels = ["comp1", "comp2", "comp3", Opt.names];
 % deltaT = median(diff(Htimes));
 % fig('Cross-correlation between each event and activity components');clf
 % ta = tiledlayout(size(combined,2), size(combined,2), 'TileSpacing', 'compact', 'Padding', 'compact');
@@ -117,7 +122,7 @@ ta = tiledlayout(10, 10, 'TileSpacing', 'compact', 'Padding', 'compact'); % Adju
 % total = size(combined,2) * size(combined,2);
 % cnt=0;
 results = cell(size(combined,2), size(combined,2));
-for k = progress(1:N, 'title', 'Subsampling')
+for k = progress(1:N, 'Title', 'Subsampling')
     sampleStart = 1 + (k-1) * sampleSize;
     sampleEnd = k * sampleSize;
     subsample = combined(sampleStart:sampleEnd, :);
@@ -158,7 +163,7 @@ ci = Opt.ci;
 means = cellfun(@(x) mean(x,2), results, 'UniformOutput', false);
 ci_lower = cellfun(@(x) prctile(x, ci/2, 2), results, 'UniformOutput', false);
 ci_upper = cellfun(@(x) prctile(x, 1-(ci/2), 2), results, 'UniformOutput', false);
-for i = progress(1:size(combined,2), 'title', 'Plotting means and confidence intervals')
+for i = progress(1:size(combined,2), 'Title', 'Plotting means and confidence intervals')
     for j = 1:size(combined,2)
         ax = subplot(size(combined,2), size(combined,2), ...
              sub2ind([size(combined,2), size(combined,2)], i, j));
@@ -174,9 +179,9 @@ out.cross_corr          = results;
 out.cross_corr_mean     = means;
 out.cross_corr_ci_lower = ci_lower;
 out.cross_corr_ci_upper = ci_upper;
-saveas(gcf, fullfile(figuredefine(), "cross_corr_" + figAppend + ".fig"))
-saveas(gcf, fullfile(figuredefine(), "cross_corr_" + figAppend + ".png"))
-saveas(gcf, fullfile(figuredefine(), "cross_corr_" + figAppend + ".svg"))
+saveas(gcf, fullfile(folder), "cross_corr_" + figAppend + ".fig"))
+saveas(gcf, fullfile(folder), "cross_corr_" + figAppend + ".png"))
+saveas(gcf, fullfile(folder), "cross_corr_" + figAppend + ".svg"))
 
 % -------------------------------------------------------------------------
 
@@ -188,7 +193,7 @@ ta = tiledlayout(10, 10, 'TileSpacing', 'compact', 'Padding', 'compact'); % Adju
 % total = size(combined,2) * size(combined,2);
 % cnt=0;
 results = cell(size(combined,2), size(combined,2));
-for k = progress(1:N, 'title', 'Subsampling')
+for k = progress(1:N, 'Title', 'Subsampling')
     sampleStart = 1 + (k-1) * sampleSize;
     sampleEnd = k * sampleSize;
     subsample = combined(sampleStart:sampleEnd, :);
@@ -229,7 +234,7 @@ ci = Opt.ci;
 means = cellfun(@(x) mean(x,2), results, 'UniformOutput', false);
 ci_lower = cellfun(@(x) prctile(x, ci/2, 2), results, 'UniformOutput', false);
 ci_upper = cellfun(@(x) prctile(x, 1-(ci/2), 2), results, 'UniformOutput', false);
-for i = progress(1:size(combined,2), 'title', 'Plotting means and confidence intervals')
+for i = progress(1:size(combined,2), 'Title', 'Plotting means and confidence intervals')
     for j = 1:size(combined,2)
         ax = subplot(size(combined,2), size(combined,2), ...
              sub2ind([size(combined,2), size(combined,2)], i, j));
@@ -245,6 +250,6 @@ out.cross_xcov          = results;
 out.cross_xcov_mean     = means;
 out.cross_xcov_ci_lower = ci_lower;
 out.cross_xcov_ci_upper = ci_upper;
-saveas(gcf, fullfile(figuredefine(), "cross_xcov_" + figAppend + ".fig"))
-saveas(gcf, fullfile(figuredefine(), "cross_xcov_" + figAppend + ".png"))
-saveas(gcf, fullfile(figuredefine(), "cross_xcov_" + figAppend + ".svg"))
+saveas(gcf, fullfile(folder), "cross_xcov_" + figAppend + ".fig"))
+saveas(gcf, fullfile(folder), "cross_xcov_" + figAppend + ".png"))
+saveas(gcf, fullfile(folder), "cross_xcov_" + figAppend + ".svg"))

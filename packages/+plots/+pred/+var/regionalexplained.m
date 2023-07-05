@@ -65,11 +65,11 @@ for m = progress(1:nMethods, 'Title', char("method"))
             nCurrTarget = size(Patterns(m,p,2,i).X_target,1);
             % animalNo = floor(p/(nPartition+1)+1);
             % nCurrSource = nSource(animalNo);
-            single_pred_with_hpc{m}{i}{p} = [];
-            single_pred_with_pfc{m}{i}{p} = [];
+            single_pred_with_hpc{m, i, p} = [];
+            single_pred_with_pfc{m, i, p} = [];
 
-            r_withhpc_patterns{m}{i}{p} = zeros(1,nCurrTarget);
-            r_withpfc_patterns{m}{i}{p} = zeros(1,nCurrTarget);
+            r_withhpc_patterns{m, i, p} = zeros(1,nCurrTarget);
+            r_withpfc_patterns{m, i, p} = zeros(1,nCurrTarget);
             
             curr_source    = (Patterns(m,p,1,i).X_source)';
             curr_targethpc = (Patterns(m,p,hpc,i).X_target)';
@@ -86,8 +86,8 @@ for m = progress(1:nMethods, 'Title', char("method"))
             patternVarExplained_hpc(m,i,p) = meanhpc;
             patternVarExplained_pfc(m,i,p) = meanpfc;
             
-            r_withpfc_patterns{m}{i}{p} = patternpfc;
-            r_withhpc_patterns{m}{i}{p} = patternhpc;
+            r_withpfc_patterns{m, i, p} = patternpfc;
+            r_withhpc_patterns{m, i, p} = patternhpc;
 
             % out.genH    = genH(i,m);
             % out.pattern = Option(m, i).patternNames(i);

@@ -73,8 +73,10 @@ for i = progress(1:nPatterns)
         withpfc_pairs{i} = [withpfc_pairs{i}, linearized_withpfc];
         withhpc_pairs{i} = [withhpc_pairs{i}, linearized_withhpc];
         
-        mean_withhpccorr_pattern(i) = mean(linearized_withhpc(~isnan(linearized_withhpc)));
-        mean_withpfccorr_pattern(i) = mean(linearized_withpfc(~isnan(linearized_withpfc)));
+        mean_withhpccorr_partitions(i,p) = mean(linearized_withhpc(~isnan(linearized_withhpc)));
+        mean_withpfccorr_partitions(i,p) = mean(linearized_withpfc(~isnan(linearized_withpfc)));
+        std_withhpccorr_partitions(i,p) = std(linearized_withhpc(~isnan(linearized_withhpc)));
+        std_withpfccorr_partitions(i,p) = std(linearized_withpfc(~isnan(linearized_withpfc)));
     end
     cur_mean_withhpc = mean(all_pairs_withhpc(~isnan(all_pairs_withhpc)));
     cur_std_withhpc  = std(all_pairs_withhpc(~isnan(all_pairs_withhpc)));
@@ -100,8 +102,10 @@ out.mean_corrwithhpc = mean_corrwithhpc; % mean of all_pairs_withhpc
 out.mean_corrwithpfc = mean_corrwithpfc; % mean of all_pairs_withpfc
 out.std_corrwithhpc = std_corrwithhpc; % std of all_pairs_withhpc
 out.std_corrwithpfc = std_corrwithpfc; % std of all_pairs_withpfc
-out.mean_withhpccorr_pattern = mean_withhpccorr_pattern; % mean of withhpc_pairs
-out.mean_withpfccorr_pattern = mean_withpfccorr_pattern; % mean of withpfc_pairs
+out.mean_withhpccorr_partitions = mean_withhpccorr_partitions; % mean of withhpc_pairs
+out.mean_withpfccorr_partitions = mean_withpfccorr_partitions; % mean of withpfc_pairs
+out.std_withhpccorr_partitions = std_withhpccorr_partitions; % std of withhpc_pairs
+out.std_withpfccorr_partitions = std_withpfccorr_partitions; % std of withpfc_pairs
 out.prophpc = prophpc; % properties of hpc
 out.proppfc = proppfc;
 

@@ -27,7 +27,8 @@ function Out = timeVarying(Patterns, Option, r, varargin)
 %   the subspaces for each behavior
 
 ip = inputParser();
-ip.addParameter('methods', {'prod'});
+ip.addParameter('method', 'prod');
+ip.addParameter('componentMethod', 'rankRegress');
 ip.parse(varargin{:});
 Opt = ip.Results;
 
@@ -39,12 +40,20 @@ if ~isfield(Patterns, 'rankRegress') || isempty(Patterns(1).rankRegress)
     error("Patterns must have the rankRegress field")
 end
 
+if Opt.componentMethod == "rankRegress"
+    outkey = "rrr";
+elseif Opt.componentMethod == "cca"
+    outkey = "cca";
+else
+    error("Unknown component method")
+end
+
 
 clear Components
 % Components = repmat(Components, ...
 %                     [Option.numPartition, Option.waysOfPartitions]);
 
-for i = 1:numel(Patterns)
+for i = progress(1:numel(Patterns), 'Title', 'Time varying analysis')
 
     P = Patterns(i); 
     if i > 1
@@ -64,18 +73,18 @@ for i = 1:numel(Patterns)
 
     % new method
     % ----------------
-    for method = Opt.methods
-        O.("rankRegress_"+method{1}) = analysis.temporal.match(P, ...
-                    Option, r,...
-                    'method', method{1},...
-                    'component_method', 'rankRegress'...
-                    );
-        O.("cca_"+method{1}) = analysis.temporal.match(P, ...
-                    Option, r,...
-                    'method', method{1},...
-                    'component_method', 'cca'...
-                    );
-    end
+    O.(outkey) = analysis.temporal.match(P, ...
+                Option, r,...
+                'method', Opt.method,...
+                'component_method', Opt.componentMethod...
+                );
+    O.(outkey).method = Opt.method;
+        % O.("cca_"+method{1}) = analysis.temporal.match(P, ...
+        %             Option, r,...
+        %             'method', method{1},...
+        %             'component_method', 'cca'...
+        %             );
+    O.name = P.name;
 
     if i == 1
         disp("Initializing output struct")

@@ -38,13 +38,13 @@ for m = 1:nMethods
         ax = ha(loc);
         axes(ax);
 
-        curr1 = [FigDat.r_withhpc_patterns{m}{i}{:}];
+        curr1 = [FigDat.r_withhpc_patterns{m,i,:}];
         indices1 = intersect(find(curr1>0), find(~isnan(curr1)));
         hpcPreds = histogram(curr1(indices1), 'NumBins', Opt.nbins);
         set(hpcPreds, 'EdgeColor', 'none', 'FaceAlpha', 0.33);
         hold on
         
-        curr2 = [FigDat.r_withpfc_patterns{m}{i}{:}];
+        curr2 = [FigDat.r_withpfc_patterns{m, i, :}];
         indices2 = intersect(find(curr2>0), find(~isnan(curr2)));
         pfcPreds = histogram(curr2(indices2), 'NumBins', Opt.nbins);
         set(pfcPreds, 'EdgeColor', 'none', 'FaceAlpha', 0.33);

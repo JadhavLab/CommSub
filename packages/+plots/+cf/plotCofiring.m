@@ -64,16 +64,16 @@ savefig(gcf, fullfigname + ".fig")
 
 function plotline(FigDat, i, cofiring_hh, Opt, color, displayname)
     if isequal(Opt.quantileMarkers, 'mean')
-        x= [FigDat.mean_withhpccorr_pattern(i),...
-            FigDat.mean_withhpccorr_pattern(i)];
+        x= [FigDat.mean_withhpccorr_partitions(i),...
+            FigDat.mean_withhpccorr_partitions(i)];
         y= [0 max(cofiring_hh.Values)];
     elseif isnumeric(Opt.quantileMarkers)
         x= zeros(numel(Opt.quantileMarkers),2);
         for j = 1:numel(Opt.quantileMarkers)
-            x(j,:)= quantile(FigDat.withhpccorr_pairs{i}, Opt.quantileMarkers(j));
+            x(j,:)= quantile(FigDat.withhpc_pairs{i}, Opt.quantileMarkers(j));
         end
-        x= [quantile(FigDat.withhpccorr_pairs{i}, Opt.quantileMarkers),...
-            quantile(FigDat.withhpccorr_pairs{i}, Opt.quantileMarkers)];
+        x= [quantile(FigDat.withhpc_pairs{i}, Opt.quantileMarkers),...
+            quantile(FigDat.withhpc_pairs{i}, Opt.quantileMarkers)];
         y= [0 max(cofiring_hh.Values)];
     else
         error("quantileMarkers must be 'mean' or numeric vector")

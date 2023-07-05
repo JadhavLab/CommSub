@@ -1,4 +1,4 @@
-function correlateBehavior(Components, Option, behavior, varargin)
+function output = correlateBehavior(Components, Option, behavior, varargin)
 % correlateBehavior(Components, Behavior, varargin)
 %
 %   Correlate the behavior with the components of the model.
@@ -64,7 +64,7 @@ time           = Components.time;
 % Interp
 Btimes = behavior.time;
 behavior = behavior(:, Opt.behaviors);
-Bvals    = table2mat(behavior(:, Opt.behaviors));
+Bvals    = table2array(behavior(:, Opt.behaviors));
 interpActivities = interp1(time, activities', Btimes);
 
 %% Plots
@@ -174,7 +174,7 @@ for i = 1:size(activities, 2)
         shuffledBvals = Bvals(randperm(length(Bvals)));
         permutationXcovs(j, i) = xcorr(activities(:, i), shuffledBvals, 'coeff');
     end
-    pValue = mean(permutationXcovs(:, i) > actualXcov);
+    permpValue(i) = mean(permutationXcovs(:, i) > actualXcov);
     disp(['p-value for activity ', Opt.names(i), ': ', num2str(pValue)])
 end
 
@@ -218,3 +218,11 @@ legend('First 3 components','Last 3 components','Shuffled')
 ylabel('F statistic')
 title('Granger Causality F statistics')
 
+% Store computed output values from entire script
+output.grang = grang;
+output.permutationXcovs = permutationXcovs;
+output.permutationPvals = permpValue;
+output.xcorr.Rvals = Rvals;
+output.xcorr.Pvals = Pvals;
+output.xcorr.lags = lags;
+output.corrMatrix = corrMatrix;
