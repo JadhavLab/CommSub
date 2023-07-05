@@ -23,7 +23,7 @@ disp("Running with Option struct => ");
 disp(Option);
 if isequal(Option.loadifexists, false) && exist(store.gethash(Option) + ".mat", 'file')
     m = matfile(store.gethash(Option) + ".mat");
-    % m = matfile("bef0923.mat");
+    % m = matfile("bef0923.mat", "Writable", true);
     Events             = util.matfile.getdefault(m, 'Events', []);
     Spk                = util.matfile.getdefault(m, 'Spk', []);
     Patterns           = util.matfile.getdefault(m, 'Patterns', []);
@@ -155,9 +155,10 @@ if Option.analysis.timeVarying
     running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
     [behavior, thrown_out_times] = table.behavior.lookup(Option.animal, ...
                                                          running_times);
-    Components.rrr = analysis.timeVarying_v2(Patterns, Option, Spk);
-    Components.rrr = plots.temporal.correlateSpectral(Components.rrr, Events, Option);
-    Components.rrr = plots.temporal.correlateBehavior(Components.rrr, Events, Option);
+    % Components         = analysis.timeVarying_v2(Patterns, Option, Spk);
+    Components_overall = analysis.timeVarying_v2(Patterns_overall, Option, Spk);
+    Components_overall = plots.temporal.correlateSpectral(Components_overall, Events, Option);
+    Components = plots.temporal.correlateBehavior(Components, Events, Option);
 end
 
 if Option.analysis.checks

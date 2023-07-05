@@ -93,8 +93,7 @@ dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 % 
 % *(nMethods * nPartiton * nDirection * nPatterns)*
 
-%% 
-% ISSUE: what is `Var16`?
+%% Calculate the pattern table
 T = query.getPatternTable(Patterns);
 
 % Figure 2A: Cofiring in source and target
@@ -165,6 +164,9 @@ plots.cf.plotCofiring(Fig2.a.spec,Option, 'Normalization', 'cdf', 'figAppend', '
 plots.cf.plotCofiring(Fig2.a.coh, Option, 'Normalization', 'cdf', 'figAppend', 'coh');
 plots.cf.plotCofiring(Fig2.a.wpli,Option, 'Normalization', 'cdf', 'figAppend', 'wp');
 
+%%
+close all
+
 
 %% 
 % Example 
@@ -197,11 +199,13 @@ Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
 Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
                         'figAppend', 'all-log',...
                         'yscale', 'log');
+%% 
+close all
 
 % Fieldss created:
 % ----------------
-% .r_withhpc_patterns; % firing prediction with hpc
-% .r_withpfc_patterns; % firing prediction with pfc
+% .r_withhpc_partitions; % firing prediction with hpc
+% .r_withpfc_partitions; % firing prediction with pfc
 % .single_pred_with_hpc; % single neuron firing prediction with hpc
 % .single_pred_with_pfc; % single neuron firing prediction with pfc
 % .patternVarExplained_hpc; % variance explained with hpc
@@ -216,9 +220,10 @@ Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
 % Check how dist of corr differs from dist of pred score 
 
 r_withhpc_patterns = [Fig2.b.r_withhpc_patterns{:}];
+with_hpc_corr = [r_withhpc_patterns.r];
 
-[h_hpc, p_hpc] = kstest2(Fig2.b.meanpred_hpc, Fig2.a.all.mean_withhpccorr_pattern);
-[h_pfc, p_pfc] = kstest2(Fig2.b.meanpred_pfc, Fig2.a.all.mean_withpfccorr_pattern);
+[h_hpc, p_hpc] = kstest2(Fig2.b.meanpred_hpc, Fig2.a.all.mean_withhpccorr_partition);
+[h_pfc, p_pfc] = kstest2(Fig2.b.meanpred_pfc, Fig2.a.all.mean_withpfccorr_partition);
 
 %%
 mean_withhpc = mean(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc))));

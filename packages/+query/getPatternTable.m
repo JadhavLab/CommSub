@@ -87,7 +87,7 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
     end
     
     if isempty(rrDim)
-        rankRegressDim = nan;
+        rrDim = nan;
     end
     
     if isfield(pattern, 'epoch')
@@ -107,12 +107,13 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
     percMax_faDim = qOpt/maxDim;
     [full_model_performance,pred_by_perf] = plots.plotPredictiveDimensions...
          (numUsedForPrediction,pattern.rankRegress.cvLoss, "do_plot", false, "averaged", false);
-    keyboard
+    first_comp_perf = pred_by_perf(1);
+    second_comp_perf = pred_by_perf(2);
         
     row = table(animal,generateH,epoch,iPartition, source, target, patternType, nSource, nTarget, ...
         directionality, rrDim, percMax_rrDim, qOpt,...
-        percMax_faDim, full_model_performance, pred_by_perf(2),...
-        singularWarning);
+        percMax_faDim, full_model_performance, first_comp_perf,...
+        second_comp_perf, singularWarning);
     row = [row, rowAddition];
 
     T = [T; row];
