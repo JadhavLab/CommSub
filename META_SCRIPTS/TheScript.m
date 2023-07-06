@@ -144,7 +144,7 @@ if Option.analysis.cca
     Patterns         = analysis.cca(Patterns, Option);
     Patterns_overall = analysis.cca(Patterns_overall, Option);
     % TODO : section that knocks off kim 2022 after these measurements
-    Components.cca   = analysis.match2overall(Patterns_overall, Events, Option);
+    Components.cca   = analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
 end
 
 if Option.analysis.timeVarying
@@ -155,10 +155,11 @@ if Option.analysis.timeVarying
     running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
     [behavior, thrown_out_times] = table.behavior.lookup(Option.animal, ...
                                                          running_times);
-    % Components         = analysis.timeVarying_v2(Patterns, Option, Spk);
+    % Components       = analysis.timeVarying_v2(Patterns, Option, Spk);
     Components_overall = analysis.timeVarying_v2(Patterns_overall, Option, Spk);
+    Components_overall = analysis.timeVarying_v2(Patterns_overall, Option, Spk, 'componentMethod', 'cca', 'method', 'prod');
     Components_overall = plots.temporal.correlateSpectral(Components_overall, Events, Option);
-    Components = plots.temporal.correlateBehavior(Components, Events, Option);
+    Components         = plots.temporal.correlateBehavior(Components, Events, Option);
 end
 
 if Option.analysis.checks
