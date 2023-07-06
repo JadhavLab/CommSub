@@ -10,9 +10,14 @@ function Components = correlateSpectal(Components, Events, Option, varargin)
 %
 % Outputs:
 %   none
+ip = inputParser();
+ip.addParameter('componentMethod', 'rrr', @(x) ischar(x) || isstring(x));
+ip.parse(varargin{:});
+Opt = ip.Results;
+Opt.componentMethod = string(Opt.componentMethod);
 
 for i = 1:numel(Components)
-    Components(i).spec = ...
+    Components(i).(Opt.componentMethod + "_spec") = ...
         singleCorrelateSpectral(Components(i), Events, Option, varargin{:});
 end
 
@@ -37,7 +42,7 @@ Opt = ip.Results;
 if Opt.figAppend ~= ""
     Opt.figAppend = "_" + Opt.figAppend;
 end
-figAppend = Option.animal + Components.name + Components.directionality + Opt.figAppend;
+figAppend = Opt.componentMethod + "_" + Option.animal + Components.name + Components.directionality + Opt.figAppend;
 Components = Components.(Opt.componentMethod);
 folder="corrSpectral";
 if ~exist(figuredefine(folder), 'dir')
@@ -53,9 +58,22 @@ if isempty(Opt.names)
     end
 end
 
+if isempty(Components)
+    return
+end
+
 if strcmpi(Opt.use, 'raw')
     activities = Components.activities;
 elseif strcmpi(Opt.use, 'smooth')
+    keyboard
+    if isfield(Components, 'smooth_activities')
+        activities = Components.smooth_activities;
+    elseif isfield(Components, 'activities')
+    elseif isfield(Components, 'u') && length(Components.u) == length(Events.time)
+        activities = Components.u .* Components.v;
+    else
+        error("No smooth activities found");
+    end
     activities  = Components.smooth_activities;
 else
     error("Invalid option for 'use': " + Opt.use);
@@ -160,15 +178,14 @@ for k = progress(1:N, 'Title', 'Subsampling')
         end
     end
 end
-sgtitle("Cross-covariance between activity components across subsamples" + newline + figAppend)
+sgtitle("Cross-correlation between activity components across subsamples" + newline + figAppend)
 set(gcf, 'Position', [100, 100, 1000, 1000])
 % determine the mean, and ci% confidence interval
 disp("Computing mean and confidence interval")
 ci = Opt.ci;
-means = cellfun(@(x) median(x,2), results, 'UniformOutput', false);
-ci_lower = cellfun(@(x) prctile(x, ci/2, 2), results, 'UniformOutput', false);
-ci_upper = cellfun(@(x) prctile(x, ((100-ci)/2), 2), ...
-    results, 'UniformOutput', false);
+means    = cellfun(@(x) prctile(x, 50,           2), results, 'UniformOutput', false);
+ci_lower = cellfun(@(x) prctile(x, ci/2,         2), results, 'UniformOutput', false);
+ci_upper = cellfun(@(x) prctile(x, ((100-ci)/2), 2), results, 'UniformOutput', false);
 for i = progress(1:size(combined,2), 'Title', 'Plotting means and confidence intervals')
     for j = 1:size(combined,2)
         ax = subplot(size(combined,2),  size(combined,2), ...
@@ -206,17 +223,18 @@ for k = progress(1:N, 'Title', 'Subsampling')
     for i = 1:size(subsample,2)
         for j = 1:size(subsample,2)
             [labelA, labelB] = deal(labels(i), labels(j));
-            [xv, lags] = xcov(subsample(:,i), subsample(:,j), min(300, sampleSize-1), 'coeff');
+            [xv, lags]       = xcov(subsample(:,i), subsample(:,j), ...
+                                min(300, sampleSize-1), 'coeff');
             lagtimes{i,j} = lags * deltaT;
-            results{i,j} = [results{i,j}, xv];
+            results{i,j}  = [results{i,j}, xv];
             cnt = sub2ind([size(combined,2), size(combined,2)], i, j);
-            ax = subplot(size(combined,2), size(combined,2), cnt);
+            ax  = subplot(size(combined,2),  size(combined,2), cnt);
             if i >= j
                 ax.Visible = 'off';
             else
                 hold on
                 plot(ax, lagtimes{i,j}, xv, 'Color', [0.5,0.5,0.5,0.5], ...
-                                     'LineWidth', 0.5, 'LineStyle', ':');
+                    'LineWidth', 0.5, 'LineStyle', ':');
                 alpha(0.33)
                 if k == 1
                     title(ax, labelA + newline + labelB)
@@ -237,8 +255,8 @@ set(gcf, 'Position', [100, 100, 1000, 1000])
 % determine the mean, and ci% confidence interval
 disp("Computing mean and confidence interval")
 ci = Opt.ci;
-means = cellfun(@(x) median(x,2), results, 'UniformOutput', false);
-ci_lower = cellfun(@(x) prctile(x, ci/2, 2), results, 'UniformOutput', false);
+means    = cellfun(@(x) prctile(x, 50,         2), results, 'UniformOutput', false);
+ci_lower = cellfun(@(x) prctile(x, ci/2,       2), results, 'UniformOutput', false);
 ci_upper = cellfun(@(x) prctile(x, 100-(ci/2), 2), results, 'UniformOutput', false);
 for i = progress(1:size(combined,2), 'Title', 'Plotting means and confidence intervals')
     for j = 1:size(combined,2)
@@ -261,35 +279,40 @@ saveas(gcf, fullfile(figuredefine(folder), "cross_xcov_" + figAppend + ".png"))
 saveas(gcf, fullfile(figuredefine(folder), "cross_xcov_" + figAppend + ".svg"))
 
 
-% Collect the p-values and F statistics for each analysis
-% pVals = [grang.pVal; grang.last_pVal; grang.shuffled_pVal]';
-% Fs = [grang.F; grang.last_F; grang.shuffled_F]';
-grang = struct();
-for i = progress(1:3, 'Title', 'Granger causality')
-    [g.F, g.pVal, g.issues] = ... 
-        plots.temporal.grangerCausality(combined(:, 1:3), combined(:, i+3), 100);
-    disp(['p-value for activity ', Opt.names(i), ': ', num2str(g.pVal)]);
-    % Compare to shuffled behavior
-    for j = progress(1:100, 'Title', 'Shuffling')
-        [g.shuffled_F(j), g.shuffled_pVal(j), g.shuff_issues(j)] = ...
-            plots.temporal.grangerCausality(combined(:, 1:3), combined(randperm(length(combined)), i+3), 100);
+try
+    % Collect the p-values and F statistics for each analysis
+    % pVals = [grang.pVal; grang.last_pVal; grang.shuffled_pVal]';
+    % Fs = [grang.F; grang.last_F; grang.shuffled_F]';
+    grang = struct();
+    for i = progress(1:3, 'Title', 'Granger causality')
+        [g.F, g.pVal, g.issues] = ... 
+            plots.temporal.grangerCausality(combined(:, 1:3), combined(:, i+3), 100);
+        disp(['p-value for activity ', Opt.names(i), ': ', num2str(g.pVal)]);
+        % Compare to shuffled behavior
+        for j = progress(1:50, 'Title', 'Shuffling')
+            [g.shuffled_F(j), g.shuffled_pVal(j), g.shuff_issues(j)] = ...
+                plots.temporal.grangerCausality(combined(:, 1:3), combined(randperm(length(combined)), i+3), 100);
+        end
+        grang(i) = g;
     end
-    grang(i) = g;
+    out.granger = grang;
+    figure;  % Create a new figure window
+    tiledlayout(1, 3);  % Create a 1x3 tiled layout
+    hold on;  % Hold current figure
+    for i = 1:length(grang)  % Assume grang is an array of struct
+        nexttile;  % Select next tile in tiled layout
+        % Create histogram for shuffled F values
+        histogram(grang(i).shuffled_F, 'Normalization', 'probability');
+        % Add vertical line for actual F value
+        ylimits = ylim;  % Get current y-axis limits
+        line([grang(i).F, grang(i).F], ylimits, 'Color', 'r');  % Add line
+        title(['Activity ', Opt.names(i)]);
+        xlabel('F value');
+        ylabel('Frequency');
+        hold off;  % Release hold on current figure
+    end
+    saveas(gcf, fullfile(figuredefine(folder), "granger_" + figAppend + ".fig"))
+    saveas(gcf, fullfile(figuredefine(folder), "granger_" + figAppend + ".png"))
+    saveas(gcf, fullfile(figuredefine(folder), "granger_" + figAppend + ".svg"))
+catch ME
 end
-figure;  % Create a new figure window
-hold on;  % Hold current figure
-for i = 1:length(grang)  % Assume grang is an array of struct
-    % Create histogram for shuffled F values
-    histogram(grang(i).shuffled_F, 'Normalization', 'probability');
-    % Add vertical line for actual F value
-    ylimits = ylim;  % Get current y-axis limits
-    line([grang(i).F, grang(i).F], ylimits, 'Color', 'r');  % Add line
-    title(['Activity ', Opt.names(i)]);
-    xlabel('F value');
-    ylabel('Frequency');
-    hold off;  % Release hold on current figure
-end
-saveas(gcf, fullfile(figuredefine(folder), "granger_" + figAppend + ".fig"))
-saveas(gcf, fullfile(figuredefine(folder), "granger_" + figAppend + ".png"))
-saveas(gcf, fullfile(figuredefine(folder), "granger_" + figAppend + ".svg"))
-out.granger = grang;

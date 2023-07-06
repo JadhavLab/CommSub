@@ -68,8 +68,8 @@ for n = progress(1:numel(Patterns), 'Title', 'RankRegress')
     % pair and j==2 means diff target/source pair
     % disp("processing rrr for "+p+" partition and the "+i+" pattern 
     % "+j+" direction")
-    curr_source = p.X_source';
-    curr_target = p.X_target';
+    curr_source = double(p.X_source');
+    curr_target = double(p.X_target');
 
     nan_rows = any(isnan(curr_source), 2) | ...
                any(isnan(curr_target), 2); % setect

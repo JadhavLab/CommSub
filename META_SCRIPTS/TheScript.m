@@ -19,20 +19,21 @@ else
     Option = option.setdefaults(Option);
 end
 %%%%%%%%%%%%%%%% DISPLAY OUR OPTIONS TO USER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp("Running with Option struct => ");
-disp(Option);
 if isequal(Option.loadifexists, false) && exist(store.gethash(Option) + ".mat", 'file')
-    m = matfile(store.gethash(Option) + ".mat");
-    % m = matfile("bef0923.mat", "Writable", true);
+    disp("Loading from file: " + store.gethash(Option) + ".mat")
+    % m = matfile(store.gethash(Option) + ".mat");
+    m = matfile("bef0923.mat", "Writable", true);
+    disp("Loaded variables: ")
     Events             = util.matfile.getdefault(m, 'Events', []);
     Spk                = util.matfile.getdefault(m, 'Spk', []);
     Patterns           = util.matfile.getdefault(m, 'Patterns', []);
     Patterns_overall   = util.matfile.getdefault(m, 'Patterns_overall', []);
     Components         = util.matfile.getdefault(m, 'Components', []);
     Components_overall = util.matfile.getdefault(m, 'Components_overall', []);
+    Option             = util.matfile.getdefault(m, 'Option', []);
+    disp("...done")
     clear m
 else
-
     %%%%%%%%%%%%%%%% OBTAIN EVENT MATRICES    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     disp("------------------------")
     disp("    Obtaining events    ")
@@ -84,6 +85,10 @@ else
     if Option.preProcess_zscore
         % Z-score the spikeCountMatrix/spikeRateMatrix
         disp(" Z-scoring ")
+        if ~isfield(Spk, 'muFR')
+            Spk.muFR  = mean(Spk.spikeRateMatrix, 2);
+            Spk.stdFR = std(Spk.spikeRateMatrix, 0, 2);
+        end
         Spk.spikeRateMatrix  = zscore(Spk.spikeRateMatrix,  0, 2);
         Spk.spikeCountMatrix = zscore(Spk.spikeCountMatrix, 0, 2);
         Spk.avgFR = mean(Spk.spikeRateMatrix, 2);
@@ -143,6 +148,9 @@ if Option.analysis.cca
     % remedies (1) regularize (2) remove linearly dependent columns (PCA)
     Patterns         = analysis.cca(Patterns, Option);
     Patterns_overall = analysis.cca(Patterns_overall, Option);
+    for i = 1:numel(Patterns_overall)
+        Components_overall(i).cca = Patterns_overall(i).cca;
+    end
     % TODO : section that knocks off kim 2022 after these measurements
     Components.cca   = analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
 end
@@ -155,10 +163,15 @@ if Option.analysis.timeVarying
     running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
     [behavior, thrown_out_times] = table.behavior.lookup(Option.animal, ...
                                                          running_times);
-    % Components       = analysis.timeVarying_v2(Patterns, Option, Spk);
-    Components_overall = analysis.timeVarying_v2(Patterns_overall, Option, Spk);
-    Components_overall = analysis.timeVarying_v2(Patterns_overall, Option, Spk, 'componentMethod', 'cca', 'method', 'prod');
-    Components_overall = plots.temporal.correlateSpectral(Components_overall, Events, Option);
+    % Component matching over time
+    rrr = analysis.match_rrr(Patterns_overall, Option, Spk);
+    cca = analysis.match_cca(Patterns_overall, Option, Spk);
+    % Spectral matches
+    Components_overall = ... 
+    plots.temporal.correlateSpectral(Components_overall, Events, Option);
+    Components_overall = ... 
+    plots.temporal.correlateSpectral(Components_overall, Events, Option, 'componentMethod', 'cca');
+    % Behavior matches
     Components         = plots.temporal.correlateBehavior(Components, Events, Option);
 end
 

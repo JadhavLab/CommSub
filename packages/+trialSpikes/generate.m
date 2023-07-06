@@ -26,7 +26,7 @@ function Spk = generate(Spk, Events, Option)
 spikeCountMatrix = Spk.spikeCountMatrix;
 timeAxis         = Spk.timeBinMidPoints;
 cellOfWindows    = Events.cellOfWindows;
-samplesPerTrial  = Option.timesPerTrial;
+samplesPerTrial  = cast(Option.timesPerTrial, class(timeAxis));
 numResult        = Option.nPatternAndControl;
 
 disp('Generating spike sample matrix and tensor')

@@ -45,6 +45,8 @@ for animal = const.all_animals(1:end)
     ndb.save(e, animal, 'avgeeg', 'indices', 0);
 end
 
+clear e theta delta ripple avgeeg eeg
+
 % animal = const.all_animals(1);
 % %% load the eeg data
 % for animal = const.all_animals

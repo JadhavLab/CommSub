@@ -167,7 +167,6 @@ plots.cf.plotCofiring(Fig2.a.wpli,Option, 'Normalization', 'cdf', 'figAppend', '
 %%
 close all
 
-
 %% 
 % Example 
 % the difference in cofiring between hpc-hpc pairs and hpc-pfc pairs
@@ -210,6 +209,7 @@ close all
 % .single_pred_with_pfc; % single neuron firing prediction with pfc
 % .patternVarExplained_hpc; % variance explained with hpc
 % .patternVarExplained_pfc; % variance explained with pfc
+
 
 %% 
 % Predicition Performance
