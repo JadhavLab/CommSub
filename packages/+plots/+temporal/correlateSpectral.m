@@ -12,7 +12,8 @@ function Components = correlateSpectal(Components, Events, Option, varargin)
 %   none
 
 for i = 1:numel(Components)
-    Components(i).spec = singleCorrelateSpectral(Components(i), Events, Option, varargin{:});
+    Components(i).spec = ...
+        singleCorrelateSpectral(Components(i), Events, Option, varargin{:});
 end
 
 % -------------------------------------------------------------------------
@@ -28,7 +29,7 @@ ip = inputParser();
 ip.addParameter('names', [], @(x) iscellstr(x)  || isstring(x));
 ip.addParameter('use', 'smooth', @(x) ischar(x) || isstring(x)); % 'smooth' or 'raw'
 ip.addParameter('ci', 68, @(x) isscalar(x) && x > 0 && x < 100);
-ip.addParameter('samples', 500, @(x) isscalar(x) && x > 0);
+ip.addParameter('samples', 100, @(x) isscalar(x) && x > 0);
 ip.addParameter('figAppend', "", @(x) ischar(x) || isstring(x));
 ip.addParameter('componentMethod', 'rrr', @(x) ischar(x) || isstring(x));
 ip.parse(varargin{:});
@@ -75,11 +76,13 @@ deltaT = median(diff(Htimes));
 combined = [interpActivities, Hvals];
 corrMatrix = corr(combined, 'type', 'Spearman');
 fig('spearman correlation matrix between events and activities')
+    clf
 imagesc(corrMatrix)
 clim = [-1,1];
 caxis(clim)
 xticklabels(labels)
 yticklabels(labels)
+title("Spearman correlation matrix between events and activities" + newline + figAppend)
 colormap(cmocean('balance'))
 colorbar
 out.spectral_correlation = corrMatrix;
@@ -131,16 +134,16 @@ for k = progress(1:N, 'Title', 'Subsampling')
     for i = 1:size(subsample,2)
         for j = 1:size(subsample,2)
             [labelA, labelB] = deal(labels(i), labels(j));
-            [xcov, lags] = xcorr(subsample(:,i), subsample(:,j), min(300, sampleSize-1), 'coeff');
-            lagtimes = lags * deltaT;
-            results{i,j} = [results{i,j}, xcov];
+            [xc, lags] = xcorr(subsample(:,i), subsample(:,j), min(300, sampleSize-1), 'coeff');
+            lagtimes{i,j} = lags * deltaT;
+            results{i,j} = [results{i,j}, xc];
             cnt = sub2ind([size(combined,2), size(combined,2)], i, j);
             ax = subplot(size(combined,2), size(combined,2), cnt);
             if i >= j
                 ax.Visible = 'off';
             else
                 hold on
-                plot(ax, lagtimes, xcov, 'Color', [0.5,0.5,0.5,0.5], ...
+                plot(ax, lagtimes{i,j}, xc, 'Color', [0.5,0.5,0.5,0.5], ...
                                      'LineWidth', 0.5, 'LineStyle', ':');
                 alpha(0.33)
                 if k == 1
@@ -157,23 +160,24 @@ for k = progress(1:N, 'Title', 'Subsampling')
         end
     end
 end
-sgtitle("Cross-covariance between activity components across subsamples")
+sgtitle("Cross-covariance between activity components across subsamples" + newline + figAppend)
 set(gcf, 'Position', [100, 100, 1000, 1000])
 % determine the mean, and ci% confidence interval
 disp("Computing mean and confidence interval")
 ci = Opt.ci;
-means = cellfun(@(x) mean(x,2), results, 'UniformOutput', false);
+means = cellfun(@(x) median(x,2), results, 'UniformOutput', false);
 ci_lower = cellfun(@(x) prctile(x, ci/2, 2), results, 'UniformOutput', false);
-ci_upper = cellfun(@(x) prctile(x, (1-ci)/2, 2), results, 'UniformOutput', false);
+ci_upper = cellfun(@(x) prctile(x, ((100-ci)/2), 2), ...
+    results, 'UniformOutput', false);
 for i = progress(1:size(combined,2), 'Title', 'Plotting means and confidence intervals')
     for j = 1:size(combined,2)
-        ax = subplot(size(combined,2), size(combined,2), ...
+        ax = subplot(size(combined,2),  size(combined,2), ...
              sub2ind([size(combined,2), size(combined,2)], i, j));
         if i < j
             hold on
-            plot(ax, lagtimes, means{i,j}, 'Color', 'k', 'LineWidth', 2);
-            plot(ax, lagtimes, ci_lower{i,j}, 'Color', 'b', 'LineWidth', 1);
-            plot(ax, lagtimes, ci_upper{i,j}, 'Color', 'b', 'LineWidth', 1);
+            plot(ax, lagtimes{i,j}, means{i,j}, 'Color', 'k', 'LineWidth', 2);
+            plot(ax, lagtimes{i,j}, ci_lower{i,j}, 'Color', 'b', 'LineWidth', 1);
+            plot(ax, lagtimes{i,j}, ci_upper{i,j}, 'Color', 'b', 'LineWidth', 1);
         end
     end
 end
@@ -202,16 +206,16 @@ for k = progress(1:N, 'Title', 'Subsampling')
     for i = 1:size(subsample,2)
         for j = 1:size(subsample,2)
             [labelA, labelB] = deal(labels(i), labels(j));
-            [xcov, lags] = xcov(subsample(:,i), subsample(:,j), min(300, sampleSize-1), 'coeff');
-            lagtimes = lags * deltaT;
-            results{i,j} = [results{i,j}, xcov];
+            [xv, lags] = xcov(subsample(:,i), subsample(:,j), min(300, sampleSize-1), 'coeff');
+            lagtimes{i,j} = lags * deltaT;
+            results{i,j} = [results{i,j}, xv];
             cnt = sub2ind([size(combined,2), size(combined,2)], i, j);
             ax = subplot(size(combined,2), size(combined,2), cnt);
             if i >= j
                 ax.Visible = 'off';
             else
                 hold on
-                plot(ax, lagtimes, xcov, 'Color', [0.5,0.5,0.5,0.5], ...
+                plot(ax, lagtimes{i,j}, xv, 'Color', [0.5,0.5,0.5,0.5], ...
                                      'LineWidth', 0.5, 'LineStyle', ':');
                 alpha(0.33)
                 if k == 1
@@ -228,23 +232,23 @@ for k = progress(1:N, 'Title', 'Subsampling')
         end
     end
 end
-sgtitle("Cross-covariance between activity components across subsamples")
+sgtitle("Cross-covariance between activity components across subsamples" + newline + figAppend)
 set(gcf, 'Position', [100, 100, 1000, 1000])
 % determine the mean, and ci% confidence interval
 disp("Computing mean and confidence interval")
 ci = Opt.ci;
-means = cellfun(@(x) mean(x,2), results, 'UniformOutput', false);
+means = cellfun(@(x) median(x,2), results, 'UniformOutput', false);
 ci_lower = cellfun(@(x) prctile(x, ci/2, 2), results, 'UniformOutput', false);
-ci_upper = cellfun(@(x) prctile(x, 1-(ci/2), 2), results, 'UniformOutput', false);
+ci_upper = cellfun(@(x) prctile(x, 100-(ci/2), 2), results, 'UniformOutput', false);
 for i = progress(1:size(combined,2), 'Title', 'Plotting means and confidence intervals')
     for j = 1:size(combined,2)
         ax = subplot(size(combined,2), size(combined,2), ...
              sub2ind([size(combined,2), size(combined,2)], i, j));
         if i < j
             hold on
-            plot(ax, lagtimes, means{i,j}, 'Color', 'k', 'LineWidth', 2);
-            plot(ax, lagtimes, ci_lower{i,j}, 'Color', 'b', 'LineWidth', 1);
-            plot(ax, lagtimes, ci_upper{i,j}, 'Color', 'b', 'LineWidth', 1);
+            plot(ax, lagtimes{i,j}, means{i,j}, 'Color', 'k', 'LineWidth', 2);
+            plot(ax, lagtimes{i,j}, ci_lower{i,j}, 'Color', 'b', 'LineWidth', 1);
+            plot(ax, lagtimes{i,j}, ci_upper{i,j}, 'Color', 'b', 'LineWidth', 1);
         end
     end
 end
@@ -255,3 +259,37 @@ out.cross_xcov_ci_upper = ci_upper;
 saveas(gcf, fullfile(figuredefine(folder), "cross_xcov_" + figAppend + ".fig"))
 saveas(gcf, fullfile(figuredefine(folder), "cross_xcov_" + figAppend + ".png"))
 saveas(gcf, fullfile(figuredefine(folder), "cross_xcov_" + figAppend + ".svg"))
+
+
+% Collect the p-values and F statistics for each analysis
+% pVals = [grang.pVal; grang.last_pVal; grang.shuffled_pVal]';
+% Fs = [grang.F; grang.last_F; grang.shuffled_F]';
+grang = struct();
+for i = progress(1:3, 'Title', 'Granger causality')
+    [g.F, g.pVal, g.issues] = ... 
+        plots.temporal.grangerCausality(combined(:, 1:3), combined(:, i+3), 100);
+    disp(['p-value for activity ', Opt.names(i), ': ', num2str(g.pVal)]);
+    % Compare to shuffled behavior
+    for j = progress(1:100, 'Title', 'Shuffling')
+        [g.shuffled_F(j), g.shuffled_pVal(j), g.shuff_issues(j)] = ...
+            plots.temporal.grangerCausality(combined(:, 1:3), combined(randperm(length(combined)), i+3), 100);
+    end
+    grang(i) = g;
+end
+figure;  % Create a new figure window
+hold on;  % Hold current figure
+for i = 1:length(grang)  % Assume grang is an array of struct
+    % Create histogram for shuffled F values
+    histogram(grang(i).shuffled_F, 'Normalization', 'probability');
+    % Add vertical line for actual F value
+    ylimits = ylim;  % Get current y-axis limits
+    line([grang(i).F, grang(i).F], ylimits, 'Color', 'r');  % Add line
+    title(['Activity ', Opt.names(i)]);
+    xlabel('F value');
+    ylabel('Frequency');
+    hold off;  % Release hold on current figure
+end
+saveas(gcf, fullfile(figuredefine(folder), "granger_" + figAppend + ".fig"))
+saveas(gcf, fullfile(figuredefine(folder), "granger_" + figAppend + ".png"))
+saveas(gcf, fullfile(figuredefine(folder), "granger_" + figAppend + ".svg"))
+out.granger = grang;

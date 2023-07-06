@@ -62,7 +62,8 @@ elseif contains(Option.generateH, "fromFilteredEEG")
     load(Option.animal + "avgeeg.mat");
     [runningSessions, sleepSessions] = getRunningSessions(Option.animal);
     [H, Hvals, Hnanlocs, times] = events.generateFromFilteredEEG(avgeeg, ...
-        Option.sourceArea, "patterns",patternNames(1:3),"downsample",10, "sessionsToInclude", runningSessions);
+        Option.sourceArea, "patterns", Option.patternNames(1:3), ...
+        "downsample",10, "sessionsToInclude", runningSessions);
 elseif contains(Option.generateH, "fromCoherence")
     load(Option.animal + "spectralBehavior.mat");
     spectrogram = efizz.C;
@@ -75,9 +76,8 @@ elseif contains(Option.generateH, "fromWpli")
     spectrogram = efizz.wpli;
     frequencyAxis = efizz.f;
     times = efizz.t;
-    [H, Hvals, Hnanlocs, times] = events.generateFromSpectra(times, spectrogram, frequencyAxis,...
-        Option.frequenciesPerPattern);
-    
+    [H, Hvals, Hnanlocs, times] = events.generateFromSpectra(times, ...
+        spectrogram, frequencyAxis, Option.frequenciesPerPattern);
 else
     error("Core method for deriving the event matrix is not recognized");
 end

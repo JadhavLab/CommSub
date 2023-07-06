@@ -10,11 +10,22 @@ function [F, pVal, issues] = grangerCausality(activities, Bvals, maxLag)
 %   - activities: a vector of activity values
 %   - Bvals: a vector of B-values
 %   - maxLag: the maximum lag to use in the test
-%
-if ~adftest(activities) || ~adftest(Bvals)
-    issues.stationarity = false;
+
+if size(activities,2) > size(activities,1)
+    activities = activities';
+end
+
+stat_act = arrayfun(@(x) adftest(activities(:,x)), 1:size(activities, 2));
+stat_B = arrayfun(@(x) adftest(Bvals(:,x)), 1:size(Bvals, 2));
+if ~all(stat_act)
+    issues.stationarity_act = false;
 else
-    issues.stationarity = true;
+    issues.stationarity_act = true;
+end
+if ~all(stat_B)
+    issues.stationarity_B = false;
+else
+    issues.stationarity_B = true;
 end
 
 % Create matrix of lagged values

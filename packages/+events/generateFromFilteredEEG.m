@@ -24,19 +24,19 @@ ip.addParameter('sessionsToExclude', []);
 ip.parse(varargin{:});
 opt = ip.Results;
 
+%% Constants
 PHASE = 2; AMP = 3;
 
+% Index and reshape the data
 % If user passes a branched cell array, instead of an ndimension struct, converet it!
 if iscell(avgEEGStruct)
-    indices = ndBranch.indicesMatrixForm(avgEEGStruct); %get the indices of all the cells within the avg eeg files, each with pfc and hpc info
-    avgEEGStruct = ndBranch.toNd(avgEEGStruct); %convert into structs with relevant information
+    indices = ndb.indicesMatrixForm(avgEEGStruct); %get the indices of all the cells within the avg eeg files, each with pfc and hpc info
+    avgEEGStruct = ndb.toNd(avgEEGStruct); %convert into structs with relevant information
 else
     indices = nd.indicesMatrixForm(avgEEGStruct);
 end
 
-
 %% get epochs with running sessions
-
 if ~isempty(opt.sessionsToInclude)
     sessionsToInclude = opt.sessionsToInclude;
 else % IF NOT PROVIDED INCLUDE EVERYTHING!
@@ -53,7 +53,7 @@ nPatterns = numel(opt.patterns);
 for iPattern = 1:nPatterns
     patternH     = [];
     patternToNan = [];
-    times = []; % Do not move this  line: If placed above for iPattern = 1:nPatterns, creates a bug
+    times        = []; % Do not move this  line: If placed above for iPattern = 1:nPatterns, creates a bug
    
     for index = indices'
 
@@ -87,7 +87,7 @@ for iPattern = 1:nPatterns
         % SELECT PHASES?
         toNan = zeros(1,length(eegData));
         if ~isempty(opt.phaseWindow) % IF A PHASE WINDOW IS GIVEN BY THE USER, USE IT
-            toNan = ~eventMatrix.inPhaseWindows(double(eegData(:,PHASE))/10000, ...
+            toNan = ~events.inPhaseWindows(double(eegData(:,PHASE))/10000, ...
                 opt.phaseWindow);
 %             eegData(toNan,:)   = nan;
         end
@@ -107,3 +107,7 @@ end
 
 H =  Hvals .* Hnanlocs;
 times = times';
+
+    figure;plot(Events.H)
+    hold on
+    % plot 85 percentile threshold
