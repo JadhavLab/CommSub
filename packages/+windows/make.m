@@ -1,5 +1,5 @@
 function [cellOfWindows, cutoff] = make(times, threshold, H, Option, varargin)
-% H: m*n matrix - m is number powers taken (aligned to times, same
+% H: m*n matrix - m is number times taken (aligned to times, same
 %    length as times) and n is the number of rhythms we are interested in
 %
 % times: time points where the powers of different rhythms were taken

@@ -28,7 +28,7 @@ opt = ip.Results;
 cross_area_corr = corr(u(:,1), v(:,1));
 
 % top cv scores
-area1_scores  = u(:,1);
+area1_scores = u(:,1);
 area2_scores = v(:,1);
 
 results = struct(...
@@ -43,8 +43,7 @@ results = struct(...
     'cross_area_corr', cross_area_corr ...
 );
 
-% make the plot
-if opt.ploton
+% make the plotf
     scatter(area1_scores, area2_scores); % scatter plot of the scores
     hold on; % keep the scatter plot when adding the next plot
     plot([-1, 1], [-1, 1], 'k--'); % add the x=y line (adjust the range as needed)

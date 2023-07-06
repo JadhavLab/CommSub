@@ -84,6 +84,7 @@ for i = progress(1:numel(Patterns), 'Title', 'Time varying analysis')
         %             'method', method{1},...
         %             'component_method', 'cca'...
         %             );
+
     O.name = P.name;
 
     if i == 1
