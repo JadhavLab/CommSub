@@ -33,7 +33,7 @@ for animal = const.all_animals(1:end)
     e      = doavg(animal, ca1_tet, pf_tet, 'eeg');
     theta  = doavg(animal, ca1_tet, pf_tet, 'theta');
     delta  = doavg(animal, ca1_tet, pf_tet, 'delta');
-    ripple = doavg(animal, ca1_tet, pf_tet, 'rippleref');
+    ripple = doavg(animal, ca1_tet, pf_tet, 'ripple');
     for i = 1:numel(e)
         e(i).theta = theta(i);
         e(i).delta = delta(i);
@@ -59,7 +59,7 @@ end
 
 function e =  doavg(animal, ca1_tet, pf_tet, eegprop)
     assert(ndbFile.exist(animal, eegprop))
-    ndb.load(animal, eegprop, 'indices', 1);
+    eeg = ndb.load(animal, eegprop, 'indices', 1);
     eeg = ndb.toNd(eeg);
     ca1 = eeg(:,:,ca1_tet);
     pfc = eeg(:,:,pf_tet);
