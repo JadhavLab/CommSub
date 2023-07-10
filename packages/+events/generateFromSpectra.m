@@ -1,8 +1,6 @@
-function [H, Hvals, Hnanlocs, times] = generateFromSpectra(times, spectrogram, frequencyAxis, ...
-                                 frequenciesPerPattern, varargin)
-
+function [H, Hvals, Hnanlocs, times] = generateFromSpectra(times, ...
+    spectrogram, frequencyAxis, frequenciesPerPattern, varargin)
     % generates H matrix from lfp data
-    
     % Inputs
     % ------
     % times: 1 x T matrix of all the possible time points

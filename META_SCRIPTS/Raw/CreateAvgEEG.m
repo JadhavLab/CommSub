@@ -1,9 +1,9 @@
-% addpath(genpath('~/Code/analysis/'))
-% addpath(genpath(codedefine()))
+addpath(genpath('~/Code/analysis/'))
+addpath(genpath(codedefine()))
 
 const  = option.constants();
 animal = const.all_animals(1);
-for animal = const.all_animals(1:end)
+for animal = "ZT2"
     animal = string(animal);
     disp(animal)
     ndb.load(animal, 'cellinfo')
@@ -31,9 +31,11 @@ for animal = const.all_animals(1:end)
     ca1_tet = top3.tetrode(1:3);
     pf_tet = top3_pfc.tetrode(1:3);
     e      = doavg(animal, ca1_tet, pf_tet, 'eeg');
+    assert(isfield(e, 'D'))
     theta  = doavg(animal, ca1_tet, pf_tet, 'theta');
     delta  = doavg(animal, ca1_tet, pf_tet, 'delta');
     ripple = doavg(animal, ca1_tet, pf_tet, 'ripple');
+    assert(isfield(ripple, 'D'))
     for i = 1:numel(e)
         e(i).theta = theta(i);
         e(i).delta = delta(i);
@@ -59,6 +61,26 @@ clear e theta delta ripple avgeeg eeg
 %     save(1animal + "avgeeg.mat", '-struct', 'm', '-v7.3', '-nocompression')
 % end
 
+% %% load the eeg data
+% and add area field
+for animal = progress(const.all_animals, 'Title', 'adding area field')
+    m=load(animal + "avgeeg01.mat");
+    m.avgeeg = ndb.toNd(m.avgeeg);
+    inds = ndb.indicesMatrixForm(m.avgeeg);
+    for ind = inds'
+        item = ndb.get(m.avgeeg, ind);
+        if ind(end) == 1
+            item.area = "CA1";
+        else
+            item.area = "PFC";
+        end
+        m.avgeeg=ndb.set(m.avgeeg, ind, item);
+    end
+    ndb.save(m.avgeeg, animal, 'avgeeg', 'indices', 0);
+end
+
+!pushover-cli "done with avgeeg"
+
 function e =  doavg(animal, ca1_tet, pf_tet, eegprop)
     assert(ndbFile.exist(animal, eegprop))
     eeg = ndb.load(animal, eegprop, 'indices', 1);
@@ -74,6 +96,7 @@ function e =  doavg(animal, ca1_tet, pf_tet, eegprop)
         mudata = mean(data, 3);
         e(:,i,1).data = mudata;
         e(:,i,1).D = squeeze(data);
+        e(:,i,1).tet = ca1_tet(i);
     end
     % get e for pfc
     % average the pfc data
@@ -84,6 +107,7 @@ function e =  doavg(animal, ca1_tet, pf_tet, eegprop)
         mudata = mean(data, 3);
         e2(:,i,1).data = mudata;
         e2(:,i,1).D = squeeze(data);
+        e2(:,i,1).tet = pf_tet(i);
     end
     % % plot the eeg data
     % figure
@@ -107,3 +131,5 @@ function e =  doavg(animal, ca1_tet, pf_tet, eegprop)
     e = cat(3, e, e2);
     e = util.type.castefficient(e, 'compressReals', true);
 end
+
+

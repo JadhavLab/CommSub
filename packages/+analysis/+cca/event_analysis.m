@@ -1,4 +1,4 @@
-function out = event_analysis(Patterns_overall, Spk, Events)
+function out = event_analysis(Patterns_overall, Spk, Events, Option, varargin)
 %EVENT_ANALYSIS   Calculate CCA r-values for each event in a given pattern.
 %
 %  out = event_analysis(Components, Patterns_overall, Spk, Events)
@@ -9,54 +9,102 @@ function out = event_analysis(Patterns_overall, Spk, Events)
 %  Events:  Structure containing event times
 %
 
+ip = inputParser();
+
 % Assuming 'area1' and 'area2' are the indices of the areas you're interested in
-area1 = find(strcmp(Spk.areaPerNeuron, 'PFC'));
-area2 = find(strcmp(Spk.areaPerNeuron, 'HPC'));
+area1 = find(strcmp(Spk.areaPerNeuron, 'CA1'));
+area2 = find(strcmp(Spk.areaPerNeuron, 'PFC'));
 
 % Create an empty matrix to store the CCA r-values for each event
-event_r_values = cell(length(Events.times), 1);
-event_u = cell(length(Events.times), 1);
-event_v = cell(length(Events.times), 1);
-out = struct(...
-    'event_r_values', event_r_values, ...
-    'event_u', event_u, ...
-    'event_v', event_v);
-out = repmat(out, size(Patterns_overall));
+out = struct('W', []);
+% out = repmat(out, size(Patterns_overall));
+
+szPatterns = size(Patterns_overall);
 
 % Loop over all patterns
-for i = 1:length(Patterns_overall)
+for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
+
+    event_u = cell(length(Events.cellOfWindows), length(Events.cellOfWindows{1}));
+    event_v = cell(length(Events.cellOfWindows), length(Events.cellOfWindows{1}));
+    event_r_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), 3);
+    event_u_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), 3);
+    event_v_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), 3);
+
+    if isempty(Patterns_overall(i).cca)
+        continue;
+    end
 
     % Extract a and b from the current pattern
-    a = Patterns_overall(i).cca.a;
-    b = Patterns_overall(i).cca.b;
+    if isfield(Patterns_overall(i).cca, 'a') && Opt.precompute > 1
+        a = Patterns_overall(i).cca.a;
+        b = Patterns_overall(i).cca.b;
+    else
+        source = Patterns_overall(i).X_source;
+        target = Patterns_overall(i).X_target;
+        if method == "zscore" && abs(mean(source(1,:))) > 100*eps(class(source))
+            source = zscore(source, 0, 2);
+            target = zscore(target, 0, 2);
+        elseif method == "spikerate" && ~any(source(1,:) < 0)
+            
+        end
+        [a,b] = cannoncorr(source, target);
+                           
+
+    end
+
+    [i1,i2] = ind2sub(szPatterns, i);
+    i = {i1,i2};
+    if i2 <= Option.nPatternAndControl
+        p = i2;
+    else
+        p = 1:Option.nPatternAndControl;
+    end
+    directionality = Patterns_overall(i{:}).directionality;
 
     % Loop over all events
-    for j = 1:length(Events.times)
+    W = struct();
+    for w = p
+        windows = Events.cellOfWindows{w};
+        for j = 1:length(windows)
 
-        % Find the time bins that correspond to the current event
-        event_time_bins = find(Spk.timeBinStartEnd >= Events.times(j,1) & Spk.timeBinStartEnd <= Events.times(j,2));
+            % Find the time bins that correspond to the current event
+            event_time_bins = find(Spk.timeBinStartEnd >= windows(j,1) &...
+                Spk.timeBinStartEnd <= windows(j,2));
+            if isempty(event_time_bins)
+                continue;
+            end
 
-        % Extract the spike data for the two areas during this event
-        area1_spikes = Spk.spikeCountMatrix(area1, event_time_bins);
-        area2_spikes = Spk.spikeCountMatrix(area2, event_time_bins);
+            % Extract the spike data for the two areas during this event
+            if directionality == "hpc-pfc"
+                area1_spikes = Spk.spikeCountMatrix(area1, event_time_bins);
+                area2_spikes = Spk.spikeCountMatrix(area2, event_time_bins);
+            elseif directionality == "hpc-hpc"
+                continue;
+            end
 
-        % Project the spike data onto the space defined by a and b to get u and v
-        u = area1_spikes' * a;
-        v = area2_spikes' * b;
+            % Project the spike data onto the space defined by a and b to get u and v
+            u = area1_spikes' * a(:,1:3);
+            v = area2_spikes' * b(:,1:3);
 
-        % Calculate the correlation between u and v
-        r = corr(u, v);
-        
-        % Store the CCA r-value and canonical variates for this event
-        event_r_values(j) = r;  % assuming we are interested in the first canonical correlation
-        event_u{j} = u;
-        event_v{j} = v;
+            % Calculate the correlation between u and v
+            r = [corr(u(:,1), v(:,1)),...
+                 corr(u(:,2), v(:,2)),...
+                 corr(u(:,3), v(:,3))];
+            
+            % Store the CCA r-value and canonical variates for this event
+            event_r_values(w,j,:) = r;  % assuming we are interested in the first canonical correlation
+            event_u_values(w,j,:) = mean(u,1);
+            event_v_values(w,j,:) = mean(v,1);
+            event_u{w,j} = u;
+            event_v{w,j} = v;
+        end
     end
 
     % Store the CCA r-values and canonical variates for this pattern
-    out(i).event_r_values = event_r_values;
-    out(i).event_u        = event_u;
-    out(i).event_v        = event_v;
+    out(i{:}).event_r_values = event_r_values;
+    out(i{:}).event_u_values = event_u_values;
+    out(i{:}).event_v_values = event_v_values;
+    out(i{:}).event_u        = event_u;
+    out(i{:}).event_v        = event_v;
 
 end
-

@@ -1,4 +1,4 @@
-function [Patterns] = rankRegress(Patterns, Option)
+function [Patterns] = rankRegress(Patterns, Option, varargin)
 % RANKREGRESS - Reduced rank regression
 %   Patterns = rankRegress(Patterns, Option)
 %
@@ -30,6 +30,13 @@ function [Patterns] = rankRegress(Patterns, Option)
 disp("rank regression")
 tic
 
+ip = inputParser;
+ip.addParameter('verbose', false, @islogical);
+ip.addParameter('ploton', false, @islogical);
+ip.parse(varargin{:});
+verbose = ip.Results.verbose;
+ploton = ip.Results.ploton;
+
 if Option.waysOfPartitions ~= 2
     nTarget = size(Patterns(1).X_target,1);
     nSource = min(size(Patterns(1).X_source,1),...
@@ -41,7 +48,7 @@ end
 
 % Number of cross validation folds.
 numDimsUsedForPrediction = 1:min(nTarget, nSource);
-cvNumFolds = Option.rankRegress.cvnum;
+cvNumFolds = double(Option.rankRegress.cvnum);
 cvOptions = statset('crossval');
 regressMethod = @ReducedRankRegress;
 cvFun = @(Ytrain, Xtrain, Ytest, Xtest) ...
@@ -91,6 +98,40 @@ for n = progress(1:numel(Patterns), 'Title', 'RankRegress')
               curr_target(~nan_rows, :), ...
               curr_source(~nan_rows,:), ...
               numDimsUsedForPrediction);
+
+    if verbose
+        disp("Opt dim: " + p.rankRegress.optDimReducedRankRegress)
+    end
+    if ploton
+        fig('ploton');
+            tiledlayout(1,3);
+            nexttile;
+            imagesc(curr_source);
+            title('Source');
+            nexttile;
+            imagesc(curr_target);
+            title('Target');
+            nexttile;
+        plot(p.rankRegress.cvLoss(1,:));
+        hold on;
+        plot(p.rankRegress.optDimReducedRankRegress, ...
+             p.rankRegress.cvLoss(1, p.rankRegress.optDimReducedRankRegress), ...
+             'r*');
+        % Plot shaded area showing standard deviation of loss
+        x = 1:size(p.rankRegress.cvLoss,2);
+            keyboard
+        y = p.rankRegress.cvLoss(1,:);
+        e = p.rankRegress.cvLoss(2,:);
+        x2 = [x, fliplr(x)];
+        inBetween = [(y-e), fliplr((y+e))];
+        fill(x2, inBetween, 'b');
+        alpha(.1);
+        hold off;
+        title('Cross validation loss');
+        xlabel('Number of dimensions');
+        ylabel('Loss');
+        drawnow;
+    end
 
      p.rankRegress.muOptLoss   = p.rankRegress.cvLoss(1, p.rankRegress.optDimReducedRankRegress);
      p.rankRegress.stdOptLoss  = p.rankRegress.cvLoss(2, p.rankRegress.optDimReducedRankRegress);

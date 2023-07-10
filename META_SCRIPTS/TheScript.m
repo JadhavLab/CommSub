@@ -14,6 +14,7 @@
 % ===================================================
 % see +option.default() to set default options
 if ~exist('Option','var')
+    addpath(genpath(codedefine()));
     Option = option.defaults(); 
 else
     Option = option.setdefaults(Option);
@@ -119,6 +120,10 @@ else
     disp(" Subsampling partitions ")
     disp("------------------------")
     [Patterns, Patterns_overall] = trialSpikes.partitionAndInitialize(Spk, Option);
+    Components = nd.initFrom(Patterns, ...
+    {'index_source', 'index_target', 'directionality', 'name'});
+    Components_overall = nd.initFrom(Patterns_overall, ...
+    {'index_source', 'index_target', 'directionality', 'name'});
 end
 
 %%%%%%%%%%%%%%%% ANALYSIS SECTION    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,7 +137,7 @@ if Option.analysis.rankRegress
     % TODO: 
     % 1. fix Option.rankregress => Option.rankRegress                 
     % 2. most rankRegress.B_ are empty                                
-    Patterns         = analysis.rankRegress(Patterns, Option);        
+    Patterns         = analysis.rankRegress(Patterns, Option, 'verbose', true);        
     Patterns_overall = analysis.rankRegress(Patterns_overall, Option);
 end
 
@@ -143,21 +148,19 @@ if Option.analysis.factorAnalysis
 end
 
 if Option.analysis.cca
-    % ISSUE: warnings emitted regarding full rank -- linear independence
-    % violation can be subtle problem or not a problem at all
-    % remedies (1) regularize (2) remove linearly dependent columns (PCA)
-    Patterns         = analysis.cca(Patterns, Option);
+    % Patterns         = analysis.cca(Patterns, Option);
     Patterns_overall = analysis.cca(Patterns_overall, Option);
-    for i = 1:numel(Patterns_overall)
-        Components_overall(i).cca = Patterns_overall(i).cca;
-    end
-    % TODO : section that knocks off kim 2022 after these measurements
-    Components.cca   = analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
+    % Copy over the components
+    Components_overall =  ...
+         nd.fieldSet(Components_overall, 'cca', Patterns_overall);
+    % Event analysis
+    event_anal   = analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
+    Components_overall = ... 
+         nd.fieldSet(Components_overall, 'event_anal', event_anal);
 end
 
 if Option.analysis.timeVarying
     % How much spiking moment to moment is explained by subspace
-    % ISSUE: hits a bug on line 4
     % TODO: 1 .also return epochwise zscored neural firing matching
     %       2. return timeseries of smoothed firing rate
     running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
@@ -173,6 +176,14 @@ if Option.analysis.timeVarying
     plots.temporal.correlateSpectral(Components_overall, Events, Option, 'componentMethod', 'cca');
     % Behavior matches
     Components         = plots.temporal.correlateBehavior(Components, Events, Option);
+    % Triggered spectrogram
+    efizz = load(Option.animal + "spectralBehavior.mat");
+    efizz = efizz.efizz;
+    for i = progress(1:numel(Patterns_overall), 'Title', 'Triggered spectrogram')
+        Components_overall(i).triggered_spectrogram = ...
+             analysis.cca.triggered_spectrogram(Patterns_overall(i), Spk, efizz);
+        % plots.triggered_spectrogram(efizz, triggered_spectrogram(i), Option);
+    end
 end
 
 if Option.analysis.checks
