@@ -7,9 +7,17 @@ function out = event_analysis(Patterns_overall, Spk, Events, Option, varargin)
 %  Patterns_overall
 %  Spk:  Spike data structure 
 %  Events:  Structure containing event times
+%  Option:  Structure containing options
+%   varargin:  'precompute', 0 or 1 (default 0)
+%              'method', 'zscore' or 'spikerate' (default 'zscore')
 %
+%  OUTPUTS:
+%  out:  Structure containing CCA r-values for each event in each pattern
 
 ip = inputParser();
+ip.addParameter('precompute', 0, @isscalar);
+ip.addParameter('method', 'zscore', @ischar);
+ip.parse(varargin{:});
 
 % Assuming 'area1' and 'area2' are the indices of the areas you're interested in
 area1 = find(strcmp(Spk.areaPerNeuron, 'CA1'));
@@ -35,21 +43,27 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
     end
 
     % Extract a and b from the current pattern
-    if isfield(Patterns_overall(i).cca, 'a') && Opt.precompute > 1
+    if isfield(Patterns_overall(i).cca, 'a') && Opt.precompute >= 1
         a = Patterns_overall(i).cca.a;
         b = Patterns_overall(i).cca.b;
-    else
+    else % if not precomputed
         source = Patterns_overall(i).X_source;
         target = Patterns_overall(i).X_target;
-        if method == "zscore" && abs(mean(source(1,:))) > 100*eps(class(source))
+        index_source = Patterns_overall(i).index_source;
+        index_target = Patterns_overall(i).index_target;
+        if Opt.method == "zscore" && abs(mean(source(1,:))) > 100*eps(class(source))
             source = zscore(source, 0, 2);
             target = zscore(target, 0, 2);
-        elseif method == "spikerate" && ~any(source(1,:) < 0)
-            
+        elseif Opt.method == "spikerate" && ~any(source(1,:) < 0)
+            % undo z-score normalization             
+            muFR = Spk.muFR(Spk.hpc.to_original(index_source));
+            stdFR = Spk.stdFR(Spk.hpc.to_original(index_source));
+            source = source .* stdFR + muFR;
+            muFR = Spk.muFR(Spk.pfc.to_original(index_target));
+            stdFR = Spk.stdFR(Spk.pfc.to_original(index_target));
+            target = target .* stdFR + muFR;
         end
         [a,b] = cannoncorr(source, target);
-                           
-
     end
 
     [i1,i2] = ind2sub(szPatterns, i);
