@@ -165,5 +165,15 @@ Spk.spikeCountMatrix = Spk.spikeCountMatrix(good_neurons,:);
 Spk.spikeRateMatrix  = Spk.spikeRateMatrix(good_neurons,:);
 Spk.areaPerNeuron    = Spk.areaPerNeuron(good_neurons);
 
+% Finally let's setup two dictionaries that translate between regional
+% index and index in the spikeSampleMatrix
+Spk.hpc.original_index = find(Spk.areaPerNeuron == "CA1");
+Spk.hpc.regional_index = 1:numel(Spk.hpc.original_index);
+Spk.hpc.to_orig   = dictionary(Spk.hpc.regional_index, Spk.hpc.original_index);
+Spk.hpc.from_orig = dictionary(Spk.hpc.original_index, Spk.hpc.regional_index);
+Spk.pfc.original_index = find(Spk.areaPerNeuron == "PFC");
+Spk.pfc.regional_index = 1:numel(Spk.pfc.original_index);
+Spk.pfc.to_orig   = dictionary(Spk.pfc.regional_index, Spk.pfc.original_index);
+Spk.pfc.from_orig = dictionary(Spk.pfc.original_index, Spk.pfc.regional_index);
 
 end

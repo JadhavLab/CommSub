@@ -48,7 +48,6 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
     for i = 1:Option.nPatternAndControl
         for j = 1:numel(split_info.directionality)
 
-            
             % Parse directionality
             directionality = split_info.directionality(j);
             sourcetarg = directionality.split('-');
@@ -58,6 +57,11 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
             s_ind = split_info.source_index;
             t_dat = split_info.target{j, 1, i};
             t_ind = split_info.target_index(j, :);
+            % Do a "checksum"-ish move if source==target
+            if source == target
+                assert(numel(intersect(s_ind, t_ind)) == 0, ...
+                    'If source==target, then source and target indices should be disjoint')
+            end
             
             % Assign x_source and x_target
             assert(~clean.isRankDeficient(s_dat), ...
@@ -70,6 +74,15 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
             % Assign index_source and index_target
             Patterns(iPartition,j,i).index_source = s_ind;
             Patterns(iPartition,j,i).index_target = t_ind;
+            Patterns(iPartition,j,i).index_og_source = Spk.hpc.from_orig(s_ind);
+            if directionality == "hpc-hpc"
+                Patterns(iPartition,j,i).index_og_target = Spk.hpc.from_orig(t_ind);
+            elseif directionality == "hpc-pfc"
+                Patterns(iPartition,j,i).index_og_target = Spk.pfc.from_orig(t_ind);
+            else
+                error('Not implemented')
+            end
+            % Patterns(iPartition,j,i).muFR_X_source = Spk.muFR_X{i};
             % Assign directionality
             Patterns(iPartition,j,i).directionality = directionality;
             % Assign pattern name
@@ -78,6 +91,7 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
             catch 
                 Patterns(iPartition,j,i).name = "Pattern " + i;
             end
+
 
             if iPartition == 1
                 if source == "hpc"
@@ -113,8 +127,13 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
                 % Assign pattern name
                 try
                     Patterns_overall(j,i).name = Option.patternNames(i);
+                    % Full name = PatternNamesFull + directionality
+                    Patterns_overall(j,i).nameFull = Option.patternNamesFull(i) + ...
+                        "-(" + directionality + ")";
                 catch 
                     Patterns_overall(j,i).name = "Pattern " + i;
+                    Patterns_overall(j,i).nameFull = "Pattern " + i + ...
+                        "-(" + directionality + ")";
                 end
             end
 
