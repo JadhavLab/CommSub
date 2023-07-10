@@ -74,15 +74,21 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
             % Assign index_source and index_target
             Patterns(iPartition,j,i).index_source = s_ind;
             Patterns(iPartition,j,i).index_target = t_ind;
-            Patterns(iPartition,j,i).index_og_source = Spk.hpc.from_orig(s_ind);
+            ind_ogsource = Spk.hpc.to_orig(s_ind);
+            Patterns(iPartition,j,i).index_og_source = ind_ogsource;
             if directionality == "hpc-hpc"
-                Patterns(iPartition,j,i).index_og_target = Spk.hpc.from_orig(t_ind);
+                ind_ogtarget = Spk.hpc.to_orig(t_ind);
+                Patterns(iPartition,j,i).index_og_target = ind_ogtarget;
             elseif directionality == "hpc-pfc"
-                Patterns(iPartition,j,i).index_og_target = Spk.pfc.from_orig(t_ind);
+                ind_ogtarget = Spk.pfc.to_orig(t_ind);
+                Patterns(iPartition,j,i).index_og_target = ind_ogtarget;
             else
                 error('Not implemented')
             end
-            % Patterns(iPartition,j,i).muFR_X_source = Spk.muFR_X{i};
+            % Patterns(iPartition,j,i).muFR_X_source = Spk.muFR(ind_ogsource);
+            % Patterns(iPartition,j,i).muFR_X_target = Spk.muFR(ind_ogtarget);
+            % Patterns(iPartition,j,i).stdFR_X_source = Spk.stdFR(ind_ogsource);
+            % Patterns(iPartition,j,i).stdFR_X_target = Spk.stdFR(ind_ogtarget);
             % Assign directionality
             Patterns(iPartition,j,i).directionality = directionality;
             % Assign pattern name
