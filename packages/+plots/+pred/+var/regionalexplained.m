@@ -23,9 +23,9 @@ Option   = munge.reshapeByLabels(Option, 1,   [Option.generateH], 'checksumSplit
 Patterns = permute(Patterns, [2 1 3 4 5]);
 Patterns = reshape(Patterns, [size(Patterns,1), size(Patterns,2)*size(Patterns,3), size(Patterns,4), size(Patterns,5)]);
 
-genHO = nd.fieldGet(Option, 'genH_name');
+genHO   = nd.fieldGet(Option, 'genH_name');
 animalO = nd.fieldGet(Option, 'animal');
-genHP = nd.fieldGet(Patterns, 'generateH');
+genHP   = nd.fieldGet(Patterns, 'generateH');
 animalP = nd.fieldGet(Patterns, 'animal');
 
 hpc = Option(1).shortcut.HPC;
@@ -39,10 +39,10 @@ nPatterns        = szPatterns(end);
 % this script calculates the regional firing predicition of all patterns
 % across methods
 %% initialize data sturctures
-r_withhpc_patterns   = cell(nMethods, nPatterns, nAnimalPartition);
-r_withpfc_patterns   = cell(nMethods, nPatterns, nAnimalPartition);
-single_pred_with_hpc = cell(nMethods, nPatterns, nAnimalPartition);
-single_pred_with_pfc = cell(nMethods, nPatterns, nAnimalPartition);
+r_withhpc_patterns      = cell(nMethods, nPatterns, nAnimalPartition);
+r_withpfc_patterns      = cell(nMethods, nPatterns, nAnimalPartition);
+single_pred_with_hpc    = cell(nMethods, nPatterns, nAnimalPartition);
+single_pred_with_pfc    = cell(nMethods, nPatterns, nAnimalPartition);
 patternVarExplained_hpc = zeros(nMethods, nPatterns, nAnimalPartition);
 patternVarExplained_pfc = zeros(nMethods, nPatterns, nAnimalPartition);
 
