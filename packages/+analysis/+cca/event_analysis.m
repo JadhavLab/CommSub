@@ -18,6 +18,7 @@ ip = inputParser();
 ip.addParameter('precompute', 0, @isscalar);
 ip.addParameter('method', 'zscore', @ischar);
 ip.parse(varargin{:});
+Opt = ip.Results;
 
 % Assuming 'area1' and 'area2' are the indices of the areas you're interested in
 area1 = find(strcmp(Spk.areaPerNeuron, 'CA1'));
@@ -44,26 +45,31 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
 
     % Extract a and b from the current pattern
     if isfield(Patterns_overall(i).cca, 'a') && Opt.precompute >= 1
+        disp("Using precomputed...")
         a = Patterns_overall(i).cca.a;
         b = Patterns_overall(i).cca.b;
     else % if not precomputed
+        disp("Computing CCA")
         source = Patterns_overall(i).X_source;
         target = Patterns_overall(i).X_target;
         index_source = Patterns_overall(i).index_source;
         index_target = Patterns_overall(i).index_target;
-        if Opt.method == "zscore" && abs(mean(source(1,:))) > 100*eps(class(source))
+        if Opt.method == "zscore" && ~munge.detectZscore(source)
+            % zscore the fioring
+            fprintf("...zscore\n")
             source = zscore(source, 0, 2);
             target = zscore(target, 0, 2);
-        elseif Opt.method == "spikerate" && ~any(source(1,:) < 0)
+        elseif Opt.method == "spikerate" && munge.detectZscore(source)
+            fprintf("...un-zscore\n")
             % undo z-score normalization             
-            muFR = Spk.muFR(Spk.hpc.to_original(index_source));
-            stdFR = Spk.stdFR(Spk.hpc.to_original(index_source));
+            muFR   = Spk.muFR(Spk.hpc.to_original(index_source));
+            stdFR  = Spk.stdFR(Spk.hpc.to_original(index_source));
             source = source .* stdFR + muFR;
-            muFR = Spk.muFR(Spk.pfc.to_original(index_target));
-            stdFR = Spk.stdFR(Spk.pfc.to_original(index_target));
+            muFR   = Spk.muFR(Spk.pfc.to_original(index_target));
+            stdFR  = Spk.stdFR(Spk.pfc.to_original(index_target));
             target = target .* stdFR + muFR;
         end
-        [a,b] = cannoncorr(source, target);
+        [a,b] = canoncorr(source', target');
     end
 
     [i1,i2] = ind2sub(szPatterns, i);

@@ -6,7 +6,6 @@ function cofiring = calculatePatternCofiring(pattern1, pattern2)
     
     [~,nPattern1] = size(pattern1);
     [~,nPattern2] = size(pattern2);
-
     
     all_cells = [pattern1,pattern2];
     corr_matrix = corrcoef(all_cells);

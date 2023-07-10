@@ -32,7 +32,7 @@ Default.animal                        = "ZT2";
 Default.samplingRate                  = [] ;             % For spikes.getSpikeTrain, nan if not given
 
 % used to determine how large the individual bins are in spikeCountMatrix
-Default.spikeBinSize                  = 0.050;           % 30 milliseconds, prviously 150 ms TIME BIN FOR EACH SAMPLE OF TRRIAL
+Default.spikeBinSize                  = 0.050;           % 50 milliseconds, prviously 150 ms TIME BIN FOR EACH SAMPLE OF TRRIAL
 
 % ----- Trial and trial binning -----
 Default.winSize                       = [0, 0.300];   % size of the
@@ -42,8 +42,8 @@ Default.winSize                       = [0, 0.300];   % size of the
 Default.positiveDerivativeCheck       = [Default.winSize(1), Default.winSize(2)/2]; % period of window with enforced positive derivative
 
 % used to be [-0.15, 0.15]
-Default.equalWindowsAcrossPatterns    = true;            % whether all three patterns have the same #windows
-Default.quantileToMakeWindows         = 0.85;
+Default.equalWindowsAcrossPatterns    = true; % whether all three patterns have the same #windows
+Default.quantileToMakeWindows         = 0.85; % quantile to use to make windows
 
 Default.thetadelta_outlierQuantile    = [0, 0.995];     % quantile to remove outliers from theta and delta
 
@@ -63,7 +63,7 @@ Default.oldControlBehavior            = false; % whether to call genratePatternS
 Default.lowerControl                  = true;  % whether to use the lower control (Hc) or the upper control (Hc2)
 
 % ----- Preprocessing -----
-Default.binsToMatchFR                 = 20;
+Default.binsToMatchFR                 = 20;    % how many bins to draw to match firing rates
 Default.preProcess_FilterLowFR        = true;  % whether to filter out low FR cells
 Default.preProcess_matchingDiscreteFR = true;  % whether to match discrete FR
 Default.preProcess_gaussianFilter     = 5;     % gaussian that covers this many samples

@@ -47,13 +47,12 @@ if contains(Option.generateH, "fromSpectra")
 
     load(Option.animal + "spectralBehavior.mat");
     if Option.sourceArea == "CA1"
-        spectrogram   = efizz.S1;
+        spectrogram       = efizz.S1;
     else
-        spectrogram   = efizz.S2;
+        spectrogram       = efizz.S2;
     end
-    
-    frequencyAxis = efizz.f;
-    times = efizz.t;
+    frequencyAxis         = efizz.f;
+    times                 = efizz.t;
     [H, Hvals, Hnanlocs, times] = events.generateFromSpectra(times,...
         spectrogram,...
         frequencyAxis,...
@@ -66,16 +65,16 @@ elseif contains(Option.generateH, "fromFilteredEEG")
         "downsample",10, "sessionsToInclude", runningSessions);
 elseif contains(Option.generateH, "fromCoherence")
     load(Option.animal + "spectralBehavior.mat");
-    spectrogram = efizz.C;
+    spectrogram   = efizz.C;
     frequencyAxis = efizz.f;
-    times = efizz.t;
+    times         = efizz.t;
     [H, Hvals, Hnanlocs, times] = events.generateFromSpectra(times, spectrogram, frequencyAxis,...
         Option.frequenciesPerPattern);
 elseif contains(Option.generateH, "fromWpli")
     load(Option.animal + "spectralBehavior.mat");
-    spectrogram = efizz.wpli;
+    spectrogram   = efizz.wpli;
     frequencyAxis = efizz.f;
-    times = efizz.t;
+    times         = efizz.t;
     [H, Hvals, Hnanlocs, times] = events.generateFromSpectra(times, ...
         spectrogram, frequencyAxis, Option.frequenciesPerPattern);
 else
