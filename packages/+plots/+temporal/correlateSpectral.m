@@ -16,7 +16,7 @@ ip.parse(varargin{:});
 Opt = ip.Results;
 Opt.componentMethod = string(Opt.componentMethod);
 
-for i = 1:numel(Components)
+for i = progress(1:numel(Components), 'Title', ['corr spectral ' Opt.componentMethod])
     Components(i).(Opt.componentMethod + "_spec") = ...
         singleCorrelateSpectral(Components(i), Events, Option, varargin{:});
 end
@@ -32,7 +32,7 @@ function out = singleCorrelateSpectral(Components, Events, Option, varargin)
 
 ip = inputParser();
 ip.addParameter('names', [], @(x) iscellstr(x)  || isstring(x));
-ip.addParameter('use', 'smooth', @(x) ischar(x) || isstring(x)); % 'smooth' or 'raw'
+ip.addParameter('use', 'raw', @(x) ischar(x) || isstring(x)); % 'smooth' or 'raw'
 ip.addParameter('ci', 68, @(x) isscalar(x) && x > 0 && x < 100);
 ip.addParameter('samples', 100, @(x) isscalar(x) && x > 0);
 ip.addParameter('figAppend', "", @(x) ischar(x) || isstring(x));
@@ -48,6 +48,10 @@ folder="corrSpectral";
 if ~exist(figuredefine(folder), 'dir')
     mkdir(figuredefine(folder))
 end
+disp("...using " + Opt.componentMethod + " components")
+disp("...and using " + Opt.use + " activities")
+disp("...and using " + Opt.ci + "% confidence interval")
+disp("...and append " + Opt.figAppend + " to figure names")
 
 %% Get components
 if isempty(Opt.names)

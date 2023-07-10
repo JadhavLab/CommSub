@@ -53,6 +53,7 @@ nexttile
 imagesc(t,f,10*log10(S_activities)');
 axis xy;
 title('Multitaper Spectrogram Activities');
+cmocean('balance');
 colorbar;
 
 % Multitaper spectrum of activities_source
@@ -60,6 +61,7 @@ nexttile
 imagesc(t,f,10*log10(S_activities_source)');
 axis xy;
 title('Multitaper Spectrogram Source');
+cmocean('balance');
 colorbar;
 
 % Multitaper spectrum of activities_target
@@ -67,6 +69,7 @@ nexttile
 imagesc(t,f,10*log10(S_activities_target)');
 axis xy;
 title('Multitaper Spectrogram Target');
+cmocean('balance');
 colorbar;
 
 linkaxes(findall(gcf,'type','axes'),'x');
