@@ -2,15 +2,12 @@ function triggered_spectrogram(efizz, specs, oneDplots, varargin)
 % plots triggered spectrogram data from efizz
 
 ip = inputParser;
-ip.addParameter('time', [], @isnumeric);
+ip.addParameter('time',       [], @isnumeric);
 ip.addParameter('thresholds', [], @isstruct);
-ip.addParameter('folder', 'commsub_triger', @ischar);
-ip.addParameter('zscore', [], @(x) iscellstr(x) || isstring(x));
-ip.addParameter('nolog', [], @(x) iscellstr(x) || isstring(x));
+ip.addParameter('zscore',     [], @(x) iscellstr(x) || isstring(x));
+ip.addParameter('nolog',      [], @(x) iscellstr(x) || isstring(x));
 ip.parse(varargin{:});
 Opt = ip.Results;
-
-folder = figuredefine(Opt.folder);
 
 % figure
 fields = fieldnames(specs);
@@ -19,7 +16,7 @@ if isempty(Opt.time)
 end
 tiledlayout(length(fields)+length(oneDplots), 1)
 fg = gcf;
-axs = [];
+axs = gobjects(length(fields), 1);
 for i = 1:length(fields)
     axs(i) = nexttile;
     f = fields{i};
@@ -37,8 +34,8 @@ for i = 1:length(fields)
 end
 linkaxes(axs, 'xy')
 if ~isempty(oneDplots)
-    nexttile
     for i = 1:length(oneDplots)
+        ax=nexttile;
         if iscell(oneDplots)
             odp = oneDplots{i};
         else
@@ -53,12 +50,13 @@ if ~isempty(oneDplots)
             if ~isempty(Opt.thresholds) && isfield(Opt.thresholds, fields{j})
                 yline(Opt.thresholds.(fields{j}), 'r')
             end
-            plot(Opt.time, odp.(fields{j}))
+            time = linspace(min(Opt.time), max(Opt.time), length(odp.(fields{j})));
+            plot(time, odp.(fields{j}))
             hold on
         end
         set(gca,'xlim', [min(Opt.time) max(Opt.time)])
         legend(fields)
         title(strjoin(fields, ' '))
+        linkaxes([axs(end-1) ax], 'x')
     end
-    linkaxes(findobj(fg, 'Type', 'Axes'), 'x')
 end

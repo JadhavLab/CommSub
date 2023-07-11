@@ -1,0 +1,54 @@
+function triggered_spec_struct(out, efizz, varargin)
+% This function is mean to be used with cca.triggered_spectrogram.m
+
+ip = inputParser;
+ip.addParameter('folder', 'trig_spec');
+ip.addParameter('figAppend', '');
+ip.KeepUnmatched = true;
+ip.parse(varargin{:});
+Opt = ip.Results;
+
+for i = 1:size(out,1)
+    for comp = 1:size(out,2)
+        spec_avg                = out(i,comp).spec_avg;
+        % threshold_crossed_times = out(i,comp).threshold_crossed_times;
+        u_average               = out(i,comp).u_average;
+        v_average               = out(i,comp).v_average;
+        time_avg                = out(i,comp).time_avg;
+        u_threshold             = out(i,comp).u_threshold;
+        v_threshold             = out(i,comp).v_threshold;
+        name                    = out(i,comp).name;
+        d                       = out(i,comp).direction;
+        if isempty(u_threshold) || isempty(v_threshold)
+            continue
+        end
+
+        % Now you have matrices where the third dimension represents different
+        % instances when the threshold was crossed. You can now take an average
+        % over the third dimension
+        thresholds=struct('u', u_threshold, 'v', v_threshold);
+        uv = struct('u', u_average(:,comp), 'v', v_average(:,comp));
+        UV = struct('u', u_average, 'v', v_average);
+        fig("spec avg direction " + d + " comp " + comp + " " + name); clf;
+        plots.triggered_spectrogram(efizz, spec_avg, uv, 'thresholds', thresholds,...
+            'nolog', ["Cavg", "Ctoppair"], 'time', time_avg);
+        sgtit = "spec avg direction " + name + newline + d + " comp " + comp;
+        sgtitle(sgtit);
+        sz  = get(0, 'Screensize');
+        pos = mod(comp-1, 10) * 0.1;
+        set(gcf, 'Position', [pos*sz(3) 0*sz(4) 0.1*sz(3) 1*sz(4)]);
+        saveas(gcf, figuredefine(Opt.folder, name+"spec-avg-direction_" + d + "_comp_" + comp + Opt.figAppend + ".png"));
+        saveas(gcf, figuredefine(Opt.folder, name+"spec-avg-direction_" + d + "_comp_" + comp + Opt.figAppend + ".pdf"));
+        saveas(gcf, figuredefine(Opt.folder, name+"spec-avg-direction_" + d + "_comp_" + comp + Opt.figAppend + ".fig"));
+        % Now let's just examine the U's and V's
+        fig("U and V direction " + d + " comp " + comp + " " + name); clf;
+        plots.triggered_spectrogram(efizz, UV, uv, 'thresholds', thresholds, ... 
+                'nolog', ["u", "v"], 'time', time_avg);
+        sgtit = "U and V direction " + name + newline + d + " comp " + comp;
+        sgtitle(sgtit);
+        set(gcf, 'Position', [pos*sz(3) 0*sz(4) 0.1*sz(3) 1*sz(4)]);
+        saveas(gcf, figuredefine(Opt.folder, name +"U-V-direction_" + d + "_comp_" + comp + Opt.figAppend + ".png"));
+        saveas(gcf, figuredefine(Opt.folder, name +"U-V-direction_" + d + "_comp_" + comp + Opt.figAppend + ".pdf"));
+        saveas(gcf, figuredefine(Opt.folder, name +"U-V-direction_" + d + "_comp_" + comp + Opt.figAppend + ".fig"));
+    end
+end
