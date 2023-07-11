@@ -65,7 +65,11 @@ elseif contains(Option.generateH, "fromFilteredEEG")
         "downsample",10, "sessionsToInclude", runningSessions);
 elseif contains(Option.generateH, "fromCoherence")
     load(Option.animal + "spectralBehavior.mat");
-    spectrogram   = efizz.C;
+    if isfield(efizz, "Cavg")
+        spectrogram   = efizz.Cavg;
+    else
+        spectrogram   = efizz.C;
+    end
     frequencyAxis = efizz.f;
     times         = efizz.t;
     [H, Hvals, Hnanlocs, times] = events.generateFromSpectra(times, spectrogram, frequencyAxis,...

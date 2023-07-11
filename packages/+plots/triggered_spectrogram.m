@@ -4,6 +4,7 @@ function triggered_spectrogram(efizz, specs, oneDplots, varargin)
 ip = inputParser;
 ip.addParameter('time',       [], @isnumeric);
 ip.addParameter('thresholds', [], @isstruct);
+ip.addParameter('means',     [], @isstruct);
 ip.addParameter('zscore',     [], @(x) iscellstr(x) || isstring(x));
 ip.addParameter('nolog',      [], @(x) iscellstr(x) || isstring(x));
 ip.parse(varargin{:});
@@ -20,14 +21,18 @@ axs = gobjects(length(fields), 1);
 for i = 1:length(fields)
     axs(i) = nexttile;
     f = fields{i};
+    s = specs.(f);
+    if ~isempty(Opt.means) && isfield(Opt.means, f)
+        s = s - Opt.means.(f);
+    end
     if ismember(f, Opt.zscore)
         % along the time axis
-        specs.(f) = zscore(specs.(f), [], 1);
-        imagesc(Opt.time, efizz.f, specs.(f)')
+        specs.(f) = zscore(s, [], 1);
+        imagesc(Opt.time, efizz.f, s')
     elseif ismember(f, Opt.nolog)
-        imagesc(Opt.time, efizz.f, specs.(f)')
+        imagesc(Opt.time, efizz.f, s')
     else
-        imagesc(Opt.time, efizz.f, log(specs.(f))')
+        imagesc(Opt.time, efizz.f, signedlog(s)')
     end
     set(gca, 'YDir', 'normal')
     title(f)

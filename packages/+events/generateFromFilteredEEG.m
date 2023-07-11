@@ -71,6 +71,9 @@ for iPattern = 1:nPatterns
         if ~isequal( singleStruct.area , brainArea )
             continue
         end
+
+        % Ensure double
+        singleStruct.samprate = double(singleStruct.samprate);
         
         % Get times of this single day-ep-brainarea
         singleTime = geteegtimes(singleStruct);
@@ -80,7 +83,7 @@ for iPattern = 1:nPatterns
         
         % DOWNSAMPLE?
         if ~isempty(opt.downsample) % IF A DOWNSAMPLE IS GIVEN BY THE USER, USE IT
-             eegData     = downsample(eegData,opt.downsample);
+             eegData    = downsample(eegData,opt.downsample);
              singleTime = downsample(singleTime,opt.downsample);
         end
 
@@ -92,9 +95,9 @@ for iPattern = 1:nPatterns
 %             eegData(toNan,:)   = nan;
         end
         
-        patternH = [patternH;     eegData(:,AMP)];
-        patternToNan = [patternToNan;  toNan];
-        times    = [times; singleTime(:)];
+        patternH     = [patternH     ; eegData(:,AMP)] ;
+        patternToNan = [patternToNan ; toNan]          ;
+        times        = [times        ; singleTime(:)]  ;
     end
     
     patternNanlocs = ones(1,length(patternToNan));
@@ -108,6 +111,6 @@ end
 H =  Hvals .* Hnanlocs;
 times = times';
 
-    figure;plot(Events.H)
-    hold on
-    % plot 85 percentile threshold
+figure;plot(Events.H)
+hold on
+% plot 85 percentile threshold

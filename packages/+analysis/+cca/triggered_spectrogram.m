@@ -43,6 +43,13 @@ total_window_size = 2 * window_size + 1;  % accounting for the point itself
 disp("Starting with " + length(Patterns_overall) + " patterns and " + ...
     length(Opt.components) + " components and ploton = " + Opt.ploton);
 
+Opt.means = [];
+Opt.mins = [];
+for field = Opt.specNames
+    Opt.means.(field{:}) = mean(efizz.(field{:}), 1);
+    Opt.mins.(field{:}) = min(efizz.(field{:}), [], 1);
+end
+
 % Loop over all patterns
 for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
 

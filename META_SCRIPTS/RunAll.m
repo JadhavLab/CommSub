@@ -48,7 +48,6 @@ disp(" -----------------------------------------")
 disp("Press any key to continue");
 pause
 
-
 dopar = false;
 if dopar
     jobs = [];
@@ -77,7 +76,9 @@ for genH_= progress(h_methods,'Title','genH method')
             'Workspace', {Option}, 'CurrentFolder', pwd);
         else
             %try
+            diary(figuredefine("logs", replace(strjoin([Option.animal, Option.generateH], "_"), " ", "") + ".log"));
             TheScript
+            diary off
             %catch MatlabException
                 %warning('Failed to run %s %s', Option.animal, Option.generateH);
             %end

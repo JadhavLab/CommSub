@@ -31,7 +31,8 @@ end
 if ~isempty(datatype)
     switch datatype
         case {'cgramc','cgramcnew'}
-            datatypeFolder = 'chronux_eeg';
+            % datatypeFolder = 'chronux_eeg'; % for RY animals
+            datatypeFolder = 'chronux_eegref'; % for JS animals
         case {'lfp','eeg','theta','delta','beta','gamma','eegref','ripple','rippleref','thetaref','deltaref'}
             datatypeFolder = 'EEG';
         case {'raw','mda','mdatab','deepinsight','deepinsightUnfilt'}

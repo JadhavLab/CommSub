@@ -12,8 +12,10 @@ case {'avgeeg','avgeegref','avgdelta','avgtheta','avgbeta','avggamma','avgripple
     levels = ["day","epoch","area"]; % area as in brain area
 case {'spikes','cellinfo','marks'}
     levels = ["day","epoch","tetrode","cell"];
-case {'cgramc','cgramcnew'}
+case {'cgramc'}
     levels = ["day","epoch","tetrodeX","tetrodeY"];
+case {'cgramcnew'}
+    levels = ["day","epoch"];
 otherwise
     warning('Datatype level not found')
 end

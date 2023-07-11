@@ -4,8 +4,6 @@ function triggered_spec_struct(out, efizz, varargin)
 ip = inputParser;
 ip.addParameter('folder', 'trig_spec');
 ip.addParameter('figAppend', '');
-ip.addParameter('means', []);
-ip.addParameter('mins', []);
 ip.KeepUnmatched = true;
 ip.parse(varargin{:});
 Opt = ip.Results;
@@ -41,7 +39,6 @@ for i = 1:size(out,1)
         set(gcf, 'Position', [pos*sz(3) 0*sz(4) 0.1*sz(3) 1*sz(4)]);
         saveas(gcf, figuredefine(Opt.folder, name+"spec-avg-direction_" + d + "_comp_" + comp + Opt.figAppend + ".png"));
         saveas(gcf, figuredefine(Opt.folder, name+"spec-avg-direction_" + d + "_comp_" + comp + Opt.figAppend + ".pdf"));
-        saveas(gcf, figuredefine(Opt.folder, name+"spec-avg-direction_" + d + "_comp_" + comp + Opt.figAppend + ".fig"));
         % Now let's just examine the U's and V's
         fig("U and V direction " + d + " comp " + comp + " " + name); clf;
         plots.triggered_spectrogram(efizz, UV, uv, 'thresholds', thresholds, ... 
@@ -51,19 +48,5 @@ for i = 1:size(out,1)
         set(gcf, 'Position', [pos*sz(3) 0*sz(4) 0.1*sz(3) 1*sz(4)]);
         saveas(gcf, figuredefine(Opt.folder, name +"U-V-direction_" + d + "_comp_" + comp + Opt.figAppend + ".png"));
         saveas(gcf, figuredefine(Opt.folder, name +"U-V-direction_" + d + "_comp_" + comp + Opt.figAppend + ".pdf"));
-        saveas(gcf, figuredefine(Opt.folder, name +"U-V-direction_" + d + "_comp_" + comp + Opt.figAppend + ".fig"));
-        if ~isempty(Opt.means)
-            fig("spec avg direction " + d + " comp " + comp + " " + name); clf;
-            plots.triggered_spectrogram(efizz, spec_avg, uv, 'thresholds', thresholds,...
-                'nolog', ["Cavg", "Ctoppair"], 'time', time_avg, 'means', Opt.means);
-            sgtit = "spec avg direction " + name + newline + d + " comp " + comp;
-            sgtitle(sgtit);
-            sz  = get(0, 'Screensize');
-            pos = mod(comp-1, 10) * 0.1;
-            set(gcf, 'Position', [pos*sz(3) 0*sz(4) 0.1*sz(3) 1*sz(4)]);
-            saveas(gcf, figuredefine(Opt.folder, name+"spec-avg-direction_" + d + "_comp_" + comp + Opt.figAppend + ".png"));
-            saveas(gcf, figuredefine(Opt.folder, name+"spec-avg-direction_" + d + "_comp_" + comp + Opt.figAppend + ".pdf"));
-            saveas(gcf, figuredefine(Opt.folder, name+"spec-avg-direction_" + d + "_comp_" + comp + Opt.figAppend + ".fig"));
-        end
     end
 end

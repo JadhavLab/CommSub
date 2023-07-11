@@ -65,7 +65,7 @@ if isempty(files)
     warning('No files found');
     res = {};
 else
-    for file = files'
+    for file = progress(files', 'Title', ['Loading ' char(datatype)])
 
         % If a simple grep filter is passed
         if ~isempty(Opt.simplefilter) && ~contains(file.name, Opt.simplefilter)
