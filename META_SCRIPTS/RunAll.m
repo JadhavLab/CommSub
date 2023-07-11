@@ -48,10 +48,19 @@ disp(" -----------------------------------------")
 disp("Press any key to continue");
 pause
 
+
+dopar = false;
+if dopar
+    jobs = [];
+end
+
 %% Run
 pickup_where_left_off = true;
+[cntAn, cntH] = deal(0);
 for genH_= progress(h_methods,'Title','genH method')
+    cntH = cntH + 1;
     for iAnimal = progress(1:numel(animal_list),'Title','Animal')
+        cntAn = cntAn + 1;
         Option.animal = animal_list(iAnimal);
         Option.generateH = genH_;
         disp("Running " + Option.animal + " " + Option.generateH);
@@ -63,12 +72,17 @@ for genH_= progress(h_methods,'Title','genH method')
         if pickup_where_left_off == false
             continue
         end
-        %try
-        TheScript
-        %catch MatlabException
-            %warning('Failed to run %s %s', Option.animal, Option.generateH);
-        %end
-        last_run = [Option.animal, Option.generateH];
-        save(progress_file, "last_run");
+        if dopar
+            jobs(cntH, cntAn) = batch(TheScript, ...
+            'Workspace', {Option}, 'CurrentFolder', pwd);
+        else
+            %try
+            TheScript
+            %catch MatlabException
+                %warning('Failed to run %s %s', Option.animal, Option.generateH);
+            %end
+            last_run = [Option.animal, Option.generateH];
+            save(progress_file, "last_run");
+        end
     end 
 end
