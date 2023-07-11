@@ -20,10 +20,11 @@ else
     Option = option.setdefaults(Option);
 end
 %%%%%%%%%%%%%%%% DISPLAY OUR OPTIONS TO USER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if isequal(Option.loadifexists, false) && exist(store.gethash(Option) + ".mat", 'file')
+if isequal(Option.loadifexists, false) && ...
+    exist(store.gethash(Option) + ".mat", 'file')
     disp("Loading from file: " + store.gethash(Option) + ".mat")
-    % m = matfile(store.gethash(Option) + ".mat");
-    m = matfile("bef0923.mat", "Writable", true);
+    m = matfile(store.gethash(Option) + ".mat");
+    % m = matfile("bef0923.mat", "Writable", true);
     disp("Loaded variables: ")
     Events             = util.matfile.getdefault(m, 'Events', []);
     Spk                = util.matfile.getdefault(m, 'Spk', []);
@@ -33,7 +34,6 @@ if isequal(Option.loadifexists, false) && exist(store.gethash(Option) + ".mat", 
     Components_overall = util.matfile.getdefault(m, 'Components_overall', []);
     Option             = util.matfile.getdefault(m, 'Option', []);
     disp("...done")
-    clear m
 else
     %%%%%%%%%%%%%%%% OBTAIN EVENT MATRICES    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     disp("------------------------")
@@ -157,10 +157,16 @@ if Option.analysis.cca
     event_anal   = analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
     Components_overall = ... 
          nd.fieldSet(Components_overall, 'event_anal', event_anal);
+    % Triggered spectrogram
+    efizz = load(Option.animal + "spectralBehavior.mat", "efizz");
+    efizz = efizz.efizz;
+    triggered_spectrogram = ...
+         analysis.cca.triggered_spectrogram(Patterns_overall(i), Spk, efizz);
 end
 
 if Option.analysis.timeVarying
     % How much spiking moment to moment is explained by subspace
+    % Requirements: Option.analysis.cca
     % TODO: 1 .also return epochwise zscored neural firing matching
     %       2. return timeseries of smoothed firing rate
     running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
@@ -172,18 +178,10 @@ if Option.analysis.timeVarying
     % Spectral matches
     Components_overall = ... 
     plots.temporal.correlateSpectral(Components_overall, Events, Option);
-    Components_overall = ... 
+    Components_overall = ... thescript
     plots.temporal.correlateSpectral(Components_overall, Events, Option, 'componentMethod', 'cca');
     % Behavior matches
     Components         = plots.temporal.correlateBehavior(Components, Events, Option);
-    % Triggered spectrogram
-    efizz = load(Option.animal + "spectralBehavior.mat");
-    efizz = efizz.efizz;
-    for i = progress(1:numel(Patterns_overall), 'Title', 'Triggered spectrogram')
-        Components_overall(i).triggered_spectrogram = ...
-             analysis.cca.triggered_spectrogram(Patterns_overall(i), Spk, efizz);
-        % plots.triggered_spectrogram(efizz, triggered_spectrogram(i), Option);
-    end
 end
 
 if Option.analysis.checks

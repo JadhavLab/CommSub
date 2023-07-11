@@ -121,6 +121,7 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
                 if source ~= target
                     assert(numel(s_ind_all) ~= numel(t_ind_all), 'Source and target areas are the same')
                 end
+                directionality = source + "-" + target;
                 % Assign x_source and x_target
                 assert(~clean.isRankDeficient(s_all));
                 Patterns_overall(j,i).X_source = s_all;
