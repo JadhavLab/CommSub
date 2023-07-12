@@ -77,6 +77,8 @@ for n = progress(1:numel(Patterns), 'Title', 'RankRegress')
     % "+j+" direction")
     curr_source = double(p.X_source');
     curr_target = double(p.X_target');
+    nSource = size(curr_source, 2);
+    nTarget = size(curr_target, 2);
 
     nan_rows = any(isnan(curr_source), 2) | ...
                any(isnan(curr_target), 2); % setect
@@ -100,7 +102,7 @@ for n = progress(1:numel(Patterns), 'Title', 'RankRegress')
               numDimsUsedForPrediction);
 
     if verbose
-        disp("Opt dim: " + p.rankRegress.optDimReducedRankRegress)
+        disp(newline + "Opt dim: " + p.rankRegress.optDimReducedRankRegress)
     end
     if ploton
         fig('ploton');
