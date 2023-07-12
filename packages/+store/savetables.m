@@ -40,7 +40,7 @@ Optimtable.cutoffs       = Events.cutoffs;
 
 % Create a table of options and table of patterns
 Optiontable  = struct2table(Option, 'AsArray', true);
-Patterntable = query.getPatternTable(Patterns);
+Patterntable = query.getPatternTable(Patterns, Option);
 
 % Combine option columns with hash and date
 tablerow = [Optiontable, Optimtable];

@@ -17,6 +17,24 @@ function new_table = flexvertcat(A, B)
 varsA = A.Properties.VariableNames;
 varsB = B.Properties.VariableNames;
 
+%% Check if the columns that exist in both tables have the same type.
+common_columns = intersect(varsA, varsB);
+for i = 1:numel(common_columns)
+    columnName = common_columns{i};
+    if ~isa(A.(columnName), class(B.(columnName)))
+        try
+            A.(columnName) = feval(class(B.(columnName)), A.(columnName));
+        catch ME
+            if isa(A.(columnName), 'cell') && all(cellfun(@isempty, A.(columnName)))
+                A.(columnName) = repmat(feval(class(B.(columnName)), NaN), height(A), 1);
+            else
+                warning('Failed to convert column %s from %s to %s: %s', ...
+                        columnName, class(A.(columnName)), class(B.(columnName)), ME.message);
+            end
+        end
+    end
+end
+
 %% determine columns in A but not in B
 add_columns = setdiff(varsA, varsB);
 for i = 1:numel(add_columns)

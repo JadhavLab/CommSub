@@ -88,8 +88,8 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
         for j = 1:length(windows)
 
             % Find the time bins that correspond to the current event
-            event_time_bins = find(Spk.timeBinStartEnd >= windows(j,1) &...
-                Spk.timeBinStartEnd <= windows(j,2));
+            event_time_bins = find(Spk.timeBinMidPoints >= windows(j,1) &...
+                Spk.timeBinMidPoints <= windows(j,2));
             if isempty(event_time_bins)
                 continue;
             end
