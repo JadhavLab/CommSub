@@ -75,7 +75,7 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
         nSource = size(pattern.X_source,1);
         nTarget = size(pattern.X_target,1);
     end
-    animal = pattern.animal;
+    animal = Option.animal;
     %Output properties
     rrDim = pattern.rankRegress.optDimReducedRankRegress;
     if isfield(pattern,'factorAnalysis') && ~isempty(pattern.factorAnalysis) && isfield(pattern.factorAnalysis,'optDimFactorRegress')
@@ -114,8 +114,8 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
         directionality, rrDim, percMax_rrDim, qOpt,...
         percMax_faDim, full_model_performance, first_comp_perf,...
         second_comp_perf, singularWarning);
+    rowAddition = rowAddition(:, setdiff(rowAddition.Properties.VariableNames, row.Properties.VariableNames));
     row = [row, rowAddition];
-
     T = [T; row];
 end
 

@@ -1,11 +1,11 @@
-function savevars(Option, Events, Spk, varargin)
+function savevars(Option, Events, Spk, saveVars)
 
-
-savestruct = struct('Option', Option, varargin{:});
+savestruct = struct('Option', Option);
+hash = store.gethash(Option);
 
 thisFile = fullfile(hashdefine(), hash + ".mat");
 disp("Saving ...");
-tic; save(thisFile, saveVars{:},'-v7.3');
+tic; save(thisFile, '-struct', 'saveVars','-v7.3');
 disp("... " + toc + " seconds");
 % link most recent state
 pushd(hashdefine());
@@ -15,7 +15,10 @@ system("ln -sf " + hash + ".mat " + recencyName);
 popd()
 % save raw?
 if Option.saveRaw
-disp("Saving raw...");
-tic; save(thisFile, "Events", "Spk",'-v7.3', '-append');
-disp("... " + toc + " seconds");
+	disp("Saving raw...");
+	tic; save(thisFile, "Events", "Spk",'-v7.3', '-append');
+	disp("... " + toc + " seconds");
 end
+
+datetime_=datetime();
+save(thisFile, "datetime_",'-v7.3', '-append');

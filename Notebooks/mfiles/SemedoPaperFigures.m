@@ -1,7 +1,7 @@
 % TODO:
 % 1. Animal-wise version of this 
 % 2.
-%
+
 % paths
 addpath(genpath(codedefine()))
 addpath(hashdefine())
@@ -20,10 +20,9 @@ filtstring = ["ismember($animal, [""JS21"",""ZT2"",""ER1"",""JS14"",""JS13"",""J
                                    "$quantileToMakeWindows == 0.85",...
                                    "arrayfun(@(x)isequal($winSize(x,:), [0,0.3]), 1:size($winSize,1))'"];
 % Get the proper keys
-matching_runs = query.getHashed_stringFilt(RunsSummary, filtstring);
+matching_runs = query.getHashed_stringFilt(RunsSummary, filtstring,...
+                        'mostrecent', ["animal", "generateH"]);
 disp("Number of matches found: " + height(matching_runs))
-
-%%
 
 %%
 
@@ -80,7 +79,7 @@ Patterns = nd.apply(Patterns, "nTarget-X_target", @(x) size(x,1) );
 [[Patterns(:, 1,1,1,1,1,1).animal]', [Option(:,1,1,1,1,1).animal]']
 [[Patterns(:, 1,1,1,1,1,1).generateH]', [Option(:,1,1,1,1,1).generateH]']
 P = munge.reshapeByLabels(Patterns, 1, [Option.generateH],  'checksumSplitField', 'animal');
-O   = munge.reshapeByLabels(Option, 1,   [Option.generateH], 'checksumSplitField', 'animal');
+O = munge.reshapeByLabels(Option, 1,   [Option.generateH], 'checksumSplitField', 'animal');
 
 
 % Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
@@ -289,6 +288,7 @@ if useSinglePrediction
     sprintf(formatSpec2,Patterns(1,1).directionality,median_singlehh)
     sprintf(formatSpec2,Patterns(1,2).directionality,median_singlehp)
 end
+
 %% Figure 4
 
 withPredDims;

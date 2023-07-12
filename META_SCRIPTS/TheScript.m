@@ -218,15 +218,14 @@ if Option.save
     disp("Saving results")
     store.savetables(Events, Patterns, Option);
 
-    saveVars = {};
+    saveVars = [];
     if exist('Patterns','var')
-        saveVars = [saveVars, {'Patterns', Patterns, ...
-                               'Patterns_overall', Patterns_overall}];
+        saveVars.Patterns = Patterns;
+        saveVars.Patterns_overall = Patterns_overall;
     end
     if exist('Components', 'var')
-        saveVars = [saveVars, {'Components', Components, ...
-                               'Components_overall', Components_overall}];
+        saveVars.Components         = Components;
+        saveVars.Components_overall = Components_overall;
     end
-    store.savevars(Option, Event, Spk, saveVars{:});
-    
+    store.savevars(Option, Events, Spk, saveVars);
 end

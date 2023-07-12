@@ -12,19 +12,18 @@ commsubspaceToPath
 Option = option.defaults();
 
 animal_list = [...
-                "JS21",...
-                "JS15",...
-                "JS14",...
-                "JS13",...
-                "JS17",...
-                "ER1",...
-                "ZT2"...
+    "JS21",... "JS15",...
+    "JS14",...
+    "JS13",...
+    "JS17",...
+    "ER1",...
+    "ZT2"...
 ];
 
 h_methods = [  ...
-             ..."fromSpectra  fromRipTimes"   ...SPECTRAL POWER
-             ..."fromCoherence  fromRipTimes"... COHERENCE
-            "fromWpli  fromRipTimes", ...    WPLI
+     "fromSpectra  fromRipTimes"   ...SPECTRAL POWER
+     ..."fromCoherence  fromRipTimes"... COHERENCE
+    ..."fromWpli  fromRipTimes", ...    WPLI
             ];
 
 %  Load previous progress
@@ -47,6 +46,7 @@ disp("Last run was " + last_run);
 disp(" -----------------------------------------")
 disp("Press any key to continue");
 pause
+first = false;
 
 dopar = false;
 if dopar
@@ -54,22 +54,27 @@ if dopar
 end
 
 %% Run
-pickup_where_left_off = true;
+pickup_where_left_off = false; % false to look for last processed, true to default process all (loop sets a false to true when finds correct last animal/genH)
 [cntAn, cntH] = deal(0);
-for genH_= progress(h_methods,'Title','genH method')
-    cntH = cntH + 1;
-    for iAnimal = progress(1:numel(animal_list),'Title','Animal')
-        cntAn = cntAn + 1;
+for genH_= progress(h_methods,'Title','genH method'); cntH = cntH + 1;
+for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1;
         Option.animal = animal_list(iAnimal);
         Option.generateH = genH_;
-        disp("Running " + Option.animal + " " + Option.generateH);
-        if isequal([Option.animal, Option.generateH], last_run)
+        if ~isequal([Option.animal, Option.generateH], last_run)
            pickup_where_left_off = true;
         else
            disp("Skipping previous run");
         end
         if pickup_where_left_off == false
             continue
+        end
+        disp(newline + "-------------------------------");
+        disp("Running " + Option.animal + " " + Option.generateH);
+        disp("-------------------------------");
+        if ~first
+            pause
+            disp("Press any key to continue");
+            first = true;
         end
         if dopar
             jobs(cntH, cntAn) = batch(TheScript, ...
@@ -85,5 +90,5 @@ for genH_= progress(h_methods,'Title','genH method')
             last_run = [Option.animal, Option.generateH];
             save(progress_file, "last_run");
         end
-    end 
-end
+end % genH
+end % animal

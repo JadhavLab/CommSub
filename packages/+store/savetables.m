@@ -13,14 +13,14 @@ end
 tableFolder = fullfile(string(codedefine()), "DATA_TABLES");
 tabname     = @(x) fullfile(tableFolder, x);
 if exist(tabname("RunsSummary" + Option.tableAppend + ".mat"), 'file') 
-load(tabname("RunsSummary" + Option.tableAppend + ".mat"));
+load(tabname("RunsSummary" + Option.tableAppend + ".mat"), 'RunsSummary');
 else
 RunsSummary = table();
 end
 
 %% DetailedRunsSummary: Summary of information for runs
 if exist(tabname("DetailedRunsSummary" + Option.tableAppend + ".mat"), 'file') 
-load(tabname("DetailedRunsSummary" + Option.tableAppend + ".mat"));
+load(tabname("DetailedRunsSummary" + Option.tableAppend + ".mat"), 'DetailedRunsSummary');
 else
 warning("no existing DetailedRunsSummary table")
 DetailedRunsSummary = table();
@@ -28,7 +28,7 @@ end
 
 % Identifying information about this options set and date of run
 hash = store.gethash(Option);
-timestamp = string(date());
+timestamp = string(datetime());
 
 % Determine information to add to table
 Optim=params.getOptimizationParams(Patterns,Events,Option);
