@@ -151,6 +151,7 @@ for n = progress(1:numel(Patterns), 'Title', 'RankRegress')
             if clean.zeroFiring(curr_singlesource)
                 continue;
             end
+            try
             [~,~, dim_singleprediction{k}, B_singleprediction{k},~,~] = ...
                 rankRegressRoutine(cvFun,...
                                    cvNumFolds, ...
@@ -158,6 +159,10 @@ for n = progress(1:numel(Patterns), 'Title', 'RankRegress')
                                    curr_target, ...
                                    curr_singlesource,...
                                    numDimsUsedForPrediction);
+            catch
+                dim_singleprediction{k} = nan;
+                B_singleprediction{k} = []
+            end
         end
 
         p.rankRegress.singlesource_B = B_singleprediction;

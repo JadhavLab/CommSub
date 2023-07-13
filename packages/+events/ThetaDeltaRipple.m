@@ -66,8 +66,10 @@ elseif contains(Option.generateH, "fromFilteredEEG")
 elseif contains(Option.generateH, "fromCoherence")
     load(Option.animal + "spectralBehavior.mat");
     if isfield(efizz, "Cavg")
+        disp("Using new average coherence field");
         spectrogram   = efizz.Cavg;
     else
+        disp("Using old coherence field");
         spectrogram   = efizz.C;
     end
     frequencyAxis = efizz.f;
