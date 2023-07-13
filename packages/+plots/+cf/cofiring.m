@@ -87,8 +87,8 @@ for i = progress(1:nPatterns)
     mean_corrwithhpc = [mean_corrwithhpc, cur_mean_withhpc];
     mean_corrwithpfc = [mean_corrwithpfc, cur_mean_withpfc];
     
-    std_corrwithhpc = [std_corrwithhpc, cur_mean_withhpc];
-    std_corrwithpfc = [std_corrwithpfc, cur_mean_withpfc];
+    std_corrwithhpc = [std_corrwithhpc, cur_std_withhpc];
+    std_corrwithpfc = [std_corrwithpfc, cur_std_withpfc];
 end
 
 % Output documentation

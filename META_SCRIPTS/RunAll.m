@@ -12,7 +12,8 @@ commsubspaceToPath
 Option = option.defaults();
 
 animal_list = [...
-    "JS21",... "JS15",...
+    "JS21",...
+    "JS15",...
     "JS14",...
     "JS13",...
     "JS17",...
@@ -24,12 +25,16 @@ h_methods = [  ...
      "fromSpectra  fromRipTimes"   ...SPECTRAL POWER
      ..."fromCoherence  fromRipTimes"... COHERENCE
     ..."fromWpli  fromRipTimes", ...    WPLI
-            ];
+];
 
 %  Load previous progress
-progress_file = fullfile(hashdefine(), "last_run.mat");
+progress_file = fullfile(hashdefine(), "last_run_coh.mat");
 if exist(progress_file, "file")
-    load(progress_file, "last_run");
+    try
+        load(progress_file, "last_run");
+    catch
+        last_run = [];
+    end
 else
     last_run = [];
 end

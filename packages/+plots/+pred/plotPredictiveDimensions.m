@@ -1,9 +1,24 @@
 function [full_model, pred_by_dim] = plotPredictiveDimensions(numDimsUsedForPrediction, cvLoss, varargin)
-
+% [full_model, pred_by_dim] = plotPredictiveDimensions(numDimsUsedForPrediction, cvLoss, varargin)
+%
 % Plot Reduced Rank Regression cross-validation results or factor analysis
-% cross-validation results
-% also returns the averaged full model
-% full_model = 1-curr_cvLoss(1,end);
+% cross-validation results also returns the averaged full model full_model =
+% 1-curr_cvLoss(1,end);
+%
+% Inputs:
+%   numDimsUsedForPrediction: number of dimensions used for prediction
+%   cvLoss: cross-validation loss
+%   varargin: optional arguments
+%       'mode': 'rr' or 'fa'
+%       'color': color of the plot
+%       'averaged': whether to average the performance for that partition
+%       'normalized': whether to normalize the performance
+%       'do_plot': whether to plot the results
+%       'optDim': optimal dimension
+%
+% Outputs:
+%   full_model: averaged full model
+%   pred_by_dim: performance by dimension
 
 
 ip = inputParser;

@@ -5,6 +5,7 @@
 % paths
 addpath(genpath(codedefine()))
 addpath(hashdefine())
+const = option.constants();
 
 %% load
 multi_epoch = false; % usually first 3, last 3 epochs
@@ -92,8 +93,8 @@ dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 % 
 % *(nMethods * nPartiton * nDirection * nPatterns)*
 
-%% Calculate the pattern table
-T = query.getPatternTable(Patterns);
+%% Calculate the pattern 
+T = query.getPatternTable(Patterns, Option);
 
 % Figure 2A: Cofiring in source and target
 % 
@@ -171,7 +172,7 @@ close all
 % the difference in cofiring between hpc-hpc pairs and hpc-pfc pairs
 % are significant for all the activity patterns
 
-plots.cf.plotCfExampByDirection(Fig2.a.all,  Patterns, Option, "figAppend", 'all');
+lots.cf.plotCfExampByDirection(Fig2.a.all,  Patterns, Option, "figAppend", 'all');
 plots.cf.plotCfExampByDirection(Fig2.a.spec, Patterns, Option, "figAppend", 'spec');
 plots.cf.plotCfExampByDirection(Fig2.a.coh,  Patterns, Option, "figAppend", 'coh');
 plots.cf.plotCfExampByDirection(Fig2.a.wpli, Patterns, Option, "figAppend", 'wp');
@@ -197,6 +198,7 @@ Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
 Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
                         'figAppend', 'all-log',...
                         'yscale', 'log');
+Fig2.datetime = datetime('now');
 %% 
 close all
 
@@ -215,14 +217,71 @@ close all
 
 % TODO: Series of heatmaps to examine corr and pred
 
-%%
+%% Stupid test - possibly erase - not sure why this was done
 % Check how dist of corr differs from dist of pred score 
 
+% Blurt out the mean predictability of each target neuron at each condition
+% (each cell holds size 1 x nNeuron)
+% Stupid test - are these distributions different?
 r_withhpc_patterns = [Fig2.b.r_withhpc_patterns{:}];
-with_hpc_corr = [r_withhpc_patterns.r];
+r_withpfc_patterns = [Fig2.b.r_withpfc_patterns{:}];
+[h_hpc, p_hpc] = kstest2(r_withhpc_patterns, Fig2.a.all.all_pairs_withhpc);
+[h_pfc, p_pfc] = kstest2(r_withhpc_patterns, Fig2.a.all.all_pairs_withpfc);
 
-[h_hpc, p_hpc] = kstest2(Fig2.b.meanpred_hpc, Fig2.a.all.mean_withhpccorr_partition);
-[h_pfc, p_pfc] = kstest2(Fig2.b.meanpred_pfc, Fig2.a.all.mean_withpfccorr_partition);
+%% GET PRED PERFORMANCE
+
+% Get the size of the original array
+sz = size(Patterns);
+% Calculate the product of the dimensions to collapse
+collapsed_size = prod(sz(1:2));
+% Reshape the array
+ReshapedPatterns = squeeze(reshape(Patterns, [collapsed_size, sz(end-2:end)]));
+% Preallocate growing vectors
+r_withhpc_patterns     = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2), nTarget);
+r_withpfc_patterns     = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2), nTarget);
+single_pred_with_hpc   = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2), nSource, nTarget);
+single_pred_with_pfc   = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2), nSource, nTarget);
+patternPerformance_hpc = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2));
+patternPerformance_pfc = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2));
+% Combine similar operations
+regions = [const.HPC, const.PFC];
+for p = 1:size(ReshapedPatterns, 1)
+    for i = 1:nPatterns
+        for d = regions
+            curr_source = ReshapedPatterns(p,d,i).X_source';
+            curr_target = ReshapedPatterns(p,d,i).X_target';
+            curr_B      = ReshapedPatterns(p,d,i).rankRegress.B;
+            [performance, mean, ~] = plots.calculatePredictionPerformance(curr_source, curr_target, curr_B);
+            % Get single neuron prediction
+            single_pred_with_hpc = zeros(nSource, nTarget);
+            single_pred_with_pfc = zeros(nSource, nTarget);
+            for k = 1:nSource
+                curr_singleB = Patterns(p,d,i).rankRegress.singlesource_B{k};
+                if ~isempty(curr_singleB)
+                    continue
+                end
+                curr_singlesource = curr_source(:,k);
+                [singlepred,~] = plots.calculatePredictionPerformance(curr_singlesource, curr_target, curr_singleB);
+                if d == 1
+                    single_pred_with_hpc(i,p,k,:) = singlepred;
+                else
+                    single_pred_with_pfc(i,p,k,:) = singlepred;
+                end
+            end
+            if d == const.HPC
+                r_withhpc_patterns(i, p, :) = pattern;
+                patternPerformance_hpc(i, p)      = mean; % Adjusted index
+            else
+                r_withpfc_patterns(i, p, :) = pattern;
+                patternPerformance_pfc(i, p)      = mean; % Adjusted index
+            end
+        end
+    end
+end
+% Compute medians
+median_singlehh = median(single_pred_with_hpc(~isnan(single_pred_with_hpc)));
+median_singlehp = median(single_pred_with_pfc(~isnan(single_pred_with_pfc)));
+
 
 %%
 mean_withhpc = mean(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc))));
@@ -263,7 +322,7 @@ lineObject2 = line([median_singlehp,median_singlehp],[0 max(hist_hp.Values)]);
 lineObject2.LineWidth = 3;  % Thicken the line
 lineObject2.Color = 'blue'; % Color it black
 
-%%
+%% Performance
 figure(601)
 clf
 for i = 1:nPatterns
@@ -309,7 +368,7 @@ pfc_delta = T.generateH == 'fromFilteredEEG  fromRipTimes'...
 pfc_ripple = T.generateH == 'fromFilteredEEG  fromRipTimes'...
     & T.directionality == "hpc-pfc" & T.patternType == "ripple";
 
-hpc_pred = {T(hpc_theta,:).full_model_performance,T(hpc_delta,:).full_model_performance,T(hpc_ripple,:).full_model_performance};
+hpc_pred = T(hpc_theta,:).full_model_performance,T(hpc_delta,:).full_model_performance,T(hpc_ripple,:).full_model_performance;
 pfc_pred = {T(pfc_theta,:).full_model_performance,T(pfc_delta,:).full_model_performance,T(pfc_ripple,:).full_model_performance};
 
 
