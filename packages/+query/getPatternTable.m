@@ -14,22 +14,13 @@ Opt = ip.Results;
 if nargin > 1 && ~isempty(Option)
     % If user provides input in the form as an Option structure, we should
     % process those into the table
-    if isfield(Option,'winSize')
-        Option = rmfield(Option, 'winSize');
-    end
-    if isfield(Option,'generateH') % this is already a field of patterns
-        Option = rmfield(Option, 'generateH');
-    end
-    for field = string(fieldnames(Option))'
-        if isempty(Option.(field))
-            Option.(field) = "";
-        end
-        if length(Option.(field)) > 1
-            Option = rmfield(Option, field);
-        end
-    end
-
-    rowAddition = struct2table(Option);
+    Option = arrayfun(@option2table, Option, 'UniformOutput', false);
+    Option = broadcast_to_match(Option, size(Patterns));
+    Option = cat(1, Option{:});
+    assert(height(Option) == numel(Patterns), ...
+          "rowAddition is not the same size as Patterns")
+    assert(ismember("animal", Option.Properties.VariableNames), ...
+          "animal is not a field of Option")
 else
     rowAddition = table();
 end
@@ -50,9 +41,10 @@ if ~isfield(Patterns, "iPartition")
 end
 numUsedForPrediction = size(Patterns(1,1,1,1), 2);
 T = table();
+iP = 0;
 for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
-    
-   iPartition = pattern.iPartition;
+    iP = iP + 1;
+    iPartition = pattern.iPartition;
     patternType = pattern.name;
     directionality = pattern.directionality;
     if isempty(directionality)
@@ -75,7 +67,7 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
         nSource = size(pattern.X_source,1);
         nTarget = size(pattern.X_target,1);
     end
-    animal = Option.animal;
+    animal = Option(iP,:).animal;
     %Output properties
     rrDim = pattern.rankRegress.optDimReducedRankRegress;
     if isfield(pattern,'factorAnalysis') && ~isempty(pattern.factorAnalysis) && isfield(pattern.factorAnalysis,'optDimFactorRegress')
@@ -107,15 +99,17 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
     percMax_faDim = qOpt/maxDim;
     [full_model_performance,pred_by_perf] = plots.plotPredictiveDimensions...
          (numUsedForPrediction,pattern.rankRegress.cvLoss, "do_plot", false, "averaged", false);
-    first_comp_perf = pred_by_perf(1);
+    first_comp_perf  = pred_by_perf(1);
     second_comp_perf = pred_by_perf(2);
         
     row = table(animal,generateH,epoch,iPartition, source, target, patternType, nSource, nTarget, ...
         directionality, rrDim, percMax_rrDim, qOpt,...
         percMax_faDim, full_model_performance, first_comp_perf,...
         second_comp_perf, singularWarning);
-    rowAddition = rowAddition(:, setdiff(rowAddition.Properties.VariableNames, row.Properties.VariableNames));
-    row = [row, rowAddition];
+    rowAddition = Option(iP, setdiff(Option.Properties.VariableNames, row.Properties.VariableNames));
+    for field = string(rowAddition.Properties.VariableNames)
+        row.(field) = rowAddition.(field);
+    end
     T = [T; row];
 end
 
@@ -145,3 +139,30 @@ if factorAnalysisChecksum
     end
 end
 % ------------------------------------------------
+
+function rowAddition = option2table(Option)
+    if isfield(Option,'winSize')
+        Option = rmfield(Option, 'winSize');
+    end
+    if isfield(Option,'generateH') % this is already a field of patterns
+        Option = rmfield(Option, 'generateH');
+    end
+    for field = string(fieldnames(Option))'
+        if isempty(Option.(field))
+            Option.(field) = "";
+        end
+        if length(Option.(field)) > 1
+            Option = rmfield(Option, field);
+        end
+    end
+    rowAddition = struct2table(Option);
+
+function B = broadcast_to_match(A, sz)
+    % Get the size of the input array
+    szA = size(A);
+    % Pad szA to sz dimension
+    szA = [szA ones(1, length(sz) - length(szA))];
+    % Calculate the number of repetitions needed in each dimension
+    rep = bsxfun(@rdivide, sz, szA);
+    % Use repmat to replicate and tile the input array
+    B = repmat(A, rep);
