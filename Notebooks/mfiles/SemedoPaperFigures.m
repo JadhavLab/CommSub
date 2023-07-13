@@ -237,58 +237,65 @@ collapsed_size = prod(sz(1:2));
 % Reshape the array
 ReshapedPatterns = squeeze(reshape(Patterns, [collapsed_size, sz(end-2:end)]));
 % Preallocate growing vectors
-r_withhpc_patterns     = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2), nTarget);
-r_withpfc_patterns     = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2), nTarget);
-single_pred_with_hpc   = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2), nSource, nTarget);
-single_pred_with_pfc   = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2), nSource, nTarget);
-patternPerformance_hpc = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2));
-patternPerformance_pfc = nan(Option(1).nPatternAndControl, size(ReshapedPatterns, 2));
-% Combine similar operations
-regions = [const.HPC, const.PFC];
-for p = 1:size(ReshapedPatterns, 1)
-    for i = 1:nPatterns
+combinedPatternsTable   = table();
+singlePredTable         = table();
+patternPerformanceTable = table();
+for p = progress(1:size(ReshapedPatterns, 1), 'Title', 'Animal*GenH*Partition')
+    for i = 1:Option(1).nPatternAndControl
         for d = regions
-            curr_source = ReshapedPatterns(p,d,i).X_source';
-            curr_target = ReshapedPatterns(p,d,i).X_target';
-            curr_B      = ReshapedPatterns(p,d,i).rankRegress.B;
-            [performance, mean, ~] = plots.calculatePredictionPerformance(curr_source, curr_target, curr_B);
-            % Get single neuron prediction
-            single_pred_with_hpc = zeros(nSource, nTarget);
-            single_pred_with_pfc = zeros(nSource, nTarget);
-            for k = 1:nSource
-                curr_singleB = Patterns(p,d,i).rankRegress.singlesource_B{k};
-                if ~isempty(curr_singleB)
+            % Existing code here
+            % Get current nTarget and nSource
+            currSource = ReshapedPatterns(p, d, i).X_source';
+            currTarget = ReshapedPatterns(p, d, i).X_target';
+            currB = ReshapedPatterns(p, d, i).rankRegress.B;
+            nSource = repmat(size(currSource, 2), size(currTarget, 2), 1);
+            nTarget = repmat(size(currTarget, 2), size(currTarget, 2), 1);
+            iTarget = 1:nTarget;
+            iSource = 1:nSource;
+            animal = repmat(ReshapedPatterns(p, d, i).animal, nTarget(1), 1);
+            genH   = repmat(ReshapedPatterns(p, d, i).genH_name, nTarget(1), 1);
+            direction = repmat(ReshapedPatterns(p, d, i).directionality, nTarget(1), 1);
+            name = repmat(ReshapedPatterns(p, d, i).name, nTarget(1), 1);
+            [perf, mu, dev] = plots.calculatePredictionPerformance(currSource, currTarget, currB);
+            mu = repmat(mu, nTarget(1), 1);
+            dev = repmat(dev, nTarget(1), 1);
+            newtab = table(animal, genH, name, direction, nSource, nTarget, iTarget', perf', mu, dev);
+            combinedPatternsTable = [combinedPatternsTable; newtab];
+            for iSource = 1:nSource(1)
+                if ~isfield(ReshapedPatterns(p,d,i), 'rankRegress') || ...
+                    ~isfield(ReshapedPatterns(p,d,i).rankRegress, 'singlesource_B')
                     continue
                 end
-                curr_singlesource = curr_source(:,k);
-                [singlepred,~] = plots.calculatePredictionPerformance(curr_singlesource, curr_target, curr_singleB);
-                if d == 1
-                    single_pred_with_hpc(i,p,k,:) = singlepred;
-                else
-                    single_pred_with_pfc(i,p,k,:) = singlepred;
+                curr_singleB = ReshapedPatterns(p,d,i).rankRegress.singlesource_B;
+                if isempty(curr_singleB)
+                    continue
                 end
-            end
-            if d == const.HPC
-                r_withhpc_patterns(i, p, :) = pattern;
-                patternPerformance_hpc(i, p)      = mean; % Adjusted index
-            else
-                r_withpfc_patterns(i, p, :) = pattern;
-                patternPerformance_pfc(i, p)      = mean; % Adjusted index
+                iSource
+                curr_singleB = curr_singleB{iSource};
+                curr_singlesource = curr_source(:,iSource);
+                [perf, mu, dev] = plots.calculatePredictionPerformance(curr_singlesource, currTarget, curr_singleB);
+                iSource = repmat(iSource, nTarget(1), 1);
+                newtab = table(animal, genH, direction, nSource, nTarget, iSource, iTarget', perf', mu, dev);
+                singlePredTable = [singlePredTable; newtab];
             end
         end
     end
 end
+if ~exist(figuredefine("tables"), 'dir'), mkdir(figuredefine("tables")); end
+savetable(combinedPatternsTable, fullfile(figuredefine("tables"), 'fig2_prediction.csv'));
+savetable(singlePredTable, fullfile(figuredefine("tables"), 'fig2_singlePrediction.csv'));
+
 % Compute medians
-median_singlehh = median(single_pred_with_hpc(~isnan(single_pred_with_hpc)));
-median_singlehp = median(single_pred_with_pfc(~isnan(single_pred_with_pfc)));
+median_singlehh = median(single_pred_with_hpc(~isnan(single_pred_with_hpc))); % median of single neuron prediction with hpc
+median_singlehp = median(single_pred_with_pfc(~isnan(single_pred_with_pfc))); % median of single neuron prediction with pfc
 
 
 %%
-mean_withhpc = mean(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc))));
-std_withhpc  = std(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc))));
+mean_withhpc = mean(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc)))); % mean of r2 with hpc
+std_withhpc  = std(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc)))); % std of r2 with hpc
 
-mean_withpfc = mean(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_square_withpfc))));
-std_withpfc  = std(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_square_withpfc))));
+mean_withpfc = mean(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_square_withpfc)))); % mean of r2 with pfc
+std_withpfc  = std(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_square_withpfc)))); % std of r2 with pfc
 
 subplot(2,1,1)
 ax1 = nexttile;
