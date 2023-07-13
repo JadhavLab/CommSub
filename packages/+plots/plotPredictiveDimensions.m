@@ -16,8 +16,6 @@ ip.addParameter("optDim", []);
 ip.parse(varargin{:});
 opt = ip.Results;
 
-
-
 x = 1:numDimsUsedForPrediction;
 nonsingular = [];
 if ~opt.averaged
@@ -30,7 +28,6 @@ if ~opt.averaged
     if ~isempty(opt.optDim)
         optDim = opt.optDim;
     end
-   
     
     for i = 1:size(cvLoss,2)
         pred_by_dim(i) = 1-cvLoss(1,i);
