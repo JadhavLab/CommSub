@@ -141,8 +141,8 @@ for p = 1:10
     mean_corrwithhpc = [mean_corrwithhpc, cur_mean_withhpc];
     mean_corrwithpfc = [mean_corrwithpfc, cur_mean_withpfc];
     
-    std_corrwithhpc = [std_corrwithhpc, cur_mean_withhpc];
-    std_corrwithpfc = [std_corrwithpfc, cur_mean_withpfc];
+    std_corrwithhpc = [std_corrwithhpc, cur_std_withhpc];
+    std_corrwithpfc = [std_corrwithpfc, cur_std_withpfc];
     
 end
 % hh_pairs_patterns = hh_pairs_patterns(~all(isnan(hh_pairs_patterns), 2))
