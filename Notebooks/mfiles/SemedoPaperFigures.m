@@ -30,7 +30,7 @@ disp("Number of matches found: " + height(matching_runs))
 if multi_epoch
     keys = [];
     for i = 1:height(matching_runs)
-        if numel(matching_runs(i,:).epochsSelected{1} ) ==3 % change this to 3 for 3 early and 3 late
+        if numel(matching_runs(i,:).epochsSelected{1} ) == 3 % change this to 3 for 3 early and 3 late
             keys = [keys, matching_runs(i,:).hash];
         end
     end
@@ -55,13 +55,21 @@ else
 end
 assert(~isempty(Option), "Data is empty -- downstream code will fail")
 Patterns = nd.merge(Patterns, Option, 'only', {'animal', 'generateH', 'genH_name'}, ...
-                                                'broadcastLike', true,...
-                                                 'overwrite', true);
+                                            'broadcastLike', true,...
+                                             'overwrite', true);
 [nDataset, nPartition, ~, nResult] = size(Patterns)
 nPatterns = nResult/2;
-
+szPatterns = size(Patterns);
+Patterns = squeeze(Patterns);
+Patterns = nd.dimLabel(Patterns, 1:ndims(Patterns), ...
+            ["iDataset", "iPartition", "iDirection", "iPatterns"]);
+Patterns = reshape(Patterns, szPatterns);
+Patterns = util.type.castefficient(Patterns, ...
+            'compressReals', true, 'verbose', false);
+Patterns = nd.apply(Patterns, "nSource-X_source", @(x) size(x,1) );
+Patterns = nd.apply(Patterns, "nTarget-X_target", @(x) size(x,1) );
+% Acquire some useful information
 uAnimals = unique([Option.animal]);
-
 nSource = zeros(1,nDataset);
 nTarget = zeros(1,nDataset);
 numDimsUsedForPrediction = cell(1,nDataset);
@@ -71,13 +79,8 @@ for a = 1:nDataset
     numDimsUsedForPrediction{a} = 1:min(nSource(a), nTarget(a));
 end
 
-Patterns = util.type.castefficient(Patterns, ...
-            'compressReals', true, 'verbose', false);
-Patterns = nd.apply(Patterns, "nSource-X_source", @(x) size(x,1) );
-Patterns = nd.apply(Patterns, "nTarget-X_target", @(x) size(x,1) );
-
 % little check
-[[Patterns(:, 1,1,1,1,1,1).animal]', [Option(:,1,1,1,1,1).animal]']
+[[Patterns(:, 1,1,1,1,1,1).animal]',    [Option(:,1,1,1,1,1).animal]']
 [[Patterns(:, 1,1,1,1,1,1).generateH]', [Option(:,1,1,1,1,1).generateH]']
 P = munge.reshapeByLabels(Patterns, 1, [Option.generateH],  'checksumSplitField', 'animal');
 O = munge.reshapeByLabels(Option, 1,   [Option.generateH], 'checksumSplitField', 'animal');
@@ -229,7 +232,6 @@ r_withpfc_patterns = [Fig2.b.r_withpfc_patterns{:}];
 [h_pfc, p_pfc] = kstest2(r_withhpc_patterns, Fig2.a.all.all_pairs_withpfc);
 
 %% GET PRED PERFORMANCE
-
 % Get the size of the original array
 sz = size(Patterns);
 % Calculate the product of the dimensions to collapse
@@ -259,7 +261,9 @@ for p = progress(1:size(ReshapedPatterns, 1), 'Title', 'Animal*GenH*Partition')
             [perf, mu, dev] = plots.calculatePredictionPerformance(currSource, currTarget, currB);
             mu = repmat(mu, nTarget(1), 1);
             dev = repmat(dev, nTarget(1), 1);
-            newtab = table(animal, genH, name, direction, nSource, nTarget, iTarget', perf', mu, dev);
+            iTarget = iTarget';
+            perf = perf';
+            newtab = table(animal, genH, name, direction, nSource, nTarget, iTarget, perf, mu, dev);
             combinedPatternsTable = [combinedPatternsTable; newtab];
             for iSource = 1:nSource(1)
                 if ~isfield(ReshapedPatterns(p,d,i), 'rankRegress') || ...
@@ -282,65 +286,50 @@ for p = progress(1:size(ReshapedPatterns, 1), 'Title', 'Animal*GenH*Partition')
     end
 end
 if ~exist(figuredefine("tables"), 'dir'), mkdir(figuredefine("tables")); end
-savetable(combinedPatternsTable, fullfile(figuredefine("tables"), 'fig2_prediction.csv'));
-savetable(singlePredTable, fullfile(figuredefine("tables"), 'fig2_singlePrediction.csv'));
+writetable(combinedPatternsTable, fullfile(figuredefine("tables"), 'fig2_prediction.csv'));
+writetable(singlePredTable, fullfile(figuredefine("tables"), 'fig2_singlePrediction.csv'));
+% Description of columsn in combinedPatternsTable
+% -----------------------------------------------
+% animal: animal name
+% genH: the type of network pattern
+% name: frequency of network pattern
+% direction: brain area directionality of network pattern
+% nSource: number of source neurons
+% nTarget: number of target neurons
+% iTarget: index of target neuron
+% perf: prediction performance
+% mu: mean prediction performance
+% dev: std of prediction performance
+if ismember('Var8', combinedPatternsTable.Properties.VariableNames)
+    combinedPatternsTable.Properties.VariableNames{'Var8'} = 'perf';
+end
 
-% Compute medians
-median_singlehh = median(single_pred_with_hpc(~isnan(single_pred_with_hpc))); % median of single neuron prediction with hpc
-median_singlehp = median(single_pred_with_pfc(~isnan(single_pred_with_pfc))); % median of single neuron prediction with pfc
-
-
-%%
-mean_withhpc = mean(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc)))); % mean of r2 with hpc
-std_withhpc  = std(r_square_withhpc(intersect(~isinf(r_square_withhpc), ~isnan(r_square_withhpc)))); % std of r2 with hpc
-
-mean_withpfc = mean(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_square_withpfc)))); % mean of r2 with pfc
-std_withpfc  = std(r_square_withpfc(intersect(~isinf(r_square_withpfc), ~isnan(r_square_withpfc)))); % std of r2 with pfc
-
-subplot(2,1,1)
-ax1 = nexttile;
-hist_withpfc = histogram(r_square_withhpc,25);
-ylabel("Data Sets")
-title ("source predicting HPC targets")
-lineObject=line([mean_withhpc,mean_withhpc],[0 max(hist_withpfc.Values)]);
-lineObject.LineStyle = ':'; % Make line dotted
-lineObject.LineWidth = 2;  % Thicken the line
-lineObject.Color = 'black'; % Color it black
-
-lineObject2 = line([median_singlehh,median_singlehh],[0 max(hist_withpfc.Values)]);
-lineObject2.LineWidth = 3;
-lineObject2.Color = 'blue';
-%%
-
-subplot(2,1,2)
-ax2 = nexttile;
-hist_hp = histogram(r_square_withpfc,25);
-% prediction performance from hpc to pfc cells
-ylabel("Data Sets")
-title ("source predicting PFC targets")
-xlabel("Performance")
-linkaxes([ax1,ax2],'x');
-lineObject=line([mean_withpfc,mean_withpfc],[0 max(hist_hp.Values)]);
-lineObject.LineStyle = ':'; % Make line dotted
-lineObject.LineWidth = 2;  % Thicken the line
-lineObject.Color = 'black'; % Color it black
-
-lineObject2 = line([median_singlehp,median_singlehp],[0 max(hist_hp.Values)]);
-lineObject2.LineWidth = 3;  % Thicken the line
-lineObject2.Color = 'blue'; % Color it black
+fig('Prediction, HPC to HPC vs HPC to PFC'); clf;
+plots.pred.regionalPerf(combinedPatternsTable, singlePredTable)
+% Run again for each genH
+for genh = unique(combinedPatternsTable.genH)'
+    fig(sprintf('Prediction, HPC to HPC vs HPC to PFC - %s', genh{1})); clf;
+    plots.pred.regionalPerf(combinedPatternsTable, ...
+        singlePredTable, 'select_genH', genh)
+end
 
 %% Performance
-figure(601)
-clf
+fig('Performance individual samples'); clf
 for i = 1:nPatterns
+    name = Option(1).patternNames(i);
+    patternPerformance_pfc = combinedPatternsTable(combinedPatternsTable.direction == "hpc-pfc" & combinedPatternsTable.name == name, :).perf;
+    patternPerformance_hpc = combinedPatternsTable(combinedPatternsTable.direction == "hpc-hpc" & combinedPatternsTable.name == name, :).perf;
     subplot(3,1,i)
-    plot(patternPerformance_pfc(i,:));
+    plot(patternPerformance_pfc);
+    ylabel("Performance")
+    xlabel("Sample")
     hold on
-    plot(patternPerformance_hpc(i,:));
-    
+    plot(patternPerformance_hpc);
     legend("pfc","hpc")
     % how to interpret nans
 end
+linkaxes(findobj(gcf,'Type','Axes'),'xy')
+ylim(findobj(gcf,'Type','Axes'),[-0.25 0.8])
 %%
 
 % print stats
@@ -377,8 +366,6 @@ pfc_ripple = T.generateH == 'fromFilteredEEG  fromRipTimes'...
 
 hpc_pred = T(hpc_theta,:).full_model_performance,T(hpc_delta,:).full_model_performance,T(hpc_ripple,:).full_model_performance;
 pfc_pred = {T(pfc_theta,:).full_model_performance,T(pfc_delta,:).full_model_performance,T(pfc_ripple,:).full_model_performance};
-
-
 
 h_corrdiff = zeros(1,nPatterns);
 p_corrdiff = zeros(1,nPatterns);
