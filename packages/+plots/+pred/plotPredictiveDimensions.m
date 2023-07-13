@@ -31,8 +31,6 @@ ip.addParameter("optDim", []);
 ip.parse(varargin{:});
 opt = ip.Results;
 
-
-
 x = 1:numDimsUsedForPrediction;
 nonsingular = [];
 if ~opt.averaged

@@ -1,59 +1,57 @@
 %% this script will calculate and plot the preformance as predicitive dimensions
 % increases
 
-%%
-% make the averaged version
-curr_cvLoss = cell(nAnimal, nMethods, nAnimalPartition, 2, nPatterns);
-curr_rrDim = cell(nAnimal, nMethods, nAnimalPartition, 2, nPatterns);
-for a = 1:nAnimal
-for m = 1:nMethods
-    for p = 1:nAnimal
-        for i = 1:nPatterns
-            for j = 1:2
-                curr_cvLoss{a,m,p,j,i} = Patterns(a,m,p,j,i).rankRegress.cvLoss;
-                curr_rrDim{a,m,p,j,i} = Patterns(a,m,p,j,i).rankRegress.optDimReducedRankRegress;
-            end
-        end
-    end
-    
-end
-end
-
 %% calculate/plot
-figure(701)
-clf
-mean_full_model_performance = [];
-
-for m = 1:1
-    for i = 1:nPatterns
-        for j = 1:2
-            subplot(1,3,i)
-            
-            if j == 1
-                full_model = plotPredictiveDimensions(numDimsUsedForPrediction{2},...
-                    curr_cvLoss(2,m,1,j,i), "optDim", curr_rrDim(2,m,1,j,i),"mode", "rr", "color","blue", "normalized", true);
-            else
-                full_model = plotPredictiveDimensions(numDimsUsedForPrediction{2},...
-                    curr_cvLoss(2,m,1,j,i), "optDim", curr_rrDim(2,m,1,j,i),"mode", "rr" ,"normalized", true);
-            end
-            hold on
-            mean_full_model_performance = [mean_full_model_performance, full_model];
-            xlim([0,8])
-
-            if j == 1
-                ax1 = gca;
-            else
-                ax2 = gca;
-            end
-            title([Patterns_AllAnimals(m,1,j,i).name ])
-            xlim([0,10])
-        end
-        linkaxes([ax1,ax2],'y')
-        
-    end
-    hold on
+tab = table();
+for i = progress(1:numel(Patterns), 'title', 'making predDim table')
+    P = Patterns(i);
+    curr_cvLoss = P.rankRegress.cvLoss;
+    curr_rrDim  = P.rankRegress.optDimReducedRankRegress;
+    direction   = P.directionality;
+    iDataset    = P.iDataset;
+    iPartition  = P.iPartition;
+    genH        = P.genH_name;
+    animal      = P.animal;
+    name        = P.name;
+    numDimsUsedForPrediction = size(curr_cvLoss,2);
+    full_model = 1 - curr_cvLoss(1,end);
+    mea        = 1 - curr_cvLoss(1,:);
+    err        = curr_cvLoss(2,:);
+    dims = 1:numDimsUsedForPrediction;
+    mea  = mea(:);
+    err  = err(:);
+    dims = dims(:);
+    optDim   = repmat(curr_rrDim,numDimsUsedForPrediction,1);
+    iDataset = repmat(iDataset,numDimsUsedForPrediction,1);
+    iP         = repmat(iPartition,numDimsUsedForPrediction,1);
+    genH       = repmat(genH,numDimsUsedForPrediction,1);
+    animal     = repmat(animal,numDimsUsedForPrediction,1);
+    direction  = repmat(direction,numDimsUsedForPrediction,1);
+    full_model = repmat(full_model,numDimsUsedForPrediction,1);
+    name       = repmat(name,numDimsUsedForPrediction,1);
+    numDimsUsedForPrediction = repmat(numDimsUsedForPrediction,numDimsUsedForPrediction,1);
+    newtab = table(iDataset,iP,genH,animal,direction,numDimsUsedForPrediction,dims,mea,err,optDim,full_model,name);
+    tab = [tab;newtab];
 end
+tab.fracOptDim = tab.optDim./tab.numDimsUsedForPrediction;
+tab.fracDim = tab.dims./tab.numDimsUsedForPrediction;
+writetable(tab, figuredefine("tables", "predDim.csv"))
 
-% how to mark legends?
-% how to do different animals?
-legend ("hpc-hpc", "hpc-pfc")
+% figure(701); clf
+    % subplot(1,3,i)
+    % full_model = plots.pred.plotPredictiveDimensions(numDimsUsedForPrediction,...
+    %     curr_cvLoss, "optDim", curr_rrDim, "mode", "rr", "color","blue", "normalized", true);
+    % hold on
+    % xlim([0,8])
+    % if j == 1, ax1 = gca;
+    % else,      ax2 = gca;
+    % end
+    % title(P.name)
+    % xlim([0,10])
+    % linkaxes([ax1, ax2],'y')
+    % hold on
+% legend ("hpc-hpc", "hpc-pfc")
+
+% Plots
+% 1. dim vs performance, error bars are teh dev
+% 2. dim vs optDim
