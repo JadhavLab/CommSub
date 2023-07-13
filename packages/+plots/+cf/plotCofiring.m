@@ -5,7 +5,7 @@ function FigDat = plot_cofiring(FigDat, Option, varargin)
 ip = inputParser;
 ip.addParameter('figAppend', '', @(x) ischar(x) || isstring(x));
 ip.addParameter('normalization', 'count', @(x) ischar(x) || isstring(x));
-ip.addParameter('quantileMarkers', [0.5], @(x) isnumeric(x) && isvector(x));
+ip.addParameter('quantileMarkers', {0.5,0.75,"mean"}, @iscell);
 ip.parse(varargin{:});
 Opt = ip.Results;
 
@@ -34,15 +34,15 @@ for i = 1:nPatterns
     ylabel("pairs")
     
     hold on
-    plotline(FigDat, i, cofiring_hh, Opt, 'blue', "hpc-hpc corfiring mean")
+    hh=plotline(FigDat, i, cofiring_hh, Opt, 'blue', "hpc-hpc corfiring mean", "hpc");
 
     hold on
-    plotline(FigDat, i, cofiring_hp, Opt, 'red', "hpc-pfc corfiring mean")
+    hp=plotline(FigDat, i, cofiring_hp, Opt, 'red', "hpc-pfc corfiring mean", "pfc");
     
     if Option(1).sourceArea =="CA1"
-        legend("hpc-hpc","hpc-pfc")
+        legend([cofiring_hh;cofiring_hp; hh; hp],["hpc-hpc", "hpc-pfc", string(Opt.quantileMarkers), string(Opt.quantileMarkers)])
     else
-        legend("pfc-hpc","pfc-pfc")
+        error("not implemented")
     end
     
     xlabel("pairwise correlation")
@@ -58,32 +58,33 @@ set(gcf, 'Position', half_screenwidth);
         
 fullfigname = fullfile(codedefine,'figures', 'new','cofire',...
     string(Opt.normalization) + "cofiring per pattern" + Opt.figAppend);
-saveas(gcf, fullfigname + ".png")
-saveas(gcf, fullfigname + ".pdf")
+saveas(gcf,  fullfigname + ".png")
+saveas(gcf,  fullfigname + ".pdf")
 savefig(gcf, fullfigname + ".fig")
 
-function plotline(FigDat, i, cofiring_hh, Opt, color, displayname)
-    if isequal(Opt.quantileMarkers, 'mean')
-        x= [FigDat.mean_withhpccorr_partitions(i),...
-            FigDat.mean_withhpccorr_partitions(i)];
-        y= [0 max(cofiring_hh.Values)];
-    elseif isnumeric(Opt.quantileMarkers)
-        x= zeros(numel(Opt.quantileMarkers),2);
-        for j = 1:numel(Opt.quantileMarkers)
-            x(j,:)= quantile(FigDat.withhpc_pairs{i}, Opt.quantileMarkers(j));
+function avg_hh = plotline(FigDat, i, cofiring_hh, Opt, color, displayname, area)
+    avg_hh = gobjects(numel(Opt.quantileMarkers),1);
+    for q = 1:numel(Opt.quantileMarkers)
+        if isequal(Opt.quantileMarkers{q}, "mean")
+            x = [mean(FigDat.("with"+area+"_pairs"){i}),...
+                 mean(FigDat.("with"+area+"_pairs"){i})];
+            y = [0 max(cofiring_hh.Values)];
+        else
+            x = [quantile(FigDat.("with"+area+"_pairs"){i}, Opt.quantileMarkers{q}),...
+                 quantile(FigDat.("with"+area+"_pairs"){i}, Opt.quantileMarkers{q})];
+            y = [0 max(cofiring_hh.Values)];
         end
-        x= [quantile(FigDat.withhpc_pairs{i}, Opt.quantileMarkers),...
-            quantile(FigDat.withhpc_pairs{i}, Opt.quantileMarkers)];
-        y= [0 max(cofiring_hh.Values)];
-    else
-        error("quantileMarkers must be 'mean' or numeric vector")
-    end
-    for i = 1:size(x,1)
-        avg_hh(i)=line(x(i,:),y);
-        avg_hh(i).LineStyle = ':'; % Make line dotted
-        avg_hh(i).LineWidth = 2;  % Thicken the line
-        avg_hh(i).Color = color;
-        avg.hh(i).DisplayName = displayname;
+        avg_hh(q)=line(x,y);
+        avg_hh(q).LineStyle = ':'; % Make line dotted
+        avg_hh(q).LineWidth = 2;  % Thicken the line
+        avg_hh(q).Color = color;
+        avg_hh(q).DisplayName = displayname;
+        if isequal(Opt.quantileMarkers{q}, "mean")
+            % add a black circle to top of the line
+            plot(x(1),y(2), 'o', 'MarkerSize', 10, 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k')
+        else
+            alpha(avg_hh(q), Opt.quantileMarkers{q});
+        end
     end
 end
 end
