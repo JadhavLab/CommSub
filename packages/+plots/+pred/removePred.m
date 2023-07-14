@@ -9,14 +9,14 @@ patternnames = Option.patternNames;
 %%
 % Run all of them
 rt = table();
-for iMethod = ["spec", "coh"]
-    [Pat, opt] = munge.getH(Patterns, Option, iMethod);
-    assert(~isempty(Pat), 'No patterns found for %s', iMethod);
+for genh = ["spec", "coh"]
+    [Pat, opt] = munge.getH(Patterns, Option, genh);
+    assert(~isempty(Pat), 'No patterns found for %s', genh);
     Patterns_AllAnimals = squeeze(Pat);
     Patterns_AllAnimals = reshape(Patterns_AllAnimals, [size(Patterns_AllAnimals,1)*size(Patterns_AllAnimals,2), size(Patterns_AllAnimals,3), size(Patterns_AllAnimals,4)]);
     for iPartition = progress(1:size(Patterns_AllAnimals,2),'Title','iPartition')
-        for baseDirection = 1:size(Patterns_AllAnimals,3)
-            for removeDirection = 1:size(Patterns_AllAnimals,3)
+        for baseDirection = 1:2
+            for removeDirection = 1:2
                 for basePattern = 1:numel(patternnames)
                     for removePattern = 1:numel(patternnames)
                         
@@ -24,21 +24,28 @@ for iMethod = ["spec", "coh"]
                         X_source = Patterns_AllAnimals(iPartition, baseDirection, basePattern).X_source;
                         X_target = Patterns_AllAnimals(iPartition, baseDirection, basePattern).X_target;
                         cvLoss = Patterns_AllAnimals(iPartition,   baseDirection, basePattern).rankRegress.cvLoss;
+                        optDim = Patterns_AllAnimals(iPartition,   baseDirection, basePattern).rankRegress.optDimReducedRankRegress;
                         numDimsUsedForPrediction = 1:size(cvLoss,2);
+                        nTarget = size(X_target,1);
                         % Remove patterns
                         B_ = Patterns_AllAnimals(iPartition, removeDirection, removePattern).rankRegress.B_;
                         % Run dim removal
                         [performance,fullmodel] = plots.sequentialRemovePredDims(X_source, X_target, B_, optDim,...
                             cvLoss, numDimsUsedForPrediction, false, "normalized", false);
+
+                        % fractionaldim = (1:size(cvLoss,2))./double(optDim);
+                        % fractionaldim = fractionaldim(:);
                         
-                        size(iMethod), size(iPartition), size(baseDirection), size(removeDirection), size(patternnames(basePattern)), size(patternnames(removePattern)), size(fullmodel)
+                        % size(genh), size(iPartition), size(baseDirection), size(removeDirection), size(patternnames(basePattern)), size(patternnames(removePattern)), size(fullmodel)
                         
-                        t = table(iMethod, iPartition, baseDirection,...
+                        t = table(genh, iPartition, baseDirection,...
                         removeDirection, patternnames(basePattern), ...
-                        patternnames(removePattern),fullmodel,...
+                        patternnames(removePattern),fullmodel, ...fractionaldim,...
                         'VariableNames',{'method','partition',...
                         'baseDirection','removeDirection','basePattern',...
-                        'removePattern','fullmodel'});
+                        'removePattern','fullmodel', ...
+                        ...'fractonaldim'...
+                        });
                         t = repmat(t,numel(performance),1);
                         performance = performance(:);
                         t.dimensionRemoved = (0:numel(performance)-1)';

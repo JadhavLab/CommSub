@@ -95,8 +95,8 @@ for pattern = progress(Patterns(:)','Title', 'Creating pattern table')
     singularWarning = pattern.singularWarning;
    
     maxDim = min(nSource,nTarget);
-    percMax_rrDim = rrDim/maxDim;
-    percMax_faDim = qOpt/maxDim;
+    percMax_rrDim = double(rrDim)/double(maxDim);
+    percMax_faDim = double(qOpt)/double(maxDim);
     [full_model_performance,pred_by_perf] = plots.plotPredictiveDimensions...
          (numUsedForPrediction,pattern.rankRegress.cvLoss, "do_plot", false, "averaged", false);
     first_comp_perf  = pred_by_perf(1);
