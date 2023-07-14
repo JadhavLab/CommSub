@@ -1,3 +1,4 @@
+commsubspaceToPath
 % Grab fields from cgramcnew and place into existing efizz structure
 % (rather than from scratch)
 
@@ -6,16 +7,17 @@ grabfields = ["Cavg", "Ctoppair"];
 const = option.constants();
 animal_list = const.all_animals;
 animal = animal_list{1};
-for i = 1:length(animal_list)
+for i = progress(2:length(animal_list), 'Title', 'FieldsToEfizz')
     animal = animal_list{i};
     m = matfile(animal + "spectralBehavior.mat", 'Writable', true);
     efizz = m.efizz;
     assert(ndbFile.exist(animal, 'cgramcnew'), "cgramcnew does not exist for " + animal);
     % cgramcnew = ndb.load(animal, 'cgramcnew', 'inds', [1,2]);
-    cgramcnew = ndb.load(animal, 'cgramcnew');
+    cgramcnew = ndb.load(animal, 'cgramcnew', 'asNd', true);
+    cgramcnew = cgramcnew(1, 2:2:end);
     cgramcnew = nd.cat(cgramcnew, 1, [], 'removeEmpty', true);
     
-    if ~isempty(cgramcnew.t)
+    if ~isempty(cgramcnew(1).t)
         tc=numel(cgramcnew.t);
     else
         tc=size(cgramcnew.S1,1);
@@ -31,5 +33,4 @@ for i = 1:length(animal_list)
     m.efizz = efizz;
     
 end
-
-
+!pushover-cli "FieldsToEfizz done"
