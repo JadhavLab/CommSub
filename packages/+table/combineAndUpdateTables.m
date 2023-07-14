@@ -8,20 +8,33 @@ function out = combineAndUpdateTables(regex, finalFile)
 %       combineAndUpdateTables('*.mat', 'finalTable.mat')
 
     % Load the existing table if it exists
+    if ~endsWith(finalFile, '.mat')
+        finalFile = finalFile + ".mat";
+    end
     if exist(finalFile, 'file')
-        load(finalFile);
+        out = load(finalFile);
+        fields = fieldnames(out);
+        assert(numel(fields) == 1);
+        out = out.(fields{1});
     else
-        out = [];
+        out = table();
     end
 
     % Get a list of the new table files
-    newFiles = dir(regex);
-    
+    newFiles = dir(codedefine("DATA_TABLES", regex));
+    if ~contains(regex, '*')
+        warning('No wildcards found in regex');
+    end
+    if isempty(newFiles)
+        warning('No new table files found');
+        return
+    end
+
     % Loop over each new table file
     for i = 1:length(newFiles)
 
         % Load the new table
-        newTable = load(fullfile(newFiles(i).folder));
+        newTable = load(fullfile(newFiles(i).folder, newFiles(i).name));
         fields = fieldnames(newTable);
         assert(numel(fields) == 1);
         newTable = newTable.(fields{1});
@@ -39,11 +52,20 @@ function out = combineAndUpdateTables(regex, finalFile)
                 out = [out; newTable(j, :)];
             else
                 % If the hash value exists, replace the existing row
-                out(idx, :) = newTable(j, :);
+                for f = setdiff(fieldnames(newTable)', {'Properties', 'Row', 'Variables'})
+                    try
+                        out.(f{1})(idx) = newTable.(f{1})(j);
+                    catch
+                        warning('Could not update %s', f{1});
+                        keyboard
+                    end
+                end
             end
         end
     end
     
     % Save the updated table
-    save(finalFile, 'out');
+    finalFile = replace(finalFile, '.mat', '');
+    out = struct(finalFile, out);
+    save(finalFile, '-struct', 'out');
 end

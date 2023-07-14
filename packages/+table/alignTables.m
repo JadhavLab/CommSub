@@ -19,6 +19,25 @@ function [table1, table2] = alignTables(table1, table2)
     for i = 1:length(colsToAdd2)
         table2.(colsToAdd2{i}) = NaN(height(table2), 1);  % Replace NaN with a suitable default value
     end
+
+    % If the hash value exists, replace the existing row
+    common_columns = intersect(table1.Properties.VariableNames, table2.Properties.VariableNames);
+    for k = 1:numel(common_columns)
+        columnName = common_columns{k};
+        if ~isa(table1.(columnName), class(table2.(columnName)))
+            try
+                table1.(columnName) = feval(class(table2.(columnName)), table1.(columnName));
+            catch ME
+                if isa(table1.(columnName), 'cell') && all(cellfun(@isempty, table1.(columnName)))
+                    table1.(columnName) = repmat({feval(class(table2.(columnName)), NaN)}, height(table1), 1);
+                else
+                    warning('Failed to convert column %s from %s to %s: %s', ...
+                            columnName, class(table1.(columnName)(idx)), class(table2.(columnName)(j)), ME.message);
+                end
+            end
+        end
+    end
+
 end
 
 
