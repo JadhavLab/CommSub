@@ -6,6 +6,9 @@
 addpath(genpath(codedefine()))
 addpath(hashdefine())
 const = option.constants();
+%% Combine tables if they exist
+table.combineAndUpdateTables("RunsSummary_*", "RunsSummary");
+load("RunsSummary.mat", "RunsSummary");
 
 %% load
 multi_epoch = false; % usually first 3, last 3 epochs
@@ -15,11 +18,12 @@ load("RunsSummary.mat");
 % Determine keys to use : you can use this string to arbitrarily select rows
 %   each item of the filtstring is a property to select. $x pulls the x
 %   column and applies the test shown
-filtstring = ["ismember($animal, [""JS21"",""ZT2"",""ER1"",""JS14"",""JS13"",""JS17""])",...
-                                   ..."$spikeBinSize==0.15",...
-                                   "$numPartition==50",...
-                                   "$quantileToMakeWindows == 0.85",...
-                                   "arrayfun(@(x)isequal($winSize(x,:), [0,0.3]), 1:size($winSize,1))'"];
+filtstring = ...
+["ismember($animal, [""JS21"",""ZT2"",""ER1"",""JS14"",""JS13"",""JS17""])",...
+       ..."$spikeBinSize==0.15",...
+       "$numPartition==50",...
+       "$quantileToMakeWindows == 0.85",...
+       "arrayfun(@(x)isequal($winSize(x,:), [0,0.3]), 1:size($winSize,1))'"];
 % Get the proper keys
 matching_runs = query.getHashed_stringFilt(RunsSummary, filtstring,...
                         'mostrecent', ["animal", "generateH"]);
@@ -388,18 +392,22 @@ pfcQoptDims = mean(temp3,2);
 %% 
 % *Pattern Specific* 
 
-removePred
+plots.pred.removePred
 
 %  Remove tuples of (targetArea,pattern) from a given (targetArea, pattern)
 
+rt_high  = rt(rt.method == "coh" & ...
+              ~contains(rt.removePattern, "control") & ...
+              ~contains(rt.basePattern, "control"), :);
+
 figure;
 g = gramm(...
-    'x',rt.dimensionRemoved, ...
-    'y', rt.performance, ...
-    'color', categorical(rt.removePattern), ...
-    'lightness', categorical(rt.sameDirectionLabel),...
-    'linestyle', categorical(rt.sameDirectionLabel));
-g = g.facet_grid(categorical(rt.basePatternLabel), categorical(rt.targetArea));
+    'x', rt_high.dimensionRemoved, ...
+    'y', rt_high.performance, ...
+    'color', categorical(rt_high.removePattern), ...
+    'lightness', categorical(rt_high.sameDirectionLabel),...
+    'linestyle', categorical(rt_high.sameDirectionLabel));
+g = g.facet_grid(categorical(rt_high.basePatternLabel), categorical(rt_high.targetArea));
 g = g.stat_summary('geom','line');
 g = g.stat_summary('geom','point');
 g = g.stat_summary('geom','errorbar');
@@ -414,6 +422,7 @@ g = g.set_names('x','dims removed',...
     'linestyle',"Remove Same/Different"+ newline+"Pred. Target");
 g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
+set(g.facet_axes_handles,'xlim',[0 3])
 % Remove pattern from same target area
 
 figure;
@@ -436,6 +445,7 @@ g = g.set_names('x','dims removed',...
     'color','Pattern dims removed');
 g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
+
 %%
 figure;
 g = gramm(...
@@ -488,6 +498,7 @@ g = g.stat_summary('geom','area');
 g = g.set_color_options(); % Restore default color
 g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
+
 %% 
 % Now let's see how similar those curves are in dimension reduced space
 
