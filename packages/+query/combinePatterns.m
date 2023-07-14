@@ -46,7 +46,8 @@ for key = progress(keys','Title','Loading keys')
     if ~isempty(Opt.RunsSummary)
         tbl = Opt.RunsSummary(Opt.RunsSummary.hash == replace(key,".mat",""),:);
         disp("Loading " + key + " from " + tbl.animal + ...
-            " with hash " + tbl.hash + " and " + tbl.generateH + " patterns");
+            " with hash " + tbl.hash + " and " + tbl.generateH + " patterns" ...
+            + " <- " + tbl.timestamp);
     end
     if ~exist(key,'file')
         warning('File not found: %s', key);

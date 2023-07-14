@@ -85,8 +85,8 @@ end
 P = munge.reshapeByLabels(Patterns, 1, [Option.generateH],  'checksumSplitField', 'animal');
 O = munge.reshapeByLabels(Option, 1,   [Option.generateH], 'checksumSplitField', 'animal');
 
-
-% Patterns = nd.flexrmfield(Patterns, {'X_source', 'X_target'});
+%% Calculate the pattern 
+T = query.getPatternTable(Patterns, Option);
 dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
 %%  
@@ -96,8 +96,6 @@ dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 % 
 % *(nMethods * nPartiton * nDirection * nPatterns)*
 
-%% Calculate the pattern 
-T = query.getPatternTable(Patterns, Option);
 
 % Figure 2A: Cofiring in source and target
 % 
@@ -317,8 +315,10 @@ end
 fig('Performance individual samples'); clf
 for i = 1:nPatterns
     name = Option(1).patternNames(i);
-    patternPerformance_pfc = combinedPatternsTable(combinedPatternsTable.direction == "hpc-pfc" & combinedPatternsTable.name == name, :).perf;
-    patternPerformance_hpc = combinedPatternsTable(combinedPatternsTable.direction == "hpc-hpc" & combinedPatternsTable.name == name, :).perf;
+    patternPerformance_pfc = ... 
+    combinedPatternsTable(combinedPatternsTable.direction == "hpc-pfc" & combinedPatternsTable.name == name, :).perf;
+    patternPerformance_hpc = ... 
+    combinedPatternsTable(combinedPatternsTable.direction == "hpc-hpc" & combinedPatternsTable.name == name, :).perf;
     subplot(3,1,i)
     plot(patternPerformance_pfc);
     ylabel("Performance")
@@ -345,8 +345,8 @@ if useSinglePrediction
 end
 
 %% Figure 4
-
 withPredDims;
+
 %%
 % histogram of all predicition perf
 hpc_theta = T.generateH == 'fromFilteredEEG  fromRipTimes'...
@@ -364,68 +364,22 @@ pfc_delta = T.generateH == 'fromFilteredEEG  fromRipTimes'...
 pfc_ripple = T.generateH == 'fromFilteredEEG  fromRipTimes'...
     & T.directionality == "hpc-pfc" & T.patternType == "ripple";
 
-hpc_pred = T(hpc_theta,:).full_model_performance,T(hpc_delta,:).full_model_performance,T(hpc_ripple,:).full_model_performance;
-pfc_pred = {T(pfc_theta,:).full_model_performance,T(pfc_delta,:).full_model_performance,T(pfc_ripple,:).full_model_performance};
-
-h_corrdiff = zeros(1,nPatterns);
-p_corrdiff = zeros(1,nPatterns);
-for i = 1:3
-    subplot(3,1,i);
-    hold off;
-    predperf_hh = histogram(hpc_pred{i});
-    set(predperf_hh, 'EdgeColor', 'none', 'FaceAlpha', 0.33);
-    hold on
-    predperf_hp = histogram(pfc_pred{i});
-    set(predperf_hp, 'EdgeColor', 'none', 'FaceAlpha', 0.33);
-    
-    title(patternnames(i))
-    ylabel("data sets")
-    
-    hold on
-    avg_hh=line([mean(hpc_pred{i}),mean(hpc_pred{i})],[0 max(predperf_hh.Values)]);
-    avg_hh.LineStyle = ':'; % Make line dotted
-    avg_hh.LineWidth = 2;  % Thicken the line
-    avg_hh.Color = 'blue';
-    avg.hh.DisplayName = "hpc-hpc corfiring mean";
-    %
-    hold on
-    avg_hp=line([mean(pfc_pred{i}),mean(pfc_pred{i})],[0 max(predperf_hp.Values)]);
-    avg_hp.LineStyle = ':'; % Make line dotted
-    avg_hp.LineWidth = 2;  % Thicken the line
-    avg_hp.Color = 'red';
-    avg.hh.DisplayName = "hpc-pfc corfiring mean";
-    
-    if source == "hpc"
-        legend("hpc-hpc","hpc-pfc")
-    else
-        legend("pfc-hpc","pfc-pfc")
-    end
-    
-    xlabel("predicition performance")
-    [h_corrdiff(i),p_corrdiff(i)] = ttest2(hpc_pred{i}(~isnan(hpc_pred{i})), pfc_pred{i}(~isnan(pfc_pred{i})));
-    [h_pred(i),p_pred(i)] = kstest2(hpc_pred{i}(~isnan(hpc_pred{i})), pfc_pred{i}(~isnan(pfc_pred{i})));
-    xlim([0,0.75])
-    
-end
-% 
-%% 
-%% Figure 5 - Showing the complexity not due to the other region being more complex
-% 
-% A: (difference in qOpt)
-
+nPartitions = max([Patterns.iPartition]); 
+nPatternsAndControls = Option.nPatternAndControl;
 temp1 = zeros(3,nPartitions);
 temp2 = zeros(3,nPartitions);
 temp3 = zeros(3,nPartitions);
 
-for j = 1:nPartitions
-    for k = 1:nPatterns
-        temp2(k,j) = Patterns(j,hpc,k).factorAnalysis.qOpt;
-        temp3(k,j) = Patterns(j,pfc,k).factorAnalysis.qOpt;
-        temp1(k,:) = temp2(k,:)./temp3(k,:);
+if isfield(Patterns, "factorAnalysis")
+    for j = 1:nPartitions
+        for k = 1:nPatternsAndControls
+            temp2(k,j) = Patterns(j,hpc,k).factorAnalysis.qOpt;
+            temp3(k,j) = Patterns(j,pfc,k).factorAnalysis.qOpt;
+            temp1(k,:) = temp2(k,:)./temp3(k,:);
+        end
     end
 end
-%
-ratios = mean(temp1,2);
+ratios      = mean(temp1,2);
 hpcQoptDims = mean(temp2,2);
 pfcQoptDims = mean(temp3,2);
 
@@ -435,6 +389,7 @@ pfcQoptDims = mean(temp3,2);
 % *Pattern Specific* 
 
 removePred
+
 %  Remove tuples of (targetArea,pattern) from a given (targetArea, pattern)
 
 figure;

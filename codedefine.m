@@ -1,4 +1,4 @@
-function folder = codedefine()
+function folder = codedefine(varargin)
 
 if ispc
     disp('Defining code folder for Ziyi machine');
@@ -12,3 +12,8 @@ elseif isunix
 end
 
 folder = string(folder);
+if nargin > 0
+    folder = fullfile(folder, varargin{:});
+end
+
+end

@@ -1,14 +1,19 @@
 
 %%
-tmp = nd.fieldGet(Patterns,'rankRegress');
+tmp = ndb.toNd(nd.fieldGet(Patterns,'rankRegress'));
 optDim = nd.fieldGet(tmp,'optDimReducedRankRegress');
 optDim = floor(median(optDim, 1));
 optDim = max(optDim,[],'all');
+patternnames = Option.patternNames;
 
 %%
 % Run all of them
 rt = table();
-for iMethod = 1:1
+for iMethod = ["spec", "coh"]
+    [Pat, opt] = munge.getH(Patterns, Option, iMethod);
+    assert(~isempty(Pat), 'No patterns found for %s', iMethod);
+    Patterns_AllAnimals = squeeze(Pat);
+    Patterns_AllAnimals = reshape(Patterns_AllAnimals, [size(Patterns_AllAnimals,1)*size(Patterns_AllAnimals,2), size(Patterns_AllAnimals,3), size(Patterns_AllAnimals,4)]);
     for iPartition = progress(1:size(Patterns_AllAnimals,2),'Title','iPartition')
         for baseDirection = 1:size(Patterns_AllAnimals,3)
             for removeDirection = 1:size(Patterns_AllAnimals,3)
@@ -16,23 +21,29 @@ for iMethod = 1:1
                     for removePattern = 1:numel(patternnames)
                         
                         % Base patterns
-                        X_source = Patterns_AllAnimals(iMethod, iPartition, baseDirection, basePattern).X_source;
-                        X_target = Patterns_AllAnimals(iMethod, iPartition, baseDirection, basePattern).X_target;
-                        cvLoss = Patterns_AllAnimals(iMethod, iPartition,   baseDirection, basePattern).rankRegress.cvLoss;
+                        X_source = Patterns_AllAnimals(iPartition, baseDirection, basePattern).X_source;
+                        X_target = Patterns_AllAnimals(iPartition, baseDirection, basePattern).X_target;
+                        cvLoss = Patterns_AllAnimals(iPartition,   baseDirection, basePattern).rankRegress.cvLoss;
                         numDimsUsedForPrediction = 1:size(cvLoss,2);
                         % Remove patterns
-                        B_ = Patterns_AllAnimals(iMethod, iPartition, removeDirection, removePattern).rankRegress.B_;
+                        B_ = Patterns_AllAnimals(iPartition, removeDirection, removePattern).rankRegress.B_;
                         % Run dim removal
                         [performance,fullmodel] = plots.sequentialRemovePredDims(X_source, X_target, B_, optDim,...
                             cvLoss, numDimsUsedForPrediction, false, "normalized", false);
                         
+                        size(iMethod), size(iPartition), size(baseDirection), size(removeDirection), size(patternnames(basePattern)), size(patternnames(removePattern)), size(fullmodel)
                         
-                        T = table(iMethod, iPartition, baseDirection, removeDirection, patternnames(basePattern), patternnames(removePattern),fullmodel,...
-                            'VariableNames',{'method','partition','baseDirection','removeDirection','basePattern','removePattern','fullmodel'});
-                        T = repmat(T,numel(performance),1);
-                        T.dimensionRemoved = (0:numel(performance(:))-1)';
-                        T.performance = performance(:);
-                        rt = [rt; T];
+                        t = table(iMethod, iPartition, baseDirection,...
+                        removeDirection, patternnames(basePattern), ...
+                        patternnames(removePattern),fullmodel,...
+                        'VariableNames',{'method','partition',...
+                        'baseDirection','removeDirection','basePattern',...
+                        'removePattern','fullmodel'});
+                        t = repmat(t,numel(performance),1);
+                        performance = performance(:);
+                        t.dimensionRemoved = (0:numel(performance)-1)';
+                        t.performance = performance(:);
+                        rt = [rt; t];
                     end
                 end
             end

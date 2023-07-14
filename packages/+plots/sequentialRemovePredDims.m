@@ -23,7 +23,7 @@ M = B_' * cov(X_source');
 
 performance = zeros(1,optDim);
 
-full_model = plotPredictiveDimensions(numDimsUsedForPrediction,...
+full_model = plots.plotPredictiveDimensions(numDimsUsedForPrediction,...
     cvLoss, "optDim", optDim, "mode", "rr",  "averaged", false, "do_plot", false);
 
 for k= 1:optDim
