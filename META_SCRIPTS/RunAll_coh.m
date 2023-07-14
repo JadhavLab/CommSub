@@ -8,6 +8,11 @@ commsubspaceToPath
 %   - You have added all the subdirectories to the path
 %           e.g. addpath(genpath(parent_directory))
 
+%% Combine tables if they exist
+table.combineAndUpdateTables("RunsSummary_*", "RunsSummary");
+load("RunsSummary.mat", "RunsSummary");
+% table.combineAndUpdateTables("DetailedRunsSummary_*", "DetailedRunsSummary");
+
 %% Script parameters
 Option = option.defaults();
 Option.tableAppend = "_coh";
@@ -28,17 +33,6 @@ h_methods = [  ...
     ..."fromWpli  fromRipTimes", ...    WPLI
 ];
 
-%  Load previous progress
-progress_file = fullfile(hashdefine(), "last_run_coh.mat");
-if exist(progress_file, "file")
-    try
-        load(progress_file, "last_run");
-    catch
-        last_run = [];
-    end
-else
-    last_run = [];
-end
 
 %% Print what we're doing
 disp(" ----------- RunAll ----------------------")
@@ -48,7 +42,6 @@ disp("and Option struct ")
 disp(rmfield(Option, {'animal', 'generateH'}));
 disp("and analysis struct ")
 disp(Option.analysis);
-disp("Last run was " + last_run);
 disp(" -----------------------------------------")
 disp("Press any key to continue");
 pause
@@ -60,26 +53,36 @@ if dopar
 end
 
 %% Run
-pickup_where_left_off = false; % false to look for last processed, true to default process all (loop sets a false to true when finds correct last animal/genH)
-[cntAn, cntH] = deal(0);
+X = datetime('now') - hours(3);
+dates = NaT(numel(RunsSummary.timestamp),1);
+for i = 1:numel(RunsSummary.timestamp)
+    dates(i) = datetime(RunsSummary.timestamp(i));
+end
+[cntAn, cntH, cntZ]         = deal(0);
+tableCheck = true; % Set to true if you want to check RunsSummary table
+for zsc = progress([true, false],'Title','zscore');  cntZ = cntZ + 1;
 for genH_= progress(h_methods,'Title','genH method'); cntH = cntH + 1;
 for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1;
+        Option.preProcess_zscore = zsc;
         Option.animal = animal_list(iAnimal);
         Option.generateH = genH_;
-        if ~isequal([Option.animal, Option.generateH], last_run)
-           pickup_where_left_off = true;
-        else
-           disp("Skipping previous run");
-        end
-        if pickup_where_left_off == false
-            continue
+        if tableCheck
+            % Check if the combination of animal and generateH exists in RunsSummary and its timestamp is not older than X
+            mask = RunsSummary.animal == Option.animal & ... 
+                   RunsSummary.generateH == Option.generateH & ...
+                   RunsSummary.preProcess_zscore == Option.preProcess_zscore & ...
+                   dates > X;
+            if any(mask)
+                disp("Skipping as entry found in RunsSummary with recent timestamp");
+                continue
+            end
         end
         disp(newline + "-------------------------------");
         disp("Running " + Option.animal + " " + Option.generateH);
         disp("-------------------------------");
         if ~first
-            pause
             disp("Press any key to continue");
+            pause
             first = true;
         end
         if dopar
@@ -87,14 +90,13 @@ for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1
             'Workspace', {Option}, 'CurrentFolder', pwd);
         else
             %try
-            diary(figuredefine("logs", replace(strjoin([Option.animal, Option.generateH], "_"), " ", "") + ".log"));
+            diary(figuredefine("logs", replace(strjoin([Option.animal, Option.generateH, Option.preProcess_zscore], "_"), " ", "") + ".log"));
             TheScript
             diary off
             %catch MatlabException
                 %warning('Failed to run %s %s', Option.animal, Option.generateH);
             %end
-            last_run = [Option.animal, Option.generateH];
-            save(progress_file, "last_run");
         end
 end % genH
 end % animal
+end % zscore
