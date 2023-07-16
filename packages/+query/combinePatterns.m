@@ -6,21 +6,22 @@ function [varargout] = combinePatterns(keys, varargin)
 disp('Adding multiEpoch to path');
 addpath('hash_FRfixed');
 
-
 ip = inputParser;
 ip.addParameter('fields', ["Patterns", "Behaviors", "Option"]);
 ip.addParameter('removeEmpty', false);
 ip.addParameter('as', 'struct'); % cell or struct
 ip.addParameter('RunsSummary', table(), @istable);
+ip.addParameter('verbose', []);
 ip.parse(varargin{:})
 Opt = ip.Results;
 fields = string(Opt.fields(:));
 
+disp("Looking for fields " + strjoin(fields, ", "));
+disp("and verbose print of " + strjoin(Opt.verbose, ", "));
+
 kCount = 0;
 P = cell(1,numel(keys));
 B = cell(1,numel(keys));
-
-otherData = cell(1,numel(keys));
 keys = keys(:);
 
 fcnt = 0;
@@ -54,7 +55,10 @@ for key = progress(keys','Title','Loading keys')
         continue
     end
 
-    tmp = matfile(key);
+    tmp = matfile(key, 'Writable', true);
+    if ~isprop(tmp, 'Option')
+        tmp.("Option") = table2struct(tbl,'ToScalar',true);
+    end
 
     fcnt = 0;
     for field  = fields'
@@ -62,9 +66,17 @@ for key = progress(keys','Title','Loading keys')
         if ismember(field, fieldnames(tmp))
             disp("Loading " + field + " from " + key);
             if strcmp(Opt.as,'struct')
-                varargout{1}.(field){kCount} = tmp.(field);
+                thing = tmp.(field);
+                varargout{1}.(field){kCount} = thing;
             elseif strcmp(Opt.as,'cell')
-                varargout{fcnt}{kCount} = tmp.(field);
+                thing = tmp.(field);
+                varargout{fcnt}{kCount} = thing;
+            end
+            if strcmp(field, "Option") && ~isempty(Opt.verbose)
+                t = struct2table(thing, 'AsArray', true);
+                disp("----------------")
+                disp("Option for " + key)
+                disp(t(:, Opt.verbose))
             end
         end
     end
@@ -72,7 +84,7 @@ for key = progress(keys','Title','Loading keys')
 end
 %keyboard
 
-% 
+% Prep output
 fcnt = 0;
 for field = fields'
     fcnt = fcnt + 1;

@@ -31,7 +31,12 @@ out = eval(evalstring);
 
 if ~isempty(Opt.mostrecent)
     % Sort the table by the "timestamp" column in descending order
-    out = sortrows(out, 'timestamp', 'descend');
+    timestamps = NaT(size(out, 1),1);
+    for t = 1:numel(timestamps)
+        timestamps(t) = datetime(out.timestamp(t));
+    end
+    [~,I]  = sort(timestamps, 'descend');
+    out = out(I, :);
     
     % Get the unique combinations of the columns in mostrecent
     [~, ia, ~] = unique(out(:, Opt.mostrecent), 'rows', 'stable');  % Adding 'stable' to preserve order

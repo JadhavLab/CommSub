@@ -1,8 +1,12 @@
-function [table1, table2] = alignTables(table1, table2)
+function [table1, table2] = alignTables(table1, table2, varargin)
 % ALIGNTABLES Aligns two tables by adding missing columns to each table
 %  [table1, table2] = ALIGNTABLES(table1, table2) adds missing columns to
 %  each table so that they have the same columns. The missing columns are
 %  added to each table and filled with NaNs.
+    ip = inputParser;
+    ip.addParameter('aggressive', false, @islogical);
+    ip.parse(varargin{:});
+    Opt = ip.Results;
 
     % Get the column names of each table
     cols1 = table1.Properties.VariableNames;
@@ -32,7 +36,11 @@ function [table1, table2] = alignTables(table1, table2)
                     table1.(columnName) = repmat({feval(class(table2.(columnName)), NaN)}, height(table1), 1);
                 else
                     warning('Failed to convert column %s from %s to %s: %s', ...
-                            columnName, class(table1.(columnName)(idx)), class(table2.(columnName)(j)), ME.message);
+                            columnName, class(table1.(columnName)), class(table2.(columnName)), ME.message);
+                    if Opt.aggressive
+                        table1.(columnName) = [];
+                        table2.(columnName) = [];
+                    end
                 end
             end
         end

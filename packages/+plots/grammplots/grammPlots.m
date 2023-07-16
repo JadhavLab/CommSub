@@ -1,6 +1,6 @@
 %%
 if ~exist('T', 'var')
-    T = query.getPatternTable(Patterns_AllAnimals);
+    T = query.getPatternTable(Patterns, Option);
 end
 % Cast any int types to double for table T
 for i = 1:width(T)
@@ -59,7 +59,7 @@ g.set_names('x', "Hilbert" + newline + "Predictive Dims", ...
 x = filteredsubset.full_model_performance;
 y = coherencesubset.full_model_performance;
 %subset = filteredsubset.directionality == "hpc-pfc" ;
-corner_kws = {'edges',-0.16:0.01:0.16, 'aspect',0.6, 'location', [0.5], 'fill', 'transparent', 'normalization',  'countdensity'}; %WARNING : EDGES OF HISTOGRAM ARE SET MANUALLY! you need this to surround your data
+corner_kws = {'edges',-0.16:0.01:0.16, 'aspect',0.6, 'location', [0.2], 'fill', 'transparent', 'normalization',  'countdensity'}; %WARNING : EDGES OF HISTOGRAM ARE SET MANUALLY! you need this to surround your data
 g(1,2) = gramm( ... 'subset', subset,...
             'x', x,...
             'y', y,...

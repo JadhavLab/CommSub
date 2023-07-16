@@ -16,7 +16,8 @@ if nargin > 1 && ~isempty(Option)
     % process those into the table
     Option = arrayfun(@option2table, Option, 'UniformOutput', false);
     Option = broadcast_to_match(Option, size(Patterns));
-    Option = cat(1, Option{:});
+    % TODO: MAKE THIS MATCH FIELDS
+    Option = table.flexvertcat(Option{:});
     assert(height(Option) == numel(Patterns), ...
           "rowAddition is not the same size as Patterns")
     assert(ismember("animal", Option.Properties.VariableNames), ...

@@ -59,7 +59,7 @@ for i = 1:numel(RunsSummary.timestamp)
     dates(i) = datetime(RunsSummary.timestamp(i));
 end
 [cntAn, cntH, cntZ]         = deal(0);
-tableCheck = true; % Set to true if you want to check RunsSummary table
+tableCheck = false; % Set to true if you want to check RunsSummary table
 for zsc = progress([true, false],'Title','zscore');  cntZ = cntZ + 1;
 for genH_= progress(h_methods,'Title','genH method'); cntH = cntH + 1;
 for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1;

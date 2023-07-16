@@ -48,13 +48,15 @@ localmode = true; % set to false to load from server
 if localmode
     % Load locally
     Out = query.combinePatterns(keys, ...
-    'RunsSummary', RunsSummary);
+    'RunsSummary', RunsSummary, ...
+     'verbose', ["animal", "generateH", "preProcess_zscore"]);
     Patterns = Out.Patterns;
-    Option = Out.Option;
+    Option   = Out.Option;
     clear Out
 else
     % Grab from server and load
-    [Patterns, otherData] = query.pattern.tmpLoadAndCombine(keys);
+    [Patterns, otherData] = query.pattern.remote_LoadAndCombine(keys, 'verbose', ...
+                                ["animal", "generateH", "preProcess_zscore"]);
     Option = otherData{1}.Option;
 end
 assert(~isempty(Option), "Data is empty -- downstream code will fail")
@@ -84,14 +86,16 @@ for a = 1:nDataset
 end
 
 % little check
-[[Patterns(:, 1,1,1,1,1,1).animal]',    [Option(:,1,1,1,1,1).animal]']
-[[Patterns(:, 1,1,1,1,1,1).generateH]', [Option(:,1,1,1,1,1).generateH]']
+% [[Patterns(:, 1,1,1,1,1,1).animal]',    [Option(:,1,1,1,1,1).animal]']
+% [[Patterns(:, 1,1,1,1,1,1).generateH]', [Option(:,1,1,1,1,1).generateH]']
+[~,I]  =sortrows([[Option.generateH]; [Option.animal]]');
+Option = Option(I);
+Patterns = Patterns(I,:,:,:,:,:,:);
 P = munge.reshapeByLabels(Patterns, 1, [Option.generateH],  'checksumSplitField', 'animal');
 O = munge.reshapeByLabels(Option, 1,   [Option.generateH], 'checksumSplitField', 'animal');
 
 %% Calculate the pattern 
 T = query.getPatternTable(Patterns, Option);
-dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
 %%  
 % The different animals loaded will actually collapse into the partition
@@ -117,6 +121,7 @@ dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 % 
 % A: How pairs of neuron in source/target co-fire
 % This is method insensitive. Just lump over animals
+dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
 %% 2A calculate co-firing across all animals
 Fig2 = struct();
