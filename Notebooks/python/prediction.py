@@ -7,8 +7,7 @@ from statsmodels.formula.api import ols
 
 # Load the data from the CSV file
 data = pd.read_csv('/Volumes/MATLAB-Drive/Shared/figures/tables/fig2_prediction.csv')
-
-
+data.loc[:,'highlow'] = data.name.apply(lambda x: 'high' if 'control' not in x else 'low')
 # Display the first few rows of the dataframe
 data.head()
 
@@ -30,31 +29,34 @@ hp_control_data.attrs['name']    = 'hpc-pfc control'
 hh_noncontrol_data.attrs['name'] = 'hpc-hpc real'
 hh_control_data.attrs['name']    = 'hpc-hpc control'
 
-
 plt.ion()
 
-fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+# ----------------------------------------
 
-# Plot for 'animal' column
-sns.countplot(ax=axes[0, 0], x='animal', data=data)
-axes[0, 0].set_title('Animal')
+def characterize(data):
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 
-# Plot for 'genH' column
-sns.countplot(ax=axes[0, 1], x='genH', data=data)
-axes[0, 1].set_title('Type of Network Pattern (genH)')
+    # Plot for 'animal' column
+    sns.countplot(ax=axes[0, 0], x='animal', data=data)
+    axes[0, 0].set_title('Animal')
 
-# Plot for 'name' column
-sns.countplot(ax=axes[1, 0], x='name', data=data)
-axes[1, 0].set_title('Frequency of Network Pattern (name)')
+    # Plot for 'genH' column
+    sns.countplot(ax=axes[0, 1], x='genH', data=data)
+    axes[0, 1].set_title('Type of Network Pattern (genH)')
 
-# Plot for 'direction' column
-sns.countplot(ax=axes[1, 1], x='direction', data=data)
-axes[1, 1].set_title('Brain Area Directionality of Network Pattern (direction)')
+    # Plot for 'name' column
+    sns.countplot(ax=axes[1, 0], x='name', data=data)
+    axes[1, 0].set_title('Frequency of Network Pattern (name)')
 
-plt.tight_layout()
-plt.show()
+    # Plot for 'direction' column
+    sns.countplot(ax=axes[1, 1], x='direction', data=data)
+    axes[1, 1].set_title('Brain Area Directionality of Network Pattern (direction)')
 
-# ----------
+    plt.tight_layout()
+    plt.show()
+characterize(hpc_pfc_data)
+
+# ----------------------------------------
 
 # # Histogram for continuous variables
 # fig, axes = plt.subplots(3, 2, figsize=(15, 10))
@@ -89,86 +91,97 @@ plt.show()
 # ----------
 
 # Binning continuous variables
-bins = 50
+def continuous_binned_characterize(data):
+    bins = 50
 
-fig, axes = plt.subplots(3, 2, figsize=(15, 10))
+    fig, axes = plt.subplots(3, 2, figsize=(15, 10))
 
-# Plot for 'nSource' column
-data['nSource'].plot(kind='hist', bins=bins, ax=axes[0, 0])
-axes[0, 0].set_title('Number of Source Neurons (nSource)')
+    # Plot for 'nSource' column
+    data['nSource'].plot(kind='hist', bins=bins, ax=axes[0, 0])
+    axes[0, 0].set_title('Number of Source Neurons (nSource)')
 
-# Plot for 'nTarget' column
-data['nTarget'].plot(kind='hist', bins=bins, ax=axes[0, 1])
-axes[0, 1].set_title('Number of Target Neurons (nTarget)')
+    # Plot for 'nTarget' column
+    data['nTarget'].plot(kind='hist', bins=bins, ax=axes[0, 1])
+    axes[0, 1].set_title('Number of Target Neurons (nTarget)')
 
-# Plot for 'Var7 (iTarget)' column
-data['Var7'].plot(kind='hist', bins=bins, ax=axes[1, 0])
-axes[1, 0].set_title('Index of Target Neuron (iTarget)')
+    # Plot for 'Var7 (iTarget)' column
+    data['Var7'].plot(kind='hist', bins=bins, ax=axes[1, 0])
+    axes[1, 0].set_title('Index of Target Neuron (iTarget)')
 
-# Plot for 'Var8 (perf)' column
-data['Var8'].plot(kind='hist', bins=bins, ax=axes[1, 1])
-axes[1, 1].set_title('Prediction Performance (perf)')
+    # Plot for 'Var8 (perf)' column
+    data['Var8'].plot(kind='hist', bins=bins, ax=axes[1, 1])
+    axes[1, 1].set_title('Prediction Performance (perf)')
 
-# Plot for 'mu' column
-data['mu'].plot(kind='hist', bins=bins, ax=axes[2, 0])
-axes[2, 0].set_title('Mean Prediction Performance (mu)')
+    # Plot for 'mu' column
+    data['mu'].plot(kind='hist', bins=bins, ax=axes[2, 0])
+    axes[2, 0].set_title('Mean Prediction Performance (mu)')
 
-# Plot for 'dev' column
-data['dev'].plot(kind='hist', bins=bins, ax=axes[2, 1])
-axes[2, 1].set_title('Std Dev of Prediction Performance (dev)')
+    # Plot for 'dev' column
+    data['dev'].plot(kind='hist', bins=bins, ax=axes[2, 1])
+    axes[2, 1].set_title('Std Dev of Prediction Performance (dev)')
 
-plt.tight_layout()
-plt.show()
+    plt.tight_layout()
+    plt.show()
 
+continuous_binned_characterize(hpc_pfc_data)
 
-# ----------
-
-# Define the bins
-bins = 100
-
-# Define the conditions
-conditions = ['direction', ['direction', 'name'], ['direction', 'name', 'genH'], 'genH']
-
-# Create the plots
-fig, axes = plt.subplots(len(conditions), 1, figsize=(10, 5 * len(conditions)))
-
-for ax, condition in zip(axes, conditions):
-    if isinstance(condition, list):
-        title = ', '.join(condition)
-        for value in filtered_data.groupby(condition).groups:
-            subset = filtered_data.loc[filtered_data.groupby(condition).groups[value]]
-            ax.hist(subset['Var8'], bins=bins, alpha=0.5, label=str(value))
-    else:
-        title = condition
-        for value in filtered_data[condition].unique():
-            subset = filtered_data[filtered_data[condition] == value]
-            ax.hist(subset['Var8'], bins=bins, alpha=0.5, label=str(value))
-    
-    ax.set_title(f'Performance Distribution Split by {title}')
-    ax.set_xlabel('Performance (Var8)')
-    ax.set_ylabel('Frequency')
-    ax.legend()
-
-plt.tight_layout()
-plt.show()
 
 # ----------
+# PLOT: Performance Distribution
+# INFO: NOT SO HELPFUL
 
-# Create a separate plot for performance split by 'genH' and 'direction'
-fig, ax = plt.subplots(figsize=(10, 5))
+def performance_distribution_split(data, quantile_xlim=0.99):
+    # Define the bins
+    bins = 100
+    # Define the conditions
+    conditions = ['direction', ['direction', 'name'], ['direction', 'name', 'genH'], 'genH']
+    # Create the plots
+    fig, axes = plt.subplots(len(conditions), 1, figsize=(10, 5 * len(conditions)))
+    for ax, condition in zip(axes, conditions):
+        if isinstance(condition, list):
+            title = ', '.join(condition)
+            for value in filtered_data.groupby(condition).groups:
+                subset = filtered_data.loc[filtered_data.groupby(condition).groups[value]]
+                ax.hist(subset['Var8'], bins=bins, alpha=0.5, label=str(value))
+        else:
+            title = condition
+            for value in filtered_data[condition].unique():
+                subset = filtered_data[filtered_data[condition] == value]
+                ax.hist(subset['Var8'], bins=bins, alpha=0.5, label=str(value))
+        
+        ax.set_title(f'Performance Distribution Split by {title}')
+        ax.set_xlabel('Performance (Var8)')
+        ax.set_ylabel('Frequency')
+        ax.set_xlim(filtered_data['Var8'].quantile(1 - quantile_xlim),
+                    filtered_data['Var8'].quantile(quantile_xlim))
+        ax.legend()
+    plt.tight_layout()
+    plt.show()
 
-sns.boxplot(ax=ax, x=filtered_data['genH'], y=filtered_data['Var8'], hue=filtered_data['direction'])
+performance_distribution_split(hpc_pfc_data, quantile_xlim=0.99)
 
-min_25th_quantile, max_75th_quantile = calculate_quantiles(filtered_data, ['genH', 'direction'])
+# ----------
+# PLOT: Perf dist by genH and direction
+# INFO: HELPFUL
 
-ax.set_title('Performance Distribution Split by genH and direction')
-ax.set_xlabel('genH')
-ax.set_ylabel('Performance (Var8)')
-ax.set_ylim(min_25th_quantile, max_75th_quantile)
-ax.legend(title='Direction', bbox_to_anchor=(1.05, 1), loc='upper left')
+def full_dist_boxplot(data):
+    # Create a separate plot for performance split by 'genH' and 'direction'
+    fig, ax = plt.subplots(figsize=(10, 5))
 
-plt.tight_layout()
-plt.show()
+    sns.boxplot(ax=ax, x=filtered_data['genH'], y=filtered_data['Var8'], hue=filtered_data['direction'])
+
+    min_25th_quantile, max_75th_quantile = calculate_quantiles(filtered_data, ['genH', 'direction'])
+
+    ax.set_title('Performance Distribution Split by genH and direction')
+    ax.set_xlabel('genH')
+    ax.set_ylabel('Performance (Var8)')
+    ax.set_ylim(min_25th_quantile, max_75th_quantile)
+    ax.legend(title='Direction', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    plt.tight_layout()
+    plt.show()
+
+full_dist_boxplot(hpc_pfc_data)
 
 
 # ----------
@@ -181,50 +194,51 @@ levene_test = stats.levene(hpc_pfc_data['Var8'][hpc_pfc_data['genH'] == 'coheren
 # Run ANOVA if Levene's test is passed (p > 0.05)
 if levene_test.pvalue > 0.05:
     # Fit the model
-    model = ols('Var8 ~ C(genH)', data=hpc_pfc_data).fit()
-
+    model = ols("Var8 ~ C(genH)", data=hpc_pfc_data).fit()
     # Perform ANOVA
     anova_table = sm.stats.anova_lm(model, typ=2)
 else:
     anova_table = None
 
-levene_test.pvalue, anova_table
+print(f'Levene\'s test p-value: {levene_test.pvalue}')
+print(anova_table)
 
 # ----------
 
-# Define the number of samples and sample size
-num_samples = 1000
-sample_size = 500
+def calculate_means_of_performance(df):
+    # Define the number of samples and sample size
+    num_samples = 1000
+    sample_size = 500
 
-df = hh_noncontrol_data
-name = df.attrs['name']
+    df = hh_noncontrol_data
+    name = df.attrs['name']
 
-# Initialize lists to hold the sample means
-power_means = []
-wpli_means = []
-coherence_means = []
+    # Initialize lists to hold the sample means
+    power_means = []
+    wpli_means = []
+    coherence_means = []
 
-# Resample and compute means
-for _ in range(num_samples):
-    power_sample = df['Var8'][df['genH'] == 'power'].sample(sample_size, replace=True)
-    power_means.append(power_sample.mean())
-    
-    wpli_sample = df['Var8'][df['genH'] == 'wpli'].sample(sample_size, replace=True)
-    wpli_means.append(wpli_sample.mean())
-    
-    coherence_sample = df['Var8'][df['genH'] == 'coherence'].sample(sample_size, replace=True)
-    coherence_means.append(coherence_sample.mean())
+    # Resample and compute means
+    for _ in range(num_samples):
+        power_sample = df['Var8'][df['genH'] == 'power'].sample(sample_size, replace=True)
+        power_means.append(power_sample.mean())
+        
+        wpli_sample = df['Var8'][df['genH'] == 'wpli'].sample(sample_size, replace=True)
+        wpli_means.append(wpli_sample.mean())
+        
+        coherence_sample = df['Var8'][df['genH'] == 'coherence'].sample(sample_size, replace=True)
+        coherence_means.append(coherence_sample.mean())
 
-# Create a histogram with transparency
-plt.figure(figsize=(10, 5))
-plt.hist(power_means, bins=50, alpha=0.5, label='power')
-plt.hist(wpli_means, bins=50, alpha=0.5, label='wpli')
-plt.hist(coherence_means, bins=50, alpha=0.5, label='coherence')
-plt.title(f'{name}: Distribution of Sample Means for hpc-pfc Direction Split by genH')
-plt.xlabel('Sample Mean of Performance (Var8)')
-plt.ylabel('Frequency')
-plt.legend()
-plt.show()
+    # Create a histogram with transparency
+    plt.figure(figsize=(10, 5))
+    plt.hist(power_means, bins=50, alpha=0.5, label='power')
+    plt.hist(wpli_means, bins=50, alpha=0.5, label='wpli')
+    plt.hist(coherence_means, bins=50, alpha=0.5, label='coherence')
+    plt.title(f'{name}: Distribution of Sample Means for hpc-pfc Direction Split by genH')
+    plt.xlabel('Sample Mean of Performance (Var8)')
+    plt.ylabel('Frequency')
+    plt.legend()
+    plt.show()
 
 # ----------
 
