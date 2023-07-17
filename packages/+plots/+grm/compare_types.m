@@ -1,4 +1,4 @@
-function plotComparison(T, genH_name1, genH_name2, varargin)
+function compare_types(T, genH_name1, genH_name2, directionality, varargin)
 % PLOTCOMPARISON Plot comparison of two genH values
 %   PLOTCOMPARISON(T, genH_name1, genH_name2) plots the comparison of two
 %   genH values in table T. genH_name1 and genH_name2 must be one of the
@@ -14,12 +14,12 @@ function plotComparison(T, genH_name1, genH_name2, varargin)
     investNames = ip.Results.investNames;
 
     % Create figure
-    figName = genH_name1 + " vs " + genH_name2;
+    figName = genH_name1 + " vs " + genH_name2 + " <" + directionality + ">";
     fig(figName); clf
 
     % Filter table
-    subset1 = T.genH_name == genH_name1 & T.directionality == "hpc-pfc";
-    subset2 = T.genH_name == genH_name2 & T.directionality == "hpc-pfc";
+    subset1 = T.genH_name == genH_name1 & T.directionality == directionality;
+    subset2 = T.genH_name == genH_name2 & T.directionality == directionality;
     filteredsubset = T(subset1, :);
     coherencesubset = T(subset2, :);
     assert(~isempty(filteredsubset))
@@ -31,18 +31,19 @@ function plotComparison(T, genH_name1, genH_name2, varargin)
         xlabelSuffix = investNames(i);
         M = max([abs(filteredsubset.(varName)); abs(coherencesubset.(varName))]);
         corner_kws = {'edges', -M:(1/10 * M):M, 'aspect', 0.6, 'location', M/2, 'fill', 'transparent', 'normalization', 'countdensity'};
-        g(1,i) = createPlot(filteredsubset, coherencesubset, varName, corner_kws, point_size, xlabelSuffix);
+        g(1,i) = createPlot(filteredsubset, coherencesubset, varName, corner_kws, point_size, xlabelSuffix, genH_name1, genH_name2);
     end
 
     % Draw the plots
     g.draw();
 
     % Save the figure
-    g.saveFig(figuredefine("gramm", "compare_perf_and_dim", figName + ".png"));
+    g.export("file_name", figuredefine("gramm", "compare_perf_and_dim", figName + ".png"));
+    g.export("file_name", figuredefine("gramm", "compare_perf_and_dim", figName + ".pdf"));
 
 end
 
-function g = createPlot(filteredsubset, coherencesubset, varName, corner_kws, point_size, xlabelSuffix)
+function g = createPlot(filteredsubset, coherencesubset, varName, corner_kws, point_size, xlabelSuffix, genH_name1, genH_name2)
     x = filteredsubset.(varName);
     y = coherencesubset.(varName);
     g = gramm('x', x, 'y', y, 'color', categorical(filteredsubset.patternAbstract), 'lightness', categorical(filteredsubset.control));

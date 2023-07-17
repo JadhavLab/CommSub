@@ -3,89 +3,26 @@ if ~exist('T', 'var')
 end
 
 %% COMPARISON OF FULL MODEL PERF AND PREDICTIVE DIMS
-plots.grm.hpcpfc_compare_types(T, "power", "coherence");
-plots.grm.hpcpfc_compare_types(T, "power", "wpli");
-plots.grm.hpcpfc_compare_types(T, "coherence", "wpli");
+plots.grm.compare_types(T, "power", "coherence", "hpc-pfc");
+plots.grm.compare_types(T, "power", "wpli", "hpc-pfc");
+plots.grm.compare_types(T, "coherence", "wpli", "hpc-pfc");
+plots.grm.compare_types(T, "power", "coherence", "hpc-hpc");
+plots.grm.compare_types(T, "power", "wpli", "hpc-hpc");
+plots.grm.compare_types(T, "coherence", "wpli", "hpc-hpc");
 
-%% Average pattern maxDimPerc single direction, all patterns
-figure(5)
-clf
-subset    = T.directionality == "hpc-pfc";
-hpcsubset = T.directionality == 'hpc-hpc';
-pfcsubset = T.directionality == 'hpc-pfc';
-
-% x = categorical(T(hpcsubset, "rrDim"));
-% y = T(pfcsubset, "rrDim");
-x = categorical(T.patternType);
-y = T.percMax_rrDim; 
-% y = T.full_model_performance;
-% g = gramm(  'x', x,...
-%     'y', y);
-% g.geom_point();
-% g.stat_cornerhist('edges',-4:0.2:4,'aspect',0.6);
-g = gramm('subset', subset, ...
-    'x', x ,...
-    'y', y,...
-    'Color', categorical(T.patternAbstract), ...
-    'lightness', categorical(T.control));
-
-g.geom_jitter('alpha', 0.8, 'width', 0.6)
-g.stat_summary('type', 'sem','geom','black_errorbar')
-%g.stat_summary('type', 'sem','geom','bar')
-g.set_point_options('base_size', 20);
-g.set_text_options('label_scaling', 1.5, 'base_size', 14);
-
-g.set_names('x', 'Pattern Type', ...
-    'y', '#(Predictive Dims)/#(Max. Pred. Dims)', ...
-    'Color', 'Pattern', ...
-    'Lightness', 'Treatment/Control')
-g.set_title(" FilteredEEG Example Pattern Dimensionalitiy" + newline() + "HPC-PFC");
-
-g.axe_property('XTickLabelRotation',35)
-g.draw()
+%% Average pattern maxDimPerc, single direction, all patterns
+plots.grm.plotPatternDim(T, "power", "hpc-pfc")
+plots.grm.plotPatternDim(T, "power", "hpc-hpc")
+plots.grm.plotPatternDim(T, "coherence", "hpc-pfc")
+plots.grm.plotPatternDim(T, "coherence", "hpc-hpc")
+plots.grm.plotPatternDim(T, "wpli", "hpc-pfc")
+plots.grm.plotPatternDim(T, "wpli", "hpc-hpc")
 
 % ------------------------------------------------------------
 
-%%$% Cornerhist hpc versus pfc predictive
-hpcsubset =   T.directionality == "hpc-hpc";
-pfcsubset =  T.directionality == "hpc-pfc" ;
-hpcsubset = T(hpcsubset,:);
-pfcsubset = T(pfcsubset,:);
-x = hpcsubset.rrDim;
-y = pfcsubset.rrDim;
-
-clf
-f=figure(5)
-corner_kws = {'edges',-10:0.5:10, 'aspect',1, 'location', [16], 'fill', 'transparent', 'normalization',  'countdensity'}; %WARNING : EDGES OF HISTOGRAM ARE SET MANUALLY! you need this to surround your data
-% LOCATION SETS WHERE THE CORNER HISTS ARE PLACED
-set(f,'Position',get(0,'ScreenSize'));
-g = gramm( ...
-            'x', x,...
-            'y', y,...
-            'subset', hpcsubset.control == "control")
-% assert(all(hpcsubset.patternType == pfcsubset.patternAbstract))
-g.facet_grid(categorical(hpcsubset.patternAbstractSymbol), [])
-g.geom_jitter('alpha', 0.01, 'width',0.35, 'height',0.35);
-g.stat_cornerhist(corner_kws{:});
-g.set_point_options('base_size',5);
-g.set_text_options('label_scaling', 1.5, 'base_size', 10);
-g.set_names('x', "HPC" +newline+ "predictive dimensions", ...
-    'y', "PFC" +newline+ "predictive dimensions", ...
-    'Color', 'Pattern', ...
-    'row','',...
-    'Lightness', 'Treatment/Control')
-g=g.set_color_options('chroma',0);
-g.set_text_options('interpreter','latex','base_size',10)
-%set(g.results.geom_jitter_handle,'MarkerSize',5)
-g.update('subset', hpcsubset.control ~= "control",...
-         'color', categorical(hpcsubset.patternAbstract));
-g.set_color_options();
-g.stat_cornerhist(corner_kws{:});
-g.geom_abline('style','k:');
-% g.axe_property('XTickLabelRotation',35, 'axis','square')
-g.geom_jitter('alpha', 0.30, 'width',0.35, 'height',0.35);
-g.draw()
-%set(g.results.geom_jitter_handle,'MarkerSize',5);
+plots.grm.comparePatternDim(T, "power")
+plots.grm.comparePatternDim(T, "coherence")
+plots.grm.comparePatternDim(T, "wpli")
 
 % ------------------------------------------------------------
 
