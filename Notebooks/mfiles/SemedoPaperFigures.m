@@ -2,6 +2,7 @@
 % 1. Animal-wise version of this 
 % 2.
 PreambleFigs
+dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
 %%  
 % The different animals loaded will actually collapse into the partition
@@ -27,7 +28,6 @@ PreambleFigs
 % 
 % A: How pairs of neuron in source/target co-fire
 % This is method insensitive. Just lump over animals
-dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
 %% 2A calculate co-firing across all animals
 Fig2 = struct();
@@ -129,12 +129,6 @@ close all
 % .patternVarExplained_hpc; % variance explained with hpc
 % .patternVarExplained_pfc; % variance explained with pfc
 
-
-%% 
-% Predicition Performance
-
-% TODO: Series of heatmaps to examine corr and pred
-
 %% Stupid test - possibly erase - not sure why this was done
 % Check how dist of corr differs from dist of pred score 
 
@@ -145,6 +139,12 @@ r_withhpc_patterns = [Fig2.b.r_withhpc_patterns{:}];
 r_withpfc_patterns = [Fig2.b.r_withpfc_patterns{:}];
 [h_hpc, p_hpc] = kstest2(r_withhpc_patterns, Fig2.a.all.all_pairs_withhpc);
 [h_pfc, p_pfc] = kstest2(r_withhpc_patterns, Fig2.a.all.all_pairs_withpfc);
+
+
+%% 
+% Predicition Performance
+
+% TODO: Series of heatmaps to examine corr and pred
 
 %% GET PRED PERFORMANCE TAVLWE
 [combinedPatternsTable, singlePredTable] = ...

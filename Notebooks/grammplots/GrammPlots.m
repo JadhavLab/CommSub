@@ -1,29 +1,16 @@
 if ~exist('T', 'var')
     PreambFigs; % Load data
 end
-% Cast any int types to double for table T
-for i = 1:width(T)
-    if isinteger(T.(i))
-        T.(i) = double(T.(i));
-    end
-end
 
-patternType = T.patternType;
-patternType( ~contains(patternType, '-' ), : ) = patternType( ~contains(patternType, '-' ), : ) + "-";
-columns = patternType.split('-');
-columns(columns(:,2)=="",2) = "pattern activity";
-T.patternAbstract = columns(:,1);
-T.control = columns(:,2);
-T.patternAbstractSymbol = T.patternAbstract.replace('theta','$\theta$').replace('delta','$\delta$').replace('ripple','SPW-R');
-
-% T.winSize = cell2mat(T.winSize);
-
-plots.grm.hpcpfc_compare_types;
+%% COMPARISON OF FULL MODEL PERF AND PREDICTIVE DIMS
+plots.grm.hpcpfc_compare_types(T, "power", "coherence");
+plots.grm.hpcpfc_compare_types(T, "power", "wpli");
+plots.grm.hpcpfc_compare_types(T, "coherence", "wpli");
 
 %% Average pattern maxDimPerc single direction, all patterns
 figure(5)
 clf
-subset =   T.directionality == "hpc-pfc";
+subset    = T.directionality == "hpc-pfc";
 hpcsubset = T.directionality == 'hpc-hpc';
 pfcsubset = T.directionality == 'hpc-pfc';
 
