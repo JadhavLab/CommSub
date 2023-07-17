@@ -4,8 +4,8 @@ function Y = cat(X, innerdims, outerdims, varargin)
 %
 % Inputs:
 % X: cell array of structs or nd-struct
-% innerdims: dimensions to merge along
-% outerdims: dimensions to merge along
+% innerdims: dimensions to merge along within groups of structs
+% outerdims: merge within these group dimensions
 % varargin: 'removeEmpty', true/false (default false), remove empty structs
 %   after merging
 % Outputs:

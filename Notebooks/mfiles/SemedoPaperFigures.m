@@ -84,6 +84,15 @@ for a = 1:nDataset
     nTarget(a) = size(Patterns(a,1,1,1,1).X_target,1);
     numDimsUsedForPrediction{a} = 1:min(nSource(a), nTarget(a));
 end
+regions = [const.HPC, const.PFC];
+
+% No idea why sometimes this is fulla nans
+if any(isnan(Option(1).patternNamesFull))
+    trans = @(x,y) x + " " + y;
+    Option = nd.apply(Option, "patternNamesFull-patternNames,genH_name", trans);
+    Option = nd.apply(Option, "patterNamesFull-patternNames,genH_name", trans);
+    assert(all(~ismissing(Option(1).patterNamesFull)), "Example number is missing or NaN")
+end
 
 % little check
 % [[Patterns(:, 1,1,1,1,1,1).animal]',    [Option(:,1,1,1,1,1).animal]']
@@ -181,8 +190,8 @@ close all
 % Example 
 % the difference in cofiring between hpc-hpc pairs and hpc-pfc pairs
 % are significant for all the activity patterns
-
-lots.cf.plotCfExampByDirection(Fig2.a.all,  Patterns, Option, "figAppend", 'all');
+tic
+plots.cf.plotCfExampByDirection(Fig2.a.all,  Patterns, Option, "figAppend", 'all');
 plots.cf.plotCfExampByDirection(Fig2.a.spec, Patterns, Option, "figAppend", 'spec');
 plots.cf.plotCfExampByDirection(Fig2.a.coh,  Patterns, Option, "figAppend", 'coh');
 plots.cf.plotCfExampByDirection(Fig2.a.wpli, Patterns, Option, "figAppend", 'wp');
@@ -191,7 +200,7 @@ plots.cf.plotCfExampByDirection(Fig2.a.all,  Patterns, Option, "figAppend", 'all
 plots.cf.plotCfExampByDirection(Fig2.a.spec, Patterns, Option, "figAppend", 'spec', 'Normalization', 'probability');
 plots.cf.plotCfExampByDirection(Fig2.a.coh,  Patterns, Option, "figAppend", 'coh',  'Normalization', 'probability');
 plots.cf.plotCfExampByDirection(Fig2.a.wpli, Patterns, Option, "figAppend", 'wp',   'Normalization', 'probability');
-
+disp("Time to plot: " + toc)
 %%
 
 dump.Fig2 = Fig2;
@@ -201,6 +210,7 @@ dump.Fig2 = Fig2;
 % response variability can be explained by another individual neuron"
 % 
 % B: Explained Variance
+tic
 Fig2.b = plots.pred.var.regionalexplained(Patterns, Option, ...
                         'appendAttributes', {'animal', 'generateH','name'});
 Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
@@ -209,6 +219,7 @@ Fig2.b = plots.pred.var.plotexplained(Fig2.b, Option, ...
                         'figAppend', 'all-log',...
                         'yscale', 'log');
 Fig2.datetime = datetime('now');
+disp("Time to plot: " + toc)
 %% 
 close all
 
@@ -238,79 +249,11 @@ r_withpfc_patterns = [Fig2.b.r_withpfc_patterns{:}];
 [h_hpc, p_hpc] = kstest2(r_withhpc_patterns, Fig2.a.all.all_pairs_withhpc);
 [h_pfc, p_pfc] = kstest2(r_withhpc_patterns, Fig2.a.all.all_pairs_withpfc);
 
-%% GET PRED PERFORMANCE
-% Get the size of the original array
-sz = size(Patterns);
-% Calculate the product of the dimensions to collapse
-collapsed_size = prod(sz(1:2));
-% Reshape the array
-ReshapedPatterns = squeeze(reshape(Patterns, [collapsed_size, sz(end-2:end)]));
-% Preallocate growing vectors
-combinedPatternsTable   = table();
-singlePredTable         = table();
-patternPerformanceTable = table();
-for p = progress(1:size(ReshapedPatterns, 1), 'Title', 'Animal*GenH*Partition')
-    for i = 1:Option(1).nPatternAndControl
-        for d = regions
-            % Existing code here
-            % Get current nTarget and nSource
-            currSource = ReshapedPatterns(p, d, i).X_source';
-            currTarget = ReshapedPatterns(p, d, i).X_target';
-            currB = ReshapedPatterns(p, d, i).rankRegress.B;
-            nSource = repmat(size(currSource, 2), size(currTarget, 2), 1);
-            nTarget = repmat(size(currTarget, 2), size(currTarget, 2), 1);
-            iTarget = 1:nTarget;
-            iSource = 1:nSource;
-            animal = repmat(ReshapedPatterns(p, d, i).animal, nTarget(1), 1);
-            genH   = repmat(ReshapedPatterns(p, d, i).genH_name, nTarget(1), 1);
-            direction = repmat(ReshapedPatterns(p, d, i).directionality, nTarget(1), 1);
-            name = repmat(ReshapedPatterns(p, d, i).name, nTarget(1), 1);
-            [perf, mu, dev] = plots.calculatePredictionPerformance(currSource, currTarget, currB);
-            mu = repmat(mu, nTarget(1), 1);
-            dev = repmat(dev, nTarget(1), 1);
-            iTarget = iTarget';
-            perf = perf';
-            newtab = table(animal, genH, name, direction, nSource, nTarget, iTarget, perf, mu, dev);
-            combinedPatternsTable = [combinedPatternsTable; newtab];
-            for iSource = 1:nSource(1)
-                if ~isfield(ReshapedPatterns(p,d,i), 'rankRegress') || ...
-                    ~isfield(ReshapedPatterns(p,d,i).rankRegress, 'singlesource_B')
-                    continue
-                end
-                curr_singleB = ReshapedPatterns(p,d,i).rankRegress.singlesource_B;
-                if isempty(curr_singleB)
-                    continue
-                end
-                iSource
-                curr_singleB = curr_singleB{iSource};
-                curr_singlesource = curr_source(:,iSource);
-                [perf, mu, dev] = plots.calculatePredictionPerformance(curr_singlesource, currTarget, curr_singleB);
-                iSource = repmat(iSource, nTarget(1), 1);
-                newtab = table(animal, genH, direction, nSource, nTarget, iSource, iTarget', perf', mu, dev);
-                singlePredTable = [singlePredTable; newtab];
-            end
-        end
-    end
-end
-if ~exist(figuredefine("tables"), 'dir'), mkdir(figuredefine("tables")); end
-writetable(combinedPatternsTable, fullfile(figuredefine("tables"), 'fig2_prediction.csv'));
-writetable(singlePredTable, fullfile(figuredefine("tables"), 'fig2_singlePrediction.csv'));
-% Description of columsn in combinedPatternsTable
-% -----------------------------------------------
-% animal: animal name
-% genH: the type of network pattern
-% name: frequency of network pattern
-% direction: brain area directionality of network pattern
-% nSource: number of source neurons
-% nTarget: number of target neurons
-% iTarget: index of target neuron
-% perf: prediction performance
-% mu: mean prediction performance
-% dev: std of prediction performance
-if ismember('Var8', combinedPatternsTable.Properties.VariableNames)
-    combinedPatternsTable.Properties.VariableNames{'Var8'} = 'perf';
-end
+%% GET PRED PERFORMANCE TAVLWE
+[combinedPatternsTable, singlePredTable] = ...
+    table.analyses.allAnimPredTable(Patterns, Option);
 
+%% PERFORMANCE PLOTS
 fig('Prediction, HPC to HPC vs HPC to PFC'); clf;
 plots.pred.regionalPerf(combinedPatternsTable, singlePredTable)
 % Run again for each genH
@@ -320,7 +263,6 @@ for genh = unique(combinedPatternsTable.genH)'
         singlePredTable, 'select_genH', genh)
 end
 
-%% Performance
 fig('Performance individual samples'); clf
 for i = 1:nPatterns
     name = Option(1).patternNames(i);

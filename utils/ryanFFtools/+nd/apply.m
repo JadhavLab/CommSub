@@ -18,8 +18,8 @@ function X = apply(X, varargin)
 % fieldmethod = "*" apply lambda to all fields without recursing
 % fieldmethod = "**" all fields and recursively apply if encounter an ndstruct
 % fieldmethod = set of fields, only apply to those fields
-% fieldmethod = x"-"y , apply to x and title the new result y
-% fieldmethod = x1,x2,x3,...,xn"-"y , apply to set of fields and title the new result y
+% fieldmethod = y"-"x , apply to x and title the new result y
+% fieldmethod = y"-"x1,x2,x3,...,xn , apply to set of fields and title the new result y
 %
 % if fieldmethod is empty, then the lambda is applied to the entire struct
 %
@@ -85,9 +85,14 @@ if isstruct(X) || iscell(X)
             to = split(1);
             if contains(from, ",")
                 from = split(2);
-                from = strsplit(from, ",");
-                x.(to) = lambda(x(:,from));
+                splitfrom = string(strsplit(from, ","));
+                args = cell(1, numel(splitfrom));
+                for i = 1:numel(splitfrom)
+                    args{i} = x.(splitfrom(i));
+                end
+                x.(to) = lambda(args{:});
             else
+                assert(~contains(from, ","), "Can't have multiple froms in this mode");
                 from = split(2);
                 x.(to) = lambda(x.(from));
             end
