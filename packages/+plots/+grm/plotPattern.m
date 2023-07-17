@@ -1,12 +1,24 @@
-function plotPatternDim(T, genH_name, directionality)
+function plotPatternDim(T, genH_name, directionality, varargin)
 % PLOTPATTERNDIM Plot the dimensionality of the example patterns
+
+    ip = inputParser();
+    ip.addParameter('x', "patternType");
+    ip.addParameter('y', "percMax_rrDim");
+    ip.addParameter('color', "patternAbstract");
+    ip.addParameter('lightness', "control");
+    ip.parse(varargin{:});
+    Opt = ip.Results;
 
     % Create figure
     figName = genH_name + " Example Pattern Dimensionality";
     fig(figName); clf
 
     % Filter table
-    subset = T.genH_name == genH_name & T.directionality == directionality;
+    if ~isempty(directionality)
+        subset = T.genH_name == genH_name & T.directionality == directionality;
+    else
+        subset = T.genH_name == genH_name;
+    end
     filteredT = T(subset, :);
     assert(~isempty(filteredT))
 
@@ -22,6 +34,10 @@ function plotPatternDim(T, genH_name, directionality)
     g.set_title(genH_name + " Example Pattern Dimensionality" + newline() + directionality);
     g.axe_property('XTickLabelRotation', 35);
     g.draw();
+
+    set(gcf, 'Position',  get(0, 'Screensize'));
+
+    % Set gramm figures
 
     g.export("file_name", figuredefine("gramm", "patterndim", directionality + "-" + genH_name), "file_type", "svg");
     g.export("file_name", figuredefine("gramm", "patterndim", directionality + "-" + genH_name), "file_type", "pdf");

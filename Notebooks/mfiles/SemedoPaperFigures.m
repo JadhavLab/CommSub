@@ -180,8 +180,8 @@ if useSinglePrediction
     sprintf(formatSpec2,Patterns(1,2).directionality,median_singlehp)
 end
 
-%% Figure 4
-withPredDims;
+%% Figure 4 :: make a table
+plots.pred.withPredDims
 
 %%
 % histogram of all predicition perf

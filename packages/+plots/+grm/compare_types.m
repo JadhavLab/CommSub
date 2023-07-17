@@ -36,6 +36,12 @@ function compare_types(T, genH_name1, genH_name2, directionality, varargin)
 
     % Draw the plots
     g.draw();
+    % for i = 1:numel(g)
+    %     for ax = g(i).facet_axes_handles
+    %         axis(ax, 'square');
+    %     end
+    % end
+    set(gcf, 'Position', get(0, 'Screensize')); % Maximize figure.
 
     % Save the figure
     g.export("file_name", figuredefine("gramm", "compare_perf_and_dim", figName + ".png"));

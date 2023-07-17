@@ -35,9 +35,14 @@ function plotCornerHist(T, genH_name)
     g.stat_cornerhist(corner_kws{:});
     g.geom_abline('style', 'k:');
     g.geom_jitter('alpha', 0.30, 'width', 0.35, 'height', 0.35);
+    for ax = g.facet_axes_handles
+        axis(ax, 'square');
+    end
 
     % Draw the plot
     g.draw();
+
+    set(gcf, 'Position', get(0, 'ScreenSize'));
 
     % Save the plot
     g.export("file_name", figuredefine("gramm", "patterndim", "compare-dir-" + henH_name + "_cornerhist"), "file_type", "pdf");

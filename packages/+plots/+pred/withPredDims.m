@@ -3,7 +3,7 @@
 
 %% calculate/plot
 tab = table();
-for i = progress(1:numel(Patterns), 'title', 'making predDim table')
+for i = progress(1:numel(Patterns), 'Title', 'making predDim table')
     P = Patterns(i);
     curr_cvLoss = P.rankRegress.cvLoss;
     curr_rrDim  = P.rankRegress.optDimReducedRankRegress;
@@ -33,7 +33,7 @@ for i = progress(1:numel(Patterns), 'title', 'making predDim table')
     newtab = table(iDataset,iP,genH,animal,direction,numDimsUsedForPrediction,dims,mea,err,optDim,full_model,name);
     tab = [tab;newtab];
 end
-tab.fracOptDim = tab.optDim./tab.numDimsUsedForPrediction;
+tab.fracOptDim = double(tab.optDim)./tab.numDimsUsedForPrediction;
 tab.fracDim = tab.dims./tab.numDimsUsedForPrediction;
 writetable(tab, figuredefine("tables", "predDim.csv"))
 

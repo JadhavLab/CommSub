@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
@@ -10,7 +11,8 @@ if not os.path.exists(folder):
 
 # Load the dataset
 df = pd.read_csv('/Volumes/MATLAB-Drive/Shared/figures/tables/predDim.csv')
-
+u = {key:np.unique(df[key]) for key in df.keys()}
+df.loc[:,'highlow'] = df.name.apply(lambda x: 'high' if 'control' not in x else 'low')
 # Display the first few rows of the dataset
 df.head()
 
@@ -21,11 +23,17 @@ df.head()
 dataset_ids = df['iDataset'].unique()
 
 # Create a subplot for each dataset
-fig, axs = plt.subplots(len(dataset_ids), figsize=(10, 5 * len(dataset_ids)))
+fig, axs = plt.subplots(int(len(dataset_ids)/3), 3, figsize=(10, 5 * len(dataset_ids)), sharex=True, sharey=True)
 
-for i, dataset_id in enumerate(dataset_ids):
+for dataset_id in dataset_ids:
+    
     # Filter the data for the current dataset
     data_subset = df[df['iDataset'] == dataset_id]
+
+    j = np.where(data_subset.genH.iloc[0] == np.array(['power', 'coherence', 'wpli']))[0]
+    i = np.where(data_subset.animal.iloc[0] == np.array(u["animal"]))[0]
+
+    ax = axs[i,j][0]
     
     # Unique partitions in the current dataset
     partitions = data_subset['iP'].unique()
@@ -33,16 +41,79 @@ for i, dataset_id in enumerate(dataset_ids):
     # Plot each partition as a separate line
     for partition in partitions:
         partition_data = data_subset[data_subset['iP'] == partition]
-        axs[i].plot(partition_data['dims'], partition_data['mea'], linestyle='dotted', c='black', alpha=0.2, markersize=1, lw=0.5)
-        axs[i].set(xlim=(0,10))
+        ax.plot(partition_data['dims'], partition_data['mea'], linestyle='dotted', c='black', alpha=0.2, markersize=1, lw=0.5)
+        ax.set(xlim=(0,10))
     
     # Set the title and labels
-    axs[i].set_title(f'Animal: {data_subset["animal"].iloc[0]}, genH: {data_subset["genH"].iloc[0]}')
-    axs[i].set_xlabel('Dimensions')
-    axs[i].set_ylabel('MEA')
+    ax.set_title(f'Animal: {data_subset["animal"].iloc[0]}, genH: {data_subset["genH"].iloc[0]}')
+    ax.set_xlabel('Dimensions')
+    ax.set_ylabel('MEA')
 
 plt.tight_layout()
 plt.show()
+
+
+# ------------------------------o
+# Define colors for highlow types
+def plot_mea_by_dimensions(df, direction_filter=None):
+    """
+    Function to plot Mean Error of Approximation (MEA) vs dimensions for different animal and genH types.
+    The data can be filtered by a specific directionality.
+    
+    Parameters:
+    - df: DataFrame containing the data
+    - direction_filter: Optional; if specified, only data with this directionality will be plotted
+    """
+    
+    # Define colors for highlow types
+    highlow_colors = {'high': 'red', 'low': 'blue'}
+    
+    # If a direction filter is specified, filter the data accordingly
+    if direction_filter is not None:
+        df = df[df['direction'] == direction_filter]
+
+    # List of unique animals
+    unique_animals = df['animal'].unique()
+    
+    # List of unique genH types
+    unique_genH = df['genH'].unique()
+    
+    # Create a subplot for each combination of animal and genH type
+    fig, axs = plt.subplots(len(unique_animals), len(unique_genH), figsize=(10, 18), sharex=True, sharey=True)
+    
+    for i, animal in enumerate(unique_animals):
+        for j, genH_type in enumerate(unique_genH):
+            # Filter the data for the current animal and genH type
+            data_subset = df[(df['animal'] == animal) & (df['genH'] == genH_type)]
+            
+            if not data_subset.empty:
+                # Unique partitions in the current dataset
+                partitions = data_subset['iP'].unique()
+                
+                # Plot each partition as a separate line
+                for partition in partitions:
+                    partition_data = data_subset[data_subset['iP'] == partition]
+                    
+                    # Define color based on highlow type and plot each highlow type as a separate line
+                    for highlow in ["high", "low"]:
+                        color = highlow_colors[highlow]
+                        pD = partition_data[partition_data['highlow'] == highlow]
+                        axs[i, j].plot(pD['dims'], pD['mea'], linestyle='dotted', 
+                                       color=color, alpha=0.2, markersize=1, lw=0.5)
+                        
+                axs[i, j].set_xlim(0, 10)  # Set x-axis limits
+                
+                # Set the title and labels
+                axs[i, j].set_title(f'Animal: {animal}, genH: {genH_type}')
+                axs[i, j].set_xlabel('Dimensions')
+                axs[i, j].set_ylabel('MEA')
+    
+    fig.suptitle(f'MEA vs. dimensions for different animal and genH types ({direction_filter})')
+    plt.tight_layout()
+    plt.show()
+
+plot_mea_by_dimensions(df, direction_filter='hpc-hpc')
+plot_mea_by_dimensions(df, direction_filter='hpc-pfc')
 
 
 # ------------------------------

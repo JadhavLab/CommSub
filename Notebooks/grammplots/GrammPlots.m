@@ -3,22 +3,23 @@ if ~exist('T', 'var')
 end
 
 %% COMPARISON OF FULL MODEL PERF AND PREDICTIVE DIMS
-plots.grm.compare_types(T, "power", "coherence", "hpc-pfc");
-plots.grm.compare_types(T, "power", "wpli", "hpc-pfc");
-plots.grm.compare_types(T, "coherence", "wpli", "hpc-pfc");
-plots.grm.compare_types(T, "power", "coherence", "hpc-hpc");
-plots.grm.compare_types(T, "power", "wpli", "hpc-hpc");
-plots.grm.compare_types(T, "coherence", "wpli", "hpc-hpc");
+plots.grm.compare_types(T, "power",     "coherence", "hpc-pfc");
+plots.grm.compare_types(T, "power",     "wpli",      "hpc-pfc");
+plots.grm.compare_types(T, "coherence", "wpli",      "hpc-pfc");
+plots.grm.compare_types(T, "power",     "coherence", "hpc-hpc");
+plots.grm.compare_types(T, "power",     "wpli",      "hpc-hpc");
+plots.grm.compare_types(T, "coherence", "wpli",      "hpc-hpc");
 
-%% Average pattern maxDimPerc, single direction, all patterns
-plots.grm.plotPatternDim(T, "power", "hpc-pfc")
-plots.grm.plotPatternDim(T, "power", "hpc-hpc")
-plots.grm.plotPatternDim(T, "coherence", "hpc-pfc")
-plots.grm.plotPatternDim(T, "coherence", "hpc-hpc")
-plots.grm.plotPatternDim(T, "wpli", "hpc-pfc")
-plots.grm.plotPatternDim(T, "wpli", "hpc-hpc")
+%% SHOW PREDICTIVE DIMENSIONS FOR EACH PATTERN
+plots.grm.plotPattern(T, "power",     "hpc-pfc");
+plots.grm.plotPattern(T, "power",     "hpc-hpc");
+plots.grm.plotPattern(T, "coherence", "hpc-pfc");
+plots.grm.plotPattern(T, "coherence", "hpc-hpc");
+plots.grm.plotPattern(T, "wpli",      "hpc-pfc");
+plots.grm.plotPattern(T, "wpli",      "hpc-hpc");
 
 % ------------------------------------------------------------
+% Compare dimensionality for each pattern hpc-hpc vs hpc-pfc
 
 plots.grm.comparePatternDim(T, "power")
 plots.grm.comparePatternDim(T, "coherence")
