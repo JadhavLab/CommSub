@@ -12,6 +12,7 @@ load("RunsSummary.mat", "RunsSummary");
 
 %% load
 multi_epoch = false; % usually first 3, last 3 epochs
+zscr = true; % zscored or not
 load("RunsSummary.mat");
 % TABLE : ACQUIRE RUNS
 % ----------------------
@@ -21,6 +22,7 @@ load("RunsSummary.mat");
 filtstring = ...
 ["ismember($animal, [""JS21"",""ZT2"",""ER1"",""JS14"",""JS13"",""JS17""])",...
        ..."$spikeBinSize==0.15",...
+       "$preProcess_zscore=="+zscr,...
        "$numPartition==50",...
        "$quantileToMakeWindows == 0.85",...
        "arrayfun(@(x)isequal($winSize(x,:), [0,0.3]), 1:size($winSize,1))'"];
@@ -253,6 +255,7 @@ r_withpfc_patterns = [Fig2.b.r_withpfc_patterns{:}];
 [combinedPatternsTable, singlePredTable] = ...
     table.analyses.allAnimPredTable(Patterns, Option);
 
+
 %% PERFORMANCE PLOTS
 fig('Prediction, HPC to HPC vs HPC to PFC'); clf;
 plots.pred.regionalPerf(combinedPatternsTable, singlePredTable)
@@ -263,24 +266,11 @@ for genh = unique(combinedPatternsTable.genH)'
         singlePredTable, 'select_genH', genh)
 end
 
-fig('Performance individual samples'); clf
-for i = 1:nPatterns
-    name = Option(1).patternNames(i);
-    patternPerformance_pfc = ... 
-    combinedPatternsTable(combinedPatternsTable.direction == "hpc-pfc" & combinedPatternsTable.name == name, :).perf;
-    patternPerformance_hpc = ... 
-    combinedPatternsTable(combinedPatternsTable.direction == "hpc-hpc" & combinedPatternsTable.name == name, :).perf;
-    subplot(3,1,i)
-    plot(patternPerformance_pfc);
-    ylabel("Performance")
-    xlabel("Sample")
-    hold on
-    plot(patternPerformance_hpc);
-    legend("pfc","hpc")
-    % how to interpret nans
-end
-linkaxes(findobj(gcf,'Type','Axes'),'xy')
-ylim(findobj(gcf,'Type','Axes'),[-0.25 0.8])
+% Individual samples
+plots.pred.plotIndivSamples(combinedPatternsTable, Option);
+plots.pred.plotIndivSamples(combinedPatternsTable, Option, 'power')
+plots.pred.plotIndivSamples(combinedPatternsTable, Option, 'coherence')
+plots.pred.plotIndivSamples(combinedPatternsTable, Option, 'wpli')
 %%
 
 % print stats
