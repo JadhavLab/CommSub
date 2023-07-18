@@ -65,7 +65,7 @@ function [H, Hvals, Hnanlocs, times] = generateFromSpectra(times, ...
         
         result = result'; % the average power of each discrete frequency, since mean operates on a row-wise fashion
         % we need to transpose 
-        H(:,i) = mean(result, 2); % average power of each frequency band
+        H(:,i) = mean(result',2);
         
         if any(isnan(H(:,i)))
             keyboard
