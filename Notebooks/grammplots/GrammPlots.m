@@ -29,14 +29,14 @@ plots.grm.comparePatternDim(T, "wpli")
 
 x = hpcsubset.percMax_rrDim;
 y = pfcsubset.percMax_rrDim;
-f=figure(1005)
+f=figure(1005);
 corner_kws = {'edges',-0.8:0.05:0.8, 'aspect',1, 'location', [1], 'fill', 'transparent', 'normalization',  'countdensity'}; %WARNING : EDGES OF HISTOGRAM ARE SET MANUALLY! you need this to surround your data
 % LOCATION SETS WHERE THE CORNER HISTS ARE PLACED
 set(f,'Position');
 g = gramm( ...
             'x', x,...
             'y', y,...
-            'subset', hpcsubset.control == "control")
+            'subset', hpcsubset.control == "control");
 % assert(all(hpcsubset.patternType == pfcsubset.patternAbstract))
 g.facet_grid(categorical(hpcsubset.patternAbstractSymbol), [])
 g.geom_jitter('alpha', 0.01, 'width',0.02, 'height',0.02);

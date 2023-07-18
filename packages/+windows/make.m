@@ -46,7 +46,7 @@ assert(all(boolcheck==0) || all(boolcheck==1),...
 
 %% 1. calculate the quantiles
 %% --------------------------
-[nTime,nPatterns] = size(H);
+[~,nPatterns] = size(H);
 cutoff = zeros(numel(threshold),nPatterns);
 
 % Compute quantile cutoffs either from H or another given variable
@@ -76,7 +76,7 @@ LOW = 1;
 HIGH = 2;
 is_cutoff_range = size(cutoff, 1) == 2;
 assert(size(cutoff,1) == 1, "Cutoff must be a range (2 numbers) or a min or max (1 number)")
-H_isPattern = false(size(H));
+% H_isPattern = false(size(H));
 
 % Repeat the cutoff array to match size of H
 cutoffRepeat = repmat(cutoff, [size(H, 1), 1]);
@@ -95,8 +95,8 @@ else
 end
 
 % Marking as false for H values outside upper and lower quantile range
-H_isPattern = H_isPattern & (H > lowerOutlierCutoffRepeat) & (H < upperOutlierCutoffRepeat);
-
+H_isPattern = H_isPattern & (H > lowerOutlierCutoffRepeat) &...
+                            (H < upperOutlierCutoffRepeat);
 
 if isscalar(winSize)
     winSize = [-winSize, winSize];

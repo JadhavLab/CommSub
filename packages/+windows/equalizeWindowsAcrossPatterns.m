@@ -1,5 +1,4 @@
 function equalized = equalizeWindowsAcrossPatterns(cellOfWindows)
-
 % this function equalize the windows across patterns within a cell of
 % windows
   

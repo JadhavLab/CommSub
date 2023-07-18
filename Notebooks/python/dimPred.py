@@ -7,9 +7,9 @@ from sklearn.utils import resample
 from tqdm import tqdm
 
 plt.ion()
-folder='/Volumes/MATLAB-Drive/Shared/figures/python/dimPred/'
-if not os.path.exists(folder):
-    os.makedirs(folder)
+savefolder='/Volumes/MATLAB-Drive/Shared/figures/python/dimPred/'
+if not os.path.exists(savefolder):
+    os.makedirs(savefolder)
 
 # Load the dataset
 df = pd.read_csv('/Volumes/MATLAB-Drive/Shared/figures/tables/predDim.csv')
@@ -17,6 +17,8 @@ u = {key:np.unique(df[key]) for key in df.keys()}
 df.loc[:,'highlow'] = df.name.apply(lambda x: 'high' if 'control' not in x else 'low')
 # Display the first few rows of the dataset
 df.head()
+df.loc[:,'patternname'] = df.name.apply(lambda x: x.replace('-control', ''))
+df.query('genH != "wpli"', inplace=True)
 
 # ------------------------------
 # Plot the samples of MEA vs. dimension for each dataset
@@ -223,6 +225,129 @@ plot_bootstrap_mea_by_dataset(df, highlow_filter='high')
 plot_bootstrap_mea_by_dataset(df, highlow_filter='low')
 
 
+# ------------------------------
+
+# Here's the corrected function
+
+def plot_bootstrap_mea_by_dataset(df, name_split=False, highlow_filter=None, n_iterations=100,
+                                  frac_dim_filter=None):
+    """
+    Function to plot bootstrap Mean Error of Approximation (MEA) ratio of 'hpc-pfc' over 'hpc-hpc' vs fractional dimensions for each dataset.
+    The data can be filtered by a specific highlow value and optionally split by name.
+
+    Parameters:
+    - df: DataFrame containing the data
+    - name_split: Optional; if True, separate subplots will be created for each unique name
+    - highlow_filter: Optional; if specified, only data with this highlow value will be plotted
+    - n_iterations: Number of bootstrap iterations
+    """
+
+    # If a highlow filter is specified, filter the data accordingly
+    if highlow_filter is not None:
+        df = df[df['highlow'] == highlow_filter]
+    if frac_dim_filter:
+        df = df[df['fracDim'] < frac_dim_filter]
+
+    # Define colors for different names
+    name_colors = {'theta': 'green', 'ripple': 'blue', 'delta': 'red'}
+    for name in df['name'].unique():
+        if 'control' in name:
+            name_colors[name] = sns.light_palette(name_colors[name.split('-')[0]], n_colors=3)[1]
+        else:
+            name_colors[name] = name_colors[name]
+
+    # List of unique datasets
+    dataset_ids = df['iDataset'].unique()
+
+    # Create a subplot for each dataset and each unique name if name_split is True
+    if name_split:
+        fig, axs = plt.subplots(len(dataset_ids), len(df['name'].unique()), figsize=(10 * len(df['name'].unique()), 5 * len(dataset_ids)), sharey=True)
+    else:
+        fig, axs = plt.subplots(len(dataset_ids), 1, figsize=(10, 5 * len(dataset_ids)), sharey=True)
+
+    # Adjust the margins around the plot grid
+    plt.subplots_adjust(top=0.95, bottom=0.05, left=0.1, right=0.9)
+
+    # Set the background color to dark gray
+    fig.patch.set_facecolor('xkcd:dark grey')
+
+    for i, dataset_id in enumerate(dataset_ids):
+        if name_split:
+            for j, name in enumerate(df['name'].unique()):
+                # Filter the data for the current dataset and name
+                data_subset = df[(df['iDataset'] == dataset_id) & (df['name'] == name)]
+                plot_ratio(data_subset, name_colors, n_iterations, i, j, axs, name)
+        else:
+            # Filter the data for the current dataset
+            data_subset = df[df['iDataset'] == dataset_id]
+            plot_ratio(data_subset, name_colors, n_iterations, i, 0, axs)
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_ratio(data_subset, name_colors, n_iterations, i, j, axs, name=None):
+    # Unique directions in the current dataset
+    directions = data_subset['direction'].unique()
+
+    if 'hpc-hpc' in directions and 'hpc-pfc' in directions:
+        # Extract the data for the two directions
+        direction_data_0 = data_subset[data_subset['direction'] == 'hpc-hpc']
+        direction_data_1 = data_subset[data_subset['direction'] == 'hpc-pfc']
+
+        # Initialize arrays to store bootstrapped means
+        bootstrap_means_0 = np.zeros((n_iterations, len(direction_data_0['fracDim'].unique())))
+        bootstrap_means_1 = np.zeros((n_iterations, len(direction_data_1['fracDim'].unique())))
+
+        # Perform bootstrapping
+        for k in range(n_iterations):
+            bootstrap_sample_0 = resample(direction_data_0, replace=True)
+            bootstrap_sample_1 = resample(direction_data_1, replace=True)
+
+            # Compute the mean for each fractional dimension
+            for l, (fracDim, group_data_0) in enumerate(bootstrap_sample_0.groupby('fracDim')):
+                group_data_1 = bootstrap_sample_1[bootstrap_sample_1['fracDim'] == fracDim]
+                if not group_data_1.empty:
+                    bootstrap_means_0[k, l] = group_data_0['mea'].mean()
+                    bootstrap_means_1[k, l] = group_data_1['mea'].mean()
+
+        # Compute the mean of the bootstrapped means
+        mean_bootstrap_means_0 = bootstrap_means_0.mean(axis=0)
+        mean_bootstrap_means_1 = bootstrap_means_1.mean(axis=0)
+
+        # Compute the MEA ratio
+        ratio_mea = mean_bootstrap_means_1 / mean_bootstrap_means_0
+
+        # Compute upper and lower bounds of the 95% confidence interval
+        lower_bound = np.percentile(ratio_mea, 2.5)
+        upper_bound = np.percentile(ratio_mea, 97.5)
+
+        # Define color based on name
+        color = name_colors[name]
+
+        # Plot the ratio MEA for each fractional dimension
+        axs[i, j].plot(direction_data_0['fracDim'].unique(), ratio_mea, color=color, linewidth=2)
+        axs[i, j].fill_between(direction_data_0['fracDim'].unique(), lower_bound, upper_bound, color=color, alpha=0.2)
+        axs[i, j].axhline(1, color='white', linestyle='--', linewidth=1)
+
+        # Set the text color of the axes to white
+        axs[i, j].xaxis.label.set_color('white')
+        axs[i, j].yaxis.label.set_color('white')
+        axs[i, j].tick_params(axis='x', colors='white')
+        axs[i, j].tick_params(axis='y', colors='white')
+        axs[i, j].title.set_color('white')
+        axs[i, j].set_facecolor('xkcd:dark grey')
+
+        # Set the title and labels
+        if name is not None:
+            axs[i, j].set_title(f'Dataset: {i+1}, Name: {name}', color='white')
+        axs[i, j].set_xlabel('Fractional Dimension', color='white')
+        axs[i, j].set_ylabel('Bootstrap MEA Ratio', color='white')
+
+plot_bootstrap_mea_by_dataset(df, name_split=True, highlow_filter='high',
+                              frac_dim_filter=0.5)
+
+
+
 
 # ------------------------------
 
@@ -308,3 +433,150 @@ from sklearn.utils import resample
 unique_genH = df['genH'].unique()
 # ------------------------------
 
+
+# Function to calculate bootstrap means of 'mea' for a given highlow category and genH
+def calculate_bootstrap_means(df, highlow_category, genH, num_samples=1000, sample_size=500):
+    # Initialize list to hold the bootstrap means
+    bootstrap_means = []
+
+    # Resample and compute means
+    for _ in range(num_samples):
+        sample = df[(df['highlow'] == highlow_category) & (df['genH'] == genH)]['mea'].sample(sample_size, replace=True)
+        bootstrap_means.append(sample.mean())
+    
+    return bootstrap_means
+
+# Create a subplot for each unique genH
+fig, axs = plt.subplots(len(df['genH'].unique()), figsize=(10, 5 * len(df['genH'].unique())))
+
+# Adjust the margins around the plot grid
+plt.subplots_adjust(top=0.95, bottom=0.05, left=0.1, right=0.9)
+
+# Set the background color to dark gray
+fig.patch.set_facecolor('xkcd:dark grey')
+
+for i, genH in tqdm(enumerate(df['genH'].unique()), 
+                    total=len(df['genH'].unique())):
+    # Calculate bootstrap means for high and low categories
+    high_means = calculate_bootstrap_means(df, 'high', genH)
+    low_means = calculate_bootstrap_means(df, 'low', genH)
+
+    # Plot histograms of bootstrap means
+    axs[i].hist(high_means, bins=50, alpha=0.5, label='high')
+    axs[i].hist(low_means, bins=50, alpha=0.5, label='low')
+
+    # Set the title and labels
+    axs[i].set_title(f'{genH}: Distribution of Bootstrap Sample Means')
+    axs[i].set_xlabel('Sample Mean of MEA')
+    axs[i].set_ylabel('Frequency')
+
+    # Set the text color of the axes to white
+    axs[i].xaxis.label.set_color('white')
+    axs[i].yaxis.label.set_color('white')
+    axs[i].tick_params(axis='x', colors='white')
+    axs[i].tick_params(axis='y', colors='white')
+    axs[i].set_facecolor('xkcd:dark grey')
+
+    axs[i].legend()
+
+plt.tight_layout()
+plt.show()
+
+
+def calculate_bootstrap_means(df, highlow_category, genH, num_samples=1000, sample_size=500):
+    # Initialize list to hold the bootstrap means
+    bootstrap_means = []
+
+    # Resample and compute means
+    for _ in range(num_samples):
+        sample = df[(df['highlow'] == highlow_category) & (df['genH'] == genH)]['mea']
+        if len(sample) > 0:
+            sample = sample.sample(sample_size, replace=True)
+            bootstrap_means.append(sample.mean())
+    
+    return bootstrap_means
+
+
+def plot_bootstrap_means(df, split_by_name=False, num_samples=1000, sample_size=500):
+    """
+    Function to plot bootstrap means of 'mea' for high and low 'highlow' categories, optionally split by 'name'.
+    The data can be split by 'name', resulting in separate subplots for each unique name.
+
+    Parameters:
+    - df: DataFrame containing the data
+    - split_by_name: Optional; if True, separate subplots will be created for each unique name
+    - num_samples: Number of bootstrap samples to draw; default is 1000
+    - sample_size: Size of each bootstrap sample; default is 500
+    """
+
+    df = df.query('fracDim > fracOptDim')
+    
+    # List of unique genH and names
+    genHs = df['genH'].unique()
+    names = df['patternname'].unique() if split_by_name else [None]
+
+    # Create a subplot for each unique genH and name
+    fig, axs = plt.subplots(len(genHs), len(names), figsize=(10 * len(names), 5 * len(genHs)))
+
+    # Adjust the margins around the plot grid
+    plt.subplots_adjust(top=0.95, bottom=0.05, left=0.1, right=0.9)
+
+    # Set the background color to dark gray
+    fig.patch.set_facecolor('xkcd:dark grey')
+
+    for i, genH in tqdm(enumerate(genHs), total=len(genHs), desc='genH'):
+        for j, name in tqdm(enumerate(names), total=len(names), desc='pattern'):
+            # Filter the data for the current genH and name (if specified)
+            data_subset = df[df['genH'] == genH] if name is None else df[(df['genH'] == genH) & (df['patternname'] == name)]
+
+            # Calculate bootstrap means for high and low categories
+            high_means = calculate_bootstrap_means(data_subset, 'high', genH, num_samples, sample_size)
+            low_means = calculate_bootstrap_means(data_subset, 'low', genH, num_samples, sample_size)
+
+            # Plot histograms of bootstrap means
+            if len(names) > 1:  # if split_by_name is True
+                ax = axs[i, j]
+            else:
+                ax = axs[i]
+
+            ax.hist(high_means, bins=50, alpha=0.5, label='high', color='xkcd:red')
+            ax.hist(low_means, bins=50, alpha=0.5, label='low', color='xkcd:blue')
+
+            # Set the title and labels
+            title = f'{genH}: Distribution of Bootstrap Sample Means'
+            if name is not None:
+                title += f' for {name}'
+            ax.set_title(title)
+            ax.set_xlabel('Sample Mean of MEA')
+            ax.set_ylabel('Frequency')
+
+            # Set the text color of the axes to white
+            ax.xaxis.label.set_color('white')
+            ax.yaxis.label.set_color('white')
+            ax.tick_params(axis='x', colors='white')
+            ax.tick_params(axis='y', colors='white')
+            ax.set_facecolor('xkcd:dark grey')
+
+            ax.legend()
+
+    plt.tight_layout()
+    plt.show()
+    return fig, axs
+
+# Use the function with example parameters
+
+fig, axs = plot_bootstrap_means(df.query('direction == "hpc-hpc"'), split_by_name=True)
+minmax = [(ax.get_xlim()[0], ax.get_xlim()[1]) for ax in plt.gcf().axes]
+minmax = (min([x[0] for x in minmax]), max([x[1] for x in minmax]))
+[ax.set_xlim(minmax) for ax in plt.gcf().axes]
+fig.suptitle('HPC-HPC\nBootstrap Means of MEA for High and Low Highlow Categories,\nSplit by Pattern/GenH', fontsize=16, fontweight='bold', color='white')
+fig.subplots_adjust(top=0.9)
+fig.savefig(os.path.join(savefolder, 'bootstrap_means_hpc-hpc.png'), dpi=300)
+
+fig, axs = plot_bootstrap_means(df.query('direction == "hpc-pfc"'), split_by_name=True)
+minmax = [(ax.get_xlim()[0], ax.get_xlim()[1]) for ax in plt.gcf().axes]
+minmax = (min([x[0] for x in minmax]), max([x[1] for x in minmax]))
+[ax.set_xlim(minmax) for ax in plt.gcf().axes]
+fig.suptitle('HPC-PFC\nBootstrap Means of MEA for High and Low Highlow Categories,\nSplit by Pattern/GenH', fontsize=16, fontweight='bold', color='white')
+fig.subplots_adjust(top=0.9)
+fig.savefig(os.path.join(savefolder, 'bootstrap_means_hpc-pfc.png'), dpi=300)

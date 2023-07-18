@@ -60,7 +60,7 @@ conditions = [isempty(opt.rippleBand), isempty(opt.rippleBandTime)];
 no_rip_times_or_values = all(conditions);
 only_one_given = any(conditions);
 if no_rip_times_or_values
-    times = first_time_of_the_day:1/opt.samprate:last_time_of_the_day;
+    times = first_time_of_the_day:(1/opt.samprate):last_time_of_the_day;
     H = interp1(opt.rippleBandTime,opt.rippleBand,times);
     Hvals = H; % this would create NaNs in Hvals
 elseif only_one_given
@@ -68,7 +68,6 @@ elseif only_one_given
 else
     times = opt.rippleBandTime;
     H     = nan(1,length(times));
-
     % How will we handle the values?
     switch opt.globalrippleWindowUnits
         case "zscore"
@@ -99,20 +98,20 @@ for j = 1:size(ripple_windows,1)
     % first qualified window encountered
     filter = times >= ripple_windows(j,1) & times < ripple_windows(j,2);
     if opt.amplitude_at_riptime == false
-        H(filter) = 1;
+        H(filter) = 1; % set all globalripple times to 1
     elseif ismember(opt.globalrippleWindowUnits, ["plugin", "zscore"])
-        H(filter) = opt.rippleBand(filter);
+        H(filter) = opt.rippleBand(filter); % set all ripple times to the ripple power
     elseif opt.globalrippleWindowUnits == "std"
-        H(filter) = ripple_windows(j,3);
+        H(filter) = ripple_windows(j,3); % set all ripple times to the std
     end
     continue;
 end
 
 % ENCODE LOCATIONS WHERE RIPPLES NOT HAPPENING
-Hnanlocs = isnan(H);
-Hnanlocs = double(Hnanlocs)';
-Hnanlocs(Hnanlocs == 1) = nan;
-Hnanlocs(Hnanlocs == 0) = 1;
+Hnanlocs = isnan(H); % nans where not happening (now a bool)
+Hnanlocs = double(Hnanlocs)'; % transpose to match H
+Hnanlocs(Hnanlocs == 1) = nan; % Nanlocs set back to nan
+Hnanlocs(Hnanlocs == 0) = 1; %  0s become 1s to allow values through in next step
 Hvals(Hnanlocs==1) = H(Hnanlocs==1);
 
 % RECREATE H AS A FACTORIZATION FROM VALUE (what) AND LOCATION (where) FACTORS

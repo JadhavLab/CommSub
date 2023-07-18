@@ -44,7 +44,6 @@ DELTA  = const.DELTA;
 THETA  = const.THETA;
 
 if contains(Option.generateH, "fromSpectra")
-
     load(Option.animal + "spectralBehavior.mat");
     if Option.sourceArea == "CA1"
         spectrogram       = efizz.S1;
