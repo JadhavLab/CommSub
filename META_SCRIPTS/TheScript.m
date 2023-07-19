@@ -148,16 +148,24 @@ if Option.analysis.factorAnalysis
 end
 
 if Option.analysis.cca
+    % ---------------------------------------------------------------------
     % Patterns         = analysis.cca(Patterns, Option);
     Patterns_overall = analysis.cca(Patterns_overall, Option);
     % Copy over the components
     Components_overall =  ...
          nd.fieldSet(Components_overall, 'cca', Patterns_overall);
-    % Event analysis
-    event_anal   = analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
+    % ---------------------------------------------------------------------
+    % Event analysis ------------------------------------------------------
+    event_anal   = ... 
+         analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
     Components_overall = ... 
          nd.fieldSet(Components_overall, 'event_anal', event_anal);
-    % Triggered spectrogram
+    % ---------------------------------------------------------------------
+    % Create table of results ---------------------------------------------
+    table.analyses.ccatime(Patterns_overall, efizz, Option, behavior,...
+                          'behaviorColumns', {'vel', 'accel', 'lindist', 'rewarded', 'trajbound'});
+    % ---------------------------------------------------------------------
+    % Triggered spectrogram -----------------------------------------------
     efizz = load(Option.animal + "spectralBehavior.mat", "efizz");
     efizz = efizz.efizz;
     disp("Running triggered spectrogram - run")
@@ -176,6 +184,7 @@ if Option.analysis.cca
         Patterns_overall(i).triggered_spectrogram_run   = triggered_spectrogram_run(i,:);
         Patterns_overall(i).triggered_spectrogram_sleep = triggered_spectrogram_sleep(i,:);
     end
+    % ---------------------------------------------------------------------
 end
 
 if Option.analysis.timeVarying

@@ -32,12 +32,14 @@ h_methods = [  ...
     "fromCoherence  fromRipTimes"... COHERENCE
     ..."fromWpli  fromRipTimes", ...    WPLI
 ];
+zvals = [true, false];
 
 
 %% Print what we're doing
 disp(" ----------- RunAll ----------------------")
 disp("Running " + numel(animal_list) + " animals");
 disp("with " + numel(h_methods) + " methods");
+disp(" and " + numel(zvals) + " zscore options");
 disp("and Option struct ")
 disp(rmfield(Option, {'animal', 'generateH'}));
 disp("and analysis struct ")
@@ -60,7 +62,7 @@ for i = 1:numel(RunsSummary.timestamp)
 end
 [cntAn, cntH, cntZ]         = deal(0);
 tableCheck = false; % Set to true if you want to check RunsSummary table
-for zsc = progress([true, false],'Title','zscore');  cntZ = cntZ + 1;
+for zsc = progress(zvals,'Title','zscore');  cntZ = cntZ + 1;
 for genH_= progress(h_methods,'Title','genH method'); cntH = cntH + 1;
 for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1;
         Option.preProcess_zscore = zsc;

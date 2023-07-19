@@ -126,6 +126,7 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
                 assert(~clean.isRankDeficient(s_all));
                 Patterns_overall(j,i).X_source = s_all;
                 Patterns_overall(j,i).X_target = t_all;
+                Patterns_overall(j,i).X_time = reshape(Spk.trialTimes{i}',1,[]);
                 % Assign index_source and index_target
                 Patterns_overall(j,i).index_source = s_ind_all;
                 Patterns_overall(j,i).index_target = t_ind_all;
