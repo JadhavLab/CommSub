@@ -580,3 +580,76 @@ minmax = (min([x[0] for x in minmax]), max([x[1] for x in minmax]))
 fig.suptitle('HPC-PFC\nBootstrap Means of MEA for High and Low Highlow Categories,\nSplit by Pattern/GenH', fontsize=16, fontweight='bold', color='white')
 fig.subplots_adjust(top=0.9)
 fig.savefig(os.path.join(savefolder, 'bootstrap_means_hpc-pfc.png'), dpi=300)
+
+def plot_3d_bootstrap_means(df, split_by_name=False, num_samples=1000, sample_size=500):
+    """
+    Function to plot 3D histograms of bootstrap means of 'mea' for high and low 'highlow' categories, optionally split by 'name'.
+    The x-axis is the bootstrap mean, the y-axis is the frequency, and the z-axis is the 'fracDim' value.
+    Each slice of the 3rd dimension is a histogram measured at a 'fracDim' value.
+
+    Parameters:
+    - df: DataFrame containing the data
+    - split_by_name: Optional; if True, separate subplots will be created for each unique name
+    - num_samples: Number of bootstrap samples to draw; default is 1000
+    - sample_size: Size of each bootstrap sample; default is 500
+    """
+    df = df.query('fracDim > fracOptDim')
+
+    # List of unique genH and names
+    genHs = df['genH'].unique()
+    names = df['patternname'].unique() if split_by_name else [None]
+    fig = plt.figure(figsize=(10, 6))
+    rows = len(genHs)
+    cols = len(names)
+
+    # Create a 3D plot for each unique genH and name
+    for i, genH in tqdm(enumerate(genHs), total=len(genHs), desc='genH'):
+        for j, name in tqdm(enumerate(names), total=len(names), desc='pattern'):
+            # Filter the data for the current genH and name (if specified)
+            data_subset = df[df['genH'] == genH] if name is None \
+                    else df[(df['genH'] == genH) & (df['patternname'] == name)]
+
+            # Create 3D histogram
+            ax = fig.add_subplot(rows, cols, i * cols + j + 1, projection='3d')
+            # Set the title and labels
+            title = f'{genH}: 3D Distribution of Bootstrap Sample Means'
+            if name is not None:
+                title += f' for {name}'
+            ax.set_title(title)
+            ax.set_xlabel('Sample Mean of MEA')
+            ax.set_ylabel('fracDim')
+            ax.set_zlabel('Frequency')
+            
+            # List of unique 'fracDim' values
+            fracDims = data_subset['fracDim'].unique()
+
+            # Calculate bootstrap means and plot histogram for each 'fracDim' value
+            for k, fracDim in enumerate(fracDims):
+                # Filter the data for the current 'fracDim'
+                fracDim_data = data_subset[data_subset['fracDim'] == fracDim]
+
+                # Calculate bootstrap means for high and low categories
+                high_means = calculate_bootstrap_means(fracDim_data, 'high', genH, num_samples, sample_size)
+                low_means = calculate_bootstrap_means(fracDim_data, 'low', genH, num_samples, sample_size)
+                if len(high_means) == 0 or len(low_means) == 0:
+                    continue
+
+                # Define bins
+                bins = np.linspace(min(min(high_means), min(low_means)), max(max(high_means), max(low_means)), 50)
+                print("bins", bins)
+
+                # Plot histograms for high and low categories
+                hist_high, _ = np.histogram(high_means, bins=bins)
+                hist_low, _  = np.histogram(low_means, bins=bins)
+
+                # Add bar collections
+                # ax.bar(bins[:-1], hist_high, zs=fracDim, zdir='y', alpha=0.3, color='r', label='high' if k == 0 else "")
+                # ax.bar(bins[:-1], hist_low,  zs=fracDim, zdir='y', alpha=0.3, color='b', label='low' if k == 0 else "")
+                ax.bar3d(bins[:-1], np.full(len(bins) - 1, fracDim), np.zeros(len(bins) - 1), 0.5, 0.5, hist_high,color='r', alpha=0.3, label='high' if k == 0 else "")
+                ax.bar3d(bins[:-1], np.full(len(bins) - 1, fracDim), np.zeros(len(bins) - 1), 0.5, 0.5, hist_low, color='b', alpha=0.3, label='low' if k == 0 else "")
+
+    plt.show()
+
+
+plot_3d_bootstrap_means(df.query('direction == "hpc-hpc"'), split_by_name=True) 
+plot_3d_bootstrap_means(df.query('direction == "hpc-pfc"'), split_by_name=True)
