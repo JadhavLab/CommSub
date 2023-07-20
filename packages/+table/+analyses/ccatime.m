@@ -17,7 +17,7 @@ function resultTable = ccatime(Components_overall, varargin)
 
     % Loop over all components
     for i = progress(1:size(Components_overall, 1), 'Title', 'CCA time')
-        for j = 1:size(Components_overall, 2)
+        for j = progress(1:size(Components_overall, 2), 'Title', 'pattern')
 
             % Get the cca field from the current component
             cca = Components_overall(i, j).cca;
@@ -72,6 +72,7 @@ function resultTable = ccatime(Components_overall, varargin)
                     for l = 1:numel(fields)
                         field = fields{l};
                         data = efizz.(field)(:, idx);
+                        data = mean(data, 2);
                         % Interpolate the data if it is not aligned to the times
                         if size(data, 1) ~= size(U, 1)
                             data = interp1(efizz.t, data, time, 'nearest');
