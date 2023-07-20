@@ -18,8 +18,8 @@ stats = struct();
 %% COMPARISON OF FULL MODEL PERF AND PREDICTIVE DIMS
 plots.grm.compare_types(T, "power",     "coherence", "hpc-hpc");
 plots.grm.compare_types(T, "power",     "coherence", "hpc-pfc", "axis", 'square')
-% plots.grm.compare_types(T, "power",     "wpli",      "hpc-hpc");
-% plots.grm.compare_types(T, "power",     "wpli",      "hpc-pfc");
+plots.grm.compare_types(T, "power",     "wpli",      "hpc-hpc");
+plots.grm.compare_types(T, "power",     "wpli",      "hpc-pfc");
 % plots.grm.compare_types(T, "coherence", "wpli",      "hpc-hpc");
 % plots.grm.compare_types(T, "coherence", "wpli",      "hpc-pfc");
 
@@ -34,9 +34,13 @@ plots.grm.plotPattern(T, "wpli",      "hpc-hpc");
 % ------------------------------------------------------------
 % Compare dimensionality for each pattern hpc-hpc vs hpc-pfc
 
-plots.grm.comparePatternDim(T, "power")
-plots.grm.comparePatternDim(T, "coherence")
-plots.grm.comparePatternDim(T, "wpli")
+plots.grm.compareField(T, "power",     "field", "rrDim")
+plots.grm.compareField(T, "coherence", "field", "rrDim")
+plots.grm.compareField(T, "power",     "field", "percMax_rrDim")
+plots.grm.compareField(T, "coherence", "field", "percMax_rrDim")
+plots.grm.compareField(T, "wpli",      "field", "percMax_rrDim")
+plots.grm.compareField(T, "wpli",      "field", "percMax_rrDim")
+% plots.grm.compareField(T, "wpli", "field", "rrDim")
 
 % ------------------------------------------------------------
 % Test percMax_rrDim
@@ -70,7 +74,7 @@ struct2table(stats.perf.powcoh.hpchpc)
 % |    ,---||    |    |   ||        |   ||   |,---||    |   |`---.|`---.
 % `    `---^`---'`---'`---'`        `   '`   '`---^`---'`---|`---'``---'
 %                                                       `---'           
-
+%
 %% Cornerhist hpc versus pfc FA qOpt
 clf
 figure(7)
@@ -84,7 +88,7 @@ subset =  ~hpcsubset.singularWarning;
 g = gramm(  'subset', subset,...
             'x', x,...
             'y', y,...
-            'color', categorical(hpcsubset.patternAbstract),...
+            'color',     categorical(hpcsubset.patternAbstract),...
             'lightness', categorical(hpcsubset.control));
 % assert(all(hpcsubset.patternType == pfcsubset.patternAbstract))
 g.facet_grid(categorical(hpcsubset.control), categorical(hpcsubset.patternAbstract))
