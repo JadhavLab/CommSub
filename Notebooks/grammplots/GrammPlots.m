@@ -1,14 +1,27 @@
 if ~exist('T', 'var')
     PreambFigs; % Load data
+    T(ismember(T.hash, keys), :)
+    % Checkpoint to /Volumes/Ark/commsubspace/
+    save(datadefine("tmpT.mat"), 'T')
+    T.control = replace(T.control, ["control", "pattern activity"], ["low", "high"]);
 end
 
+%                        
+% o  /    ,---.,---.,---.
+%   /     |---'|---'|---'
+%  /      |  \ |  \ |  \ 
+% /  o    `   ``   ``   `
+%                        
+
+stats = struct();
+
 %% COMPARISON OF FULL MODEL PERF AND PREDICTIVE DIMS
-plots.grm.compare_types(T, "power",     "coherence", "hpc-pfc");
-plots.grm.compare_types(T, "power",     "wpli",      "hpc-pfc");
-plots.grm.compare_types(T, "coherence", "wpli",      "hpc-pfc");
 plots.grm.compare_types(T, "power",     "coherence", "hpc-hpc");
-plots.grm.compare_types(T, "power",     "wpli",      "hpc-hpc");
-plots.grm.compare_types(T, "coherence", "wpli",      "hpc-hpc");
+plots.grm.compare_types(T, "power",     "coherence", "hpc-pfc", "axis", 'square')
+% plots.grm.compare_types(T, "power",     "wpli",      "hpc-hpc");
+% plots.grm.compare_types(T, "power",     "wpli",      "hpc-pfc");
+% plots.grm.compare_types(T, "coherence", "wpli",      "hpc-hpc");
+% plots.grm.compare_types(T, "coherence", "wpli",      "hpc-pfc");
 
 %% SHOW PREDICTIVE DIMENSIONS FOR EACH PATTERN
 plots.grm.plotPattern(T, "power",     "hpc-pfc");
@@ -26,80 +39,37 @@ plots.grm.comparePatternDim(T, "coherence")
 plots.grm.comparePatternDim(T, "wpli")
 
 % ------------------------------------------------------------
-
-x = hpcsubset.percMax_rrDim;
-y = pfcsubset.percMax_rrDim;
-f=figure(1005);
-corner_kws = {'edges',-0.8:0.05:0.8, 'aspect',1, 'location', [1], 'fill', 'transparent', 'normalization',  'countdensity'}; %WARNING : EDGES OF HISTOGRAM ARE SET MANUALLY! you need this to surround your data
-% LOCATION SETS WHERE THE CORNER HISTS ARE PLACED
-set(f,'Position');
-g = gramm( ...
-            'x', x,...
-            'y', y,...
-            'subset', hpcsubset.control == "control");
-% assert(all(hpcsubset.patternType == pfcsubset.patternAbstract))
-g.facet_grid(categorical(hpcsubset.patternAbstractSymbol), [])
-g.geom_jitter('alpha', 0.01, 'width',0.02, 'height',0.02);
-g.stat_cornerhist(corner_kws{:});
-g.set_point_options('base_size', 5);
-g.set_text_options('label_scaling', 1.5, 'base_size', 10);
-g.set_names('x', "HPC" +newline+ "predictive dimensions", ...
-    'y', "PFC" +newline+ "predictive dimensions", ...
-    'Color', 'Pattern', ...
-    'row','',...
-    'Lightness', 'Treatment/Control')
-
-g=g.set_color_options('chroma',0);
-g.set_text_options('interpreter','latex','base_size',10)
-%set(g.results.geom_jitter_handle,'MarkerSize',5)
-g.draw()
-results1 = g.results;
-g.update('subset', hpcsubset.control ~= "control",...
-         'color', categorical(hpcsubset.patternAbstract));
-g.set_color_options();
-g.stat_cornerhist(corner_kws{:});
-g.geom_abline('style','k:');
-% g.axe_property('XTickLabelRotation',35, 'axis','square')
-g.geom_jitter('alpha', 0.50, 'width',0.35, 'height',0.35);
-g.draw()
-%set(g.results.geom_jitter_handle,'MarkerSize',5);
-
-% ------------------------------
-% Permuation tests
-% ------------------------------
-[G, patAb] = findgroups(hpcsubset.patternAbstract);
-p = zeros(size(unique(G)));
-for gg = unique(G)'
-    t_pat = hpcsubset(G == gg & hpcsubset.control == "pattern activity", :).percMax_rrDim - pfcsubset(G==gg & pfcsubset.control=="pattern activity",:).percMax_rrDim;
-    t_ctrl = hpcsubset(G == gg & hpcsubset.control == "control", :).percMax_rrDim - pfcsubset(G==gg & pfcsubset.control=="control",:).percMax_rrDim;
-    p(gg) = permutationTest(t_pat, t_ctrl, 1000, 'plotresult', 1, 'meanfunc', @nanmedian);
-    title(patAb(gg));
-end
-
-% ------------------------------
-% Add median to each corner_hist
-% ------------------------------
-[G, patAb, ctrl] = findgroups(hpcsubset.patternAbstract, hpcsubset.control);
-[~,~,uPatAb] = unique(patAb);
-[~,~,uCtrl]  = unique(ctrl);
-med_hpc = splitapply(@median, hpcsubset.percMax_rrDim, G); % get median of each group
-[G, patAb, ctrl] = findgroups(pfcsubset.patternAbstract, pfcsubset.control);
-[~,~,uPatAb] = unique(patAb);
-[~,~,uCtrl] = unique(ctrl);
-med = splitapply(@median, hpcsubset.percMax_rrDim - pfcsubset.percMax_rrDim, G); % get median of each group
-for gg = unique(G)'
-    corner_hist_handle = g.results.stat_cornerhist(uPatAb(gg)).child_axe_handle;
-    if ctrl(gg) == "control"
-        corner_hist_color  = [0.5, 0.5, 0.5];
-    else
-        corner_hist_color  = g.results.stat_cornerhist(uPatAb(gg)).bar_handle.FaceColor/2;
-    end
-    Y = ylim(corner_hist_handle);
-    l = line(corner_hist_handle, [med(gg) med(gg)], Y*1.1,  'Color', corner_hist_color, 'LineWidth', 3, 'LineStyle', ':'); 
-end
-
+% Test percMax_rrDim
 % ------------------------------------------------------------
 
+stats.dim.powcoh.hpchpc = plots.grm.plotWithPermTest(T, "coherence", "power", "hpc-hpc", "field", "percMax_rrdim"); close all
+stats.dim.powcoh.hpcpfc = plots.grm.plotWithPermTest(T, "coherence", "power", "hpc-pfc", "field", "percMax_rrdim"); close all
+
+% ------------------------------------------------------------
+% Test full_model_performance
+% ------------------------------------------------------------
+stats.perf.powcoh.hpchpc = plots.grm.plotWithPermTest(T, "coherence", "power", "hpc-hpc", "field", "full_model_performance"); close all
+stats.perf.powcoh.hpcpfc = plots.grm.plotWithPermTest(T, "coherence", "power", "hpc-pfc", "field", "full_model_performance"); close all
+
+% ------------------------------------------------------------
+% Print stats
+% ------------------------------------------------------------
+
+disp("Power vs. coherence hpc-hpc")
+struct2table(stats.dim.powcoh.hpcpfc)
+disp("Power vs. coherence hpc-pfc")
+struct2table(stats.dim.powcoh.hpchpc)
+disp("Power vs. coherence hpc-hpc")
+struct2table(stats.perf.powcoh.hpcpfc)
+disp("Power vs. coherence hpc-pfc")
+struct2table(stats.perf.powcoh.hpchpc)
+
+%                                                                       
+% ,---.          |                  ,---.          |              o     
+% |__. ,---.,---.|--- ,---.,---.    |---|,---.,---.|    ,   .,---..,---.
+% |    ,---||    |    |   ||        |   ||   |,---||    |   |`---.|`---.
+% `    `---^`---'`---'`---'`        `   '`   '`---^`---'`---|`---'``---'
+%                                                       `---'           
 
 %% Cornerhist hpc versus pfc FA qOpt
 clf
@@ -143,7 +113,7 @@ x1 = pfcsubset.qOpt;
 y1 = pfcsubset.rrDim;
 x2 = hpcsubset.qOpt;
 y2 = hpcsubset.rrDim;
-subset = pfcsubset.generateH == "fromFilteredEEG  fromRipTimes" & ~pfcsubset.singularWarning;
+subset = pfcsubset.generateH == "fromSpectral  fromRipTimes" & ~pfcsubset.singularWarning;
 g1 = gramm(  'subset', subset,...
             'x', x1,...
             'y', y1,...
@@ -158,7 +128,6 @@ g1.geom_abline('style','k:');
 g1.stat_cornerhist('edges',-4:0.5:4, 'aspect',1.2);
 g1.set_point_options('base_size', 10);
 g1.set_text_options('label_scaling', 1.5, 'base_size', 14);
-
 g1.set_names('x', 'PFC regional dimensions', ...
     'y', 'PFC predictive dimensions', ...
     'Color', 'Pattern', ...
@@ -187,13 +156,4 @@ g2.set_names('x', 'HPC regional dimensions', ...
     'Lightness', 'Treatment/Control')
 g2.axe_property('XTickLabelRotation',35)        
 g2.draw()
-%%
-clf
-figure(9)
-g=gramm('x',cars.Horsepower,'y',cars.MPG,'subset',cars.Cylinders~=3 & cars.Cylinders~=5,'lightness',cars.Cylinders);
 
-g(1,3).geom_point();
-
-g(1,3).set_names('x','Horsepower','y','MPG','lightness','# Cyl');
-
-g(1,3).set_title('lightness');

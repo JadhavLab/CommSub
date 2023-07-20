@@ -8,10 +8,12 @@ function compare_types(T, genH_name1, genH_name2, directionality, varargin)
     ip.addParameter('point_size', 3);
     ip.addParameter('investigate', ["percMax_rrDim", "full_model_performance"]);
     ip.addParameter('investNames', ["Predictive Dims", "Model Performance"]);
+    ip.addParameter('axis',''); % if square, make the axes square
     ip.parse(varargin{:});
     point_size = ip.Results.point_size;
     investigate = ip.Results.investigate;
     investNames = ip.Results.investNames;
+    axshape = ip.Results.axis;
 
     % Create figure
     figName = genH_name1 + " vs " + genH_name2 + " <" + directionality + ">";
@@ -34,6 +36,10 @@ function compare_types(T, genH_name1, genH_name2, directionality, varargin)
         g(1,i) = createPlot(filteredsubset, coherencesubset, varName, corner_kws, point_size, xlabelSuffix, genH_name1, genH_name2);
     end
 
+    if strcmp(axshape, 'square')
+        g.axe_property('DataAspectRatio', [1 1 1]);
+    end
+
     % Draw the plots
     g.draw();
     % for i = 1:numel(g)
@@ -50,6 +56,8 @@ function compare_types(T, genH_name1, genH_name2, directionality, varargin)
 end
 
 function g = createPlot(filteredsubset, coherencesubset, varName, corner_kws, point_size, xlabelSuffix, genH_name1, genH_name2)
+    filteredsubset.control = replace(filteredsubset.control, ["control", "pattern activity"], ["low", "high"]);
+    coherencesubset.control = replace(coherencesubset.control, ["control", "pattern activity"], ["low", "high"]);
     x = filteredsubset.(varName);
     y = coherencesubset.(varName);
     g = gramm('x', x, 'y', y, 'color', categorical(filteredsubset.patternAbstract), 'lightness', categorical(filteredsubset.control));

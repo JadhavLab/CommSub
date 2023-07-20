@@ -34,4 +34,10 @@ GrammPlots
 % --------------
 % Python figures
 % --------------
-
+py = pyenv("Version", "~/miniconda3/bin/python")
+disp(pyversion); % Check python version
+script1 = ...
+py.importlib.import_module(codedefine("Notebooks","python","dimPred.py"))
+script2 = ...
+py.importlib.import_module(codedefine("Notebooks","python","prediction.py"))
+% ----------------------------------------------

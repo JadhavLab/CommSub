@@ -1,4 +1,4 @@
-function folder = datadefine()
+function folder = datadefine(varargin)
 % Automates pointing to the data  folders location on our computers
 
 disp("Running datadefine")
@@ -14,6 +14,10 @@ elseif ismac
 elseif isunix
     disp('Defining data folder for Ryan''s linux machine');
     folder = fullfile(codedefine, 'SingleDayExpt');
+end
+
+if ~isempty(varargin)
+    folder = fullfile(folder, varargin{:});
 end
 
 disp("Folders =")

@@ -180,10 +180,11 @@ if useSinglePrediction
     sprintf(formatSpec2,Patterns(1,2).directionality,median_singlehp)
 end
 
-%% Figure 4 :: make a table
+%% Figures --- Prediction Performance with PredDims
 plots.pred.withPredDims
+% See python script for the rest of the figures Notebooks/python/dimPred.py
 
-%%
+%% (Factor analysis)
 % histogram of all predicition perf
 hpc_theta = T.generateH == 'fromFilteredEEG  fromRipTimes'...
     & T.directionality == "hpc-hpc" & T.patternType == "theta";
@@ -220,7 +221,7 @@ hpcQoptDims = mean(temp2,2);
 pfcQoptDims = mean(temp3,2);
 
 
-%% Figure 6
+%% Figure 6 (Figure 4 in Thesis)
 %% 
 % *Pattern Specific* 
 
