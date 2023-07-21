@@ -1,4 +1,5 @@
 function dimensionRemoved(rt, genH)
+% DIMENSIONREMOVED 
 
 rtnew  = rt(rt.method == genH,:);
 assert(~isempty(rtnew), "No data for method " + genH);
@@ -31,7 +32,7 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval","remove dims from same+diff - zoom"),'file_type',["svg","png"]);
+g.export('file_name',figuredefine("dimensionRemoval",genH + ": remove dims from same+diff - zoom"),'file_type',["svg","png"]);
 poststeps(g)
 
 %%  REMOVE PATTERN FROM SAME TARGET AREA ONLY
@@ -57,7 +58,7 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval","remove dims from same target area only"),'file_type',["pdf","svg"]);
+g.export('file_name',figuredefine("dimensionRemoval",genH + ": remove dims from same target area only"),'file_type',["pdf","svg"]);
 poststeps(g)
 
 % REMOVE PATTERN FROM SAME TARGET AREA ONLY, zoom into [0,6]
@@ -84,7 +85,7 @@ warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 set(g.facet_axes_handles,'xlim',[0 6])
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval","remove dims from same target area only - zoom"),'file_type',["pdf","svg"]);
+g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from same target area only - zoom"),'file_type',["pdf","svg"]);
 poststeps(g)
 
 %% REMOVE PATTERN FROM DIFFERENT TARGET AREA
@@ -111,7 +112,7 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval","remove dims from different target area only"),'file_type',["pdf","svg"]);
+g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from different target area only"),'file_type',["pdf","svg"]);
 poststeps(g)
 
 %% REMOVE PATTERN FROM DIFFERENT TARGET AREA, zoom into [0,6]
@@ -137,7 +138,7 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval","remove dims from different target area only - zoom"),'file_type',["pdf","png"]);
+g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from different target area only - zoom"),'file_type',["pdf","png"]);
 poststeps(g)
 
 %% Area summary
@@ -172,7 +173,7 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export("file_name", figuredefine("dimensionRemoval/", "area-summary"), "file_type", ["pdf","png"]);
+g.export("file_name", figuredefine("dimensionRemoval/", genH + ": area-summary"), "file_type", ["pdf","png"]);
 poststeps(g)
 
     function steps()
