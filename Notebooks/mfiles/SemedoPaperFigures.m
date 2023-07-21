@@ -1,6 +1,9 @@
 % TODO:
 % 1. Animal-wise version of this 
 % 2. Add sig to figs
+if ~exist('csubpath', 'var')
+    commsubspaceToPath
+    csubpath=true
 PreambleFigs
 dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
