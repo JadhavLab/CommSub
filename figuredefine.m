@@ -40,7 +40,7 @@ end
 
 if creation
     [~,base,ext] = fileparts(x);
-    if ~exist(x,'dir') && ~contains(base,'.')
+    if ~exist(x,'dir') && ~contains(base,'.') && isempty(ext)
         mkdir(x)
     end
 end

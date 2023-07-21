@@ -12,9 +12,11 @@ zscr        = true; % zscored or not
 load("RunsSummary.mat");
 disp(" ---->  Multi epoch: " + multi_epoch)
 disp(" ---->  Zscored: " + zscr)
-if zscr
+if zscr == false
     figuredefine("-permfolder", "zscore=false");
     figuredefine("-creation", true);
+else
+    figuredefine("-clearpermfolder")
 end
 % TABLE : ACQUIRE RUNS
 % ----------------------
