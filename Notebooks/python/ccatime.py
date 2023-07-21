@@ -107,76 +107,83 @@ gmeth = granger_causality_jax if method == 'jax' else granger_causality_cupy
 # Initialize the TimeSeriesSplit object
 n_splits = 2
 # tscv = TimeSeriesSplit(n_splits=30)
-tscv = KFold(n_splits=n_splits, shuffle=False)
-# Loop over each pair of columns in the data frame
+# tscv = KFold(n_splits=n_splits, shuffle=False)
+
+# Initialize the TimeSeriesSplit object
+n_splits = 5
+
+# Initialize the KFold object
+tscv = TimeSeriesSplit(n_splits=n_splits)
+
+# Chunk size
+chunk_size = 37_000
+
+# Prepare to loop over each pair of columns in the data frame
 DF_results = pd.DataFrame()
+
 for i in tqdm(range(dfc.shape[1]), desc='Column', total=df.shape[1]):
     for j in tqdm(range(i+1, dfc.shape[1]), desc='Row'):
-        
         # Extract the time series for the pair of columns
         X = dfc.iloc[:, [i, j]].values
+        
         if method == 'cupy':
             cp._default_memory_pool.free_all_blocks()
             X = cp.asarray(X, dtype=cp.float32)
         elif method == 'jax':
             X = jnp.asarray(X)
         
-        # Initialize a list to store the results for each split
-        results = []
-        
-        # Perform time series cross-validation
-        itest, (train_index, test_index) = next(enumerate(tscv.split(X)))
-        # Get last index of train_index
-        itest, (train_index, test_index) = list(enumerate(tscv.split(X)))[-1]
-        for itest, (train_index, test_index) in tqdm(enumerate(tscv.split(X)),
-                                                     desc='Split', 
-                                                     total=n_splits):
+        num_chunks = X.shape[0] // chunk_size
+
+        for chunk_index in range(num_chunks):
+            start_index = chunk_index * chunk_size
+            end_index = start_index + chunk_size
             
-            # Split the data into training and test sets
-            X_train, X_test = X[train_index], X[test_index]
-            
-            if method == 'cupy' or method == 'jax':
-                for lag in tqdm(range(1, maxlag+1), desc='Lag', total=maxlag):
-                    # Perform the Granger causality test on the training data
-                    assert(X_train.shape[1] > 1)
-                    assert(X_train.shape[0] > lag)
-                    try:
-                        tup = gmeth(X_train[:37_000, 0], X_train[:37_000, 1],
-                                lag+1, xtest=X_test[:, 0], ytest=X_test[:, 1])
-                        # Extract the p-value for the lag of interest and add it to the results list
-                        results.append(dict(
-                            lag=lag,
-                            pvalue=tup[1],
-                            F=tup[0],
-                            r2_xy=tup[2],
-                            r2_y=tup[3],
+            X_chunk = X[start_index:end_index]
+
+            # Initialize a list to store the results for each split
+            results = []
+
+            for itest, (train_index, test_index) in tqdm(enumerate(tscv.split(X_chunk)), desc='Split', total=n_splits):
+                # Split the data into training and test sets
+                X_train, X_test = X_chunk[train_index], X_chunk[test_index]
+
+                if method == 'cupy' or method == 'jax':
+                    for lag in tqdm(range(1, maxlag+1), desc='Lag', total=maxlag):
+                        try:
+                            tup = gmeth(X_train[:, 0], X_train[:, 1], lag+1, xtest=X_test[:, 0], ytest=X_test[:, 1])
+                            results.append(dict(
+                                lag=lag,
+                                pvalue=tup[1],
+                                F=tup[0],
+                                r2_xy=tup[2],
+                                r2_y=tup[3],
                             ))
-                        print("SUCCESS")
-                    except Exception as e:
-                        print(e)
-                        results.append(None)
-                        print("FAIL")
-            else:
-                # Perform the Granger causality test on the training data
-                t1=time.time()
-                result = grangercausalitytests(X_train, maxlag=maxlag, verbose=False)
-                t2=time.time()
-                print("time: ", t2-t1)
-            
-                # Extract the p-value for the lag of interest and add it to the results list
-                pvalue = result[maxlag][0]['ssr_ftest'][1]
-                F = result[maxlag][0]['ssr_ftest'][0]
-                results.append([list(range(maxlag)), pvalue, F])
-        # Calculate the average p-value across all cross-validation splits
-        print("EXFILTRATE")
-        exfiltrate()
-        # Figure out None fraction
-        none_frac = np.sum([x is None for x in results]) / len(results)
-        print(f"None fraction: {none_frac}")
-        # Remove None values
-        results = [x for x in results if x is not None]
-        df_results = pd.DataFrame(results)
-        DF_results.append(df_results)
+                            print("SUCCESS")
+                        except Exception as e:
+                            print(e)
+                            results.append(None)
+                            print("FAIL")
+
+                else:
+                    t1=time.time()
+                    result = grangercausalitytests(X_train, maxlag=maxlag, verbose=False)
+                    t2=time.time()
+                    print("time: ", t2-t1)
+                    pvalue = result[maxlag][0]['ssr_ftest'][1]
+                    F = result[maxlag][0]['ssr_ftest'][0]
+                    results.append([list(range(maxlag)), pvalue, F])
+
+            print("EXFILTRATE")
+            exfiltrate()
+            none_frac = np.sum([x is None for x in results]) / len(results)
+            print(f"None fraction: {none_frac}")
+            results = [x for x in results if x is not None]
+            df_results = pd.DataFrame(results)
+            df_results['column1'] = dfc.columns[i]
+            df_results['column2'] = dfc.columns[j]
+            df_results['chunk_index'] = chunk_index
+            DF_results.append(df_results)
+
 
                                               
 #  . .     . . .o         |          o          
