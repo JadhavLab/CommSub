@@ -14,10 +14,14 @@
 % ===================================================
 % see +option.default() to set default options
 if ~exist('Option','var')
+    disp("Option struct does not exist, creating one")
     addpath(genpath(codedefine()));
     Option = option.defaults(); 
 else
+    disp("Option struct already exists, using that")
     Option = option.setdefaults(Option);
+    disp("Option struct is: ")
+    disp(Option)
 end
 %%%%%%%%%%%%%%%% DISPLAY OUR OPTIONS TO USER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if isequal(Option.loadifexists, false) && ...

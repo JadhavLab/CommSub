@@ -5,7 +5,7 @@ if nargin < 2
     name = 'TheScript';
 end
 
-Default = option.defaults(name)
+Default = option.defaults(name);
 for field = string(fieldnames(Default))'
     if ~isfield(Option, field)
         Option.(field) = Default.(field);
