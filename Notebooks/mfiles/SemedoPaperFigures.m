@@ -2,9 +2,10 @@
 % 1. Animal-wise version of this 
 % 2. Add sig to figs
 if ~exist('csubpath', 'var')
-    commsubspaceToPath
-    csubpath=true
-PreambleFigs
+    commsubspaceToPath;
+    csubpath=true;
+end
+PreambFigs;
 dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
 %%  
@@ -230,118 +231,19 @@ pfcQoptDims = mean(temp3,2);
 %% Figure 6 (Figure 4 in Thesis)
 %% 
 % *Pattern Specific* 
-
 plots.pred.removePred
+writetable(rt, figuredefine("tables", "rt.csv"), 'WriteRowNames',true)
 
 %  Remove tuples of (targetArea,pattern) from a given (targetArea, pattern)
 
-rt_high  = rt(rt.method == "coh" & ...
-              ~contains(rt.removePattern, "control") & ...
-              ~contains(rt.basePattern, "control"), :);
-
-figure;
-g = gramm(...
-    'x', rt_high.dimensionRemoved, ...
-    'y', rt_high.performance, ...
-    'color', categorical(rt_high.removePattern), ...
-    'lightness', categorical(rt_high.sameDirectionLabel),...
-    'linestyle', categorical(rt_high.sameDirectionLabel));
-g = g.facet_grid(categorical(rt_high.basePatternLabel), categorical(rt_high.targetArea));
-g = g.stat_summary('geom','line');
-g = g.stat_summary('geom','point');
-g = g.stat_summary('geom','errorbar');
-g = g.stat_summary('geom','area');
-g.set_text_options("interpreter",'latex');
-g = g.set_names('x','dims removed',...
-    'y','peformance',...
-    'column','Interaction',...
-    'row','Pattern', ...
-    'color','Pattern dims removed',...
-    'lightness',"Remove Same/Different"+newline+"Pred. Target",...
-    'linestyle',"Remove Same/Different"+ newline+"Pred. Target");
-g.draw();
-warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
-set(g.facet_axes_handles,'xlim',[0 3])
-% Remove pattern from same target area
-
-figure;
-g = gramm(...
-    'x',rt.dimensionRemoved, ...
-    'y', rt.performance, ...
-    'color', categorical(rt.removePattern), ...
-    'subset',rt.sameDirection);
-g = g.facet_grid(categorical(rt.basePatternLabel), categorical(rt.targetArea));
-g = g.stat_summary('geom','line');
-g = g.stat_summary('geom','point');
-g = g.stat_summary('geom','errorbar');
-g = g.stat_summary('geom','area');
-g.set_text_options("interpreter",'latex');
-g=g.set_title("Removing dimensions" + newline + "(of similar target area only)");
-g = g.set_names('x','dims removed',...
-    'y','peformance',...
-    'column','Interaction',...
-    'row','Pattern', ...
-    'color','Pattern dims removed');
-g.draw();
-warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
-
-%%
-figure;
-g = gramm(...
-    'x',rt.dimensionRemoved, ...
-    'y', rt.performance, ...
-    'color', categorical(rt.removePattern), ...
-    'subset',~rt.sameDirection);
-g = g.facet_grid(categorical(rt.basePatternLabel), categorical(rt.targetArea));
-g = g.stat_summary('geom','line');
-g = g.stat_summary('geom','point');
-g = g.stat_summary('geom','errorbar');
-g = g.stat_summary('geom','area');
-g = g.set_color_options('lightness',200);
-g.set_text_options("interpreter",'latex');
-g = g.set_names('x','dims removed',...
-    'y','peformance',...
-    'column','Interaction',...
-    'row','Pattern', ...
-    'color','Pattern dims removed');
-g=g.set_title('Removing different only')
-g.draw();
-warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
-% Overall target removal
-
-figure;
-g = gramm(...
-    'x',rt.dimensionRemoved, ...
-    'marker', rt.targetArea,...
-    'y', rt.performance, ...
-    'color', categorical(rt.sameDirectionLabel),'subset',~rt.sameDirection);
-g = g.facet_grid([],categorical(rt.targetArea));
-g = g.stat_summary('geom','line');
-g = g.stat_summary('geom','point');
-g = g.stat_summary('geom','errorbar');
-g = g.stat_summary('geom','area');
-g = g.set_color_options('chroma',0,'lightness',30);
-g.set_text_options("interpreter",'latex');
-g = g.set_names('x','dims removed',...
-    'y','peformance',...
-    'column','Interaction',...
-    'row','Pattern', ...
-    'color','Brain area removed');
-snapnow;
-g=g.update('subset',rt.sameDirection);
-%g = g.facet_grid([],categorical(rt.targetArea));
-g = g.stat_summary('geom','line');
-g = g.stat_summary('geom','point');
-g = g.stat_summary('geom','errorbar');
-g = g.stat_summary('geom','area');
-g = g.set_color_options(); % Restore default color
-g.draw();
-warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
+% plot with grm
+plots.grm.dimensionRemoved(rt, "spec");
+plots.grm.dimensionRemoved(rt, "coh");
+plots.grm.dimensionRemoved(rt, "wpli");
 
 %% 
 % Now let's see how similar those curves are in dimension reduced space
 
-unstack(rt, '');
 
 %% Figure 7
 % 

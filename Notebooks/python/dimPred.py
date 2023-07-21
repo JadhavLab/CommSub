@@ -20,8 +20,9 @@ df.head()
 df.loc[:,'patternname'] = df.name.apply(lambda x: x.replace('-control', ''))
 df.query('genH != "wpli"', inplace=True)
 
-# ------------------------------
+# -------------------------------------------------------
 # Plot the samples of MEA vs. dimension for each dataset
+# -------------------------------------------------------
 
 # List of unique datasets
 dataset_ids = df['iDataset'].unique()

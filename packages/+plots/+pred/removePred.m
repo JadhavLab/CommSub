@@ -9,7 +9,7 @@ patternnames = Option.patternNames;
 %%
 % Run all of them
 rt = table();
-for genh = ["spec", "coh"]
+for genh = ["spec", "coh", "wpli"]
     [Pat, opt] = munge.getH(Patterns, Option, genh);
     assert(~isempty(Pat), 'No patterns found for %s', genh);
     Patterns_AllAnimals = squeeze(Pat);
