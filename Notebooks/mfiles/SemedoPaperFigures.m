@@ -1,6 +1,6 @@
 % TODO:
 % 1. Animal-wise version of this 
-% 2.
+% 2. Add sig to figs
 PreambleFigs
 dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
@@ -31,13 +31,16 @@ dump = matfile(fullfile(codedefine,"figures","SPF"), "Writable", true);
 
 %% 2A calculate co-firing across all animals
 Fig2 = struct();
-Fig2.a.all = plots.cf.cofiring(Patterns, Option, 'appendAttributes', {'animal', 'generateH'});
+Fig2.a.all = plots.cf.cofiring(Patterns, Option,...
+'appendAttributes', {'animal', 'generateH'});
 [spec, opt] = munge.getH(Patterns, Option, "spec");
-Fig2.a.spec = plots.cf.cofiring(spec, opt, 'appendAttributes', {'animal', 'generateH'});
+Fig2.a.spec = plots.cf.cofiring(spec, opt,...
+'appendAttributes', {'animal', 'generateH'});
 [coh, opt] = munge.getH(Patterns, Option, "coh");
 Fig2.a.coh = plots.cf.cofiring(coh, opt);
 [wpli, opt] = munge.getH(Patterns, Option, "wpli");
-Fig2.a.wpli = plots.cf.cofiring(wpli, opt, 'appendAttributes', {'animal', 'generateH'});
+Fig2.a.wpli = plots.cf.cofiring(wpli, opt,...
+'appendAttributes', {'animal', 'generateH'});
 dump.Fig2 = Fig2;
 
 % ----------------

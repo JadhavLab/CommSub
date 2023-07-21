@@ -16,12 +16,12 @@ end
 stats = struct();
 
 %% COMPARISON OF FULL MODEL PERF AND PREDICTIVE DIMS
-plots.grm.compare_types(T, "power",     "coherence", "hpc-hpc");
+plots.grm.compare_types(T, "power",     "coherence", "hpc-hpc", "axis", 'square');
 plots.grm.compare_types(T, "power",     "coherence", "hpc-pfc", "axis", 'square')
-plots.grm.compare_types(T, "power",     "wpli",      "hpc-hpc");
-plots.grm.compare_types(T, "power",     "wpli",      "hpc-pfc");
-% plots.grm.compare_types(T, "coherence", "wpli",      "hpc-hpc");
-% plots.grm.compare_types(T, "coherence", "wpli",      "hpc-pfc");
+plots.grm.compare_types(T, "power",     "wpli",      "hpc-hpc", "axis", 'square');
+plots.grm.compare_types(T, "power",     "wpli",      "hpc-pfc", "axis", 'square');
+plots.grm.compare_types(T, "coherence", "wpli",      "hpc-hpc", "axis", 'square');
+plots.grm.compare_types(T, "coherence", "wpli",      "hpc-pfc", "axis", 'square');
 
 %% SHOW PREDICTIVE DIMENSIONS FOR EACH PATTERN
 plots.grm.plotPattern(T, "power",     "hpc-pfc");

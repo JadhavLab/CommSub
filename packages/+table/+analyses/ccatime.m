@@ -110,7 +110,10 @@ function resultTable = ccatime(Components_overall, varargin)
 
 
 if ~isempty(Option)
-    writetable(resultTable, figuredefine("tables", Option.animal + Option.genH_name + "ccatime.csv"), 'WriteRowNames', true);
+    writetable(resultTable,...
+        figuredefine("tables", Option.animal + Option.genH_name + "ccatime.csv"),...
+        'WriteRowNames', true);
 else
-    writetable(resultTable, figuredefine("tables", "ccatime.csv"), 'WriteRowNames', true);
+    writetable(resultTable, figuredefine("tables", "ccatime.csv"),...
+        'WriteRowNames', true);
 end

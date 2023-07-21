@@ -8,8 +8,14 @@ load("RunsSummary.mat", "RunsSummary");
 
 %% load
 multi_epoch = false; % usually first 3, last 3 epochs
-zscr = true; % zscored or not
+zscr        = false; % zscored or not
 load("RunsSummary.mat");
+disp(" ---->  Multi epoch: " + multi_epoch)
+disp(" ---->  Zscored: " + zscr)
+if zscr
+    figuredefine("-permfolder", "zscore=false");
+    figuredefine("-creation", true);
+end
 % TABLE : ACQUIRE RUNS
 % ----------------------
 % Determine keys to use : you can use this string to arbitrarily select rows
@@ -19,13 +25,14 @@ filtstring = ...
 ["ismember($animal, [""JS21"",""ZT2"",""ER1"",""JS14"",""JS13"",""JS17""])",...
        ..."$spikeBinSize==0.15",...
        "$preProcess_zscore=="+zscr,...
-       "$numPartition==50",...
+       ..."$numPartition==50",...
        "$quantileToMakeWindows == 0.85",...
        "arrayfun(@(x)isequal($winSize(x,:), [0,0.3]), 1:size($winSize,1))'"];
 % Get the proper keys
 matching_runs = query.getHashed_stringFilt(RunsSummary, filtstring,...
                         'mostrecent', ["animal", "generateH"]);
 disp("Number of matches found: " + height(matching_runs))
+matching_runs(:, ["animal", "generateH", "preProcess_zscore", "hash","timestamp"]) 
 
 %%
 

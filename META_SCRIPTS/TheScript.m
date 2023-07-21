@@ -63,8 +63,7 @@ else
     disp("    Getting spikes      ")
     disp("------------------------")
     Spk = spikes.getSpikeTrain(Option.animal, Option.spikeBinSize, ...
-                             Option.samplingRate);
-
+                               Option.samplingRate);
     % filter the neurons whose firing rate is lower than specified threshold
     if Option.preProcess_FilterLowFR 
         disp("------------------------")
@@ -73,7 +72,6 @@ else
         Spk = trialSpikes.filterFR(Spk, 0.1);
         disp("Mean FR: " + sort(Spk.avgFR))
     end
-
     if Option.preProcess_gaussianFilter
         % Gaussian filter the spikeCountMatrix/spikeRateMatrix
         gauss = gausswin(Option.preProcess_gaussianFilter);
