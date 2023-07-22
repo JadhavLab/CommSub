@@ -14,7 +14,6 @@ from tqdm import tqdm
 from pyexfiltrator import exfiltrate, exfiltrated
 from scipy.stats import combine_pvalues
 
-
 def granger_causality_jax(x, y, lag_order):
     # Compute the lagged versions of x and y
     X = jnp.column_stack([x[t-lag_order:t] for t in range(lag_order, len(x))])
@@ -31,7 +30,7 @@ def granger_causality_jax(x, y, lag_order):
     f_stat = ((rss_y - rss_xy) / lag_order) / (rss_xy / (len(Y) - 2 * lag_order))
     # Compute the P-value
     p_value = 1 - jnp.sum(np.random.f(1, lag_order, len(Y) - 2 * lag_order) > f_stat) / len(Y)
-    return f_stat), p_value
+    return f_stat, p_value
 
 def granger_causality_cupy(x, y, lag_order, xtest=None, ytest=None):
     x = cp.asarray(x)
@@ -104,53 +103,44 @@ maxlag = 100
 method = 'cupy'
 gmeth = granger_causality_jax if method == 'jax' else granger_causality_cupy
 
-# Initialize the TimeSeriesSplit object
-n_splits = 2
-# tscv = TimeSeriesSplit(n_splits=30)
-# tscv = KFold(n_splits=n_splits, shuffle=False)
-
-# Initialize the TimeSeriesSplit object
-n_splits = 5
+# # Initialize the TimeSeriesSplit object
+# n_splits = 2
 
 # Initialize the KFold object
+n_splits = 5
 tscv = TimeSeriesSplit(n_splits=n_splits)
-
 # Chunk size
-chunk_size = 37_000
+chunk_size = 45_000
+num_chunks = df.shape[0] // chunk_size
+print("num_chunks: ", num_chunks)
 
 # Prepare to loop over each pair of columns in the data frame
-DF_results = pd.DataFrame()
-
-for i in tqdm(range(dfc.shape[1]), desc='Column', total=df.shape[1]):
-    for j in tqdm(range(i+1, dfc.shape[1]), desc='Row'):
+DF_results = []
+for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
+    for j in tqdm(range(i+1, dfc.shape[1]), desc='ROW'):
         # Extract the time series for the pair of columns
         X = dfc.iloc[:, [i, j]].values
-        
         if method == 'cupy':
             cp._default_memory_pool.free_all_blocks()
             X = cp.asarray(X, dtype=cp.float32)
         elif method == 'jax':
             X = jnp.asarray(X)
-        
-        num_chunks = X.shape[0] // chunk_size
-
+        # num_chunks = X.shape[0] // chunk_size
         for chunk_index in range(num_chunks):
             start_index = chunk_index * chunk_size
             end_index = start_index + chunk_size
-            
             X_chunk = X[start_index:end_index]
-
             # Initialize a list to store the results for each split
             results = []
-
+            s, f = 0, 0
             for itest, (train_index, test_index) in tqdm(enumerate(tscv.split(X_chunk)), desc='Split', total=n_splits):
                 # Split the data into training and test sets
                 X_train, X_test = X_chunk[train_index], X_chunk[test_index]
-
                 if method == 'cupy' or method == 'jax':
-                    for lag in tqdm(range(1, maxlag+1), desc='Lag', total=maxlag):
+                    for lag in range(1, maxlag+1):
                         try:
-                            tup = gmeth(X_train[:, 0], X_train[:, 1], lag+1, xtest=X_test[:, 0], ytest=X_test[:, 1])
+                            tup = gmeth(X_train[:, 0], X_train[:, 1], lag+1,
+                                        xtest=X_test[:, 0], ytest=X_test[:, 1])
                             results.append(dict(
                                 lag=lag,
                                 pvalue=tup[1],
@@ -158,12 +148,11 @@ for i in tqdm(range(dfc.shape[1]), desc='Column', total=df.shape[1]):
                                 r2_xy=tup[2],
                                 r2_y=tup[3],
                             ))
-                            print("SUCCESS")
+                            s += 1
                         except Exception as e:
                             print(e)
                             results.append(None)
-                            print("FAIL")
-
+                            f += 1
                 else:
                     t1=time.time()
                     result = grangercausalitytests(X_train, maxlag=maxlag, verbose=False)
@@ -172,20 +161,20 @@ for i in tqdm(range(dfc.shape[1]), desc='Column', total=df.shape[1]):
                     pvalue = result[maxlag][0]['ssr_ftest'][1]
                     F = result[maxlag][0]['ssr_ftest'][0]
                     results.append([list(range(maxlag)), pvalue, F])
-
+                    s += 1
+            print("percent success rate: ", s/(s+f))
             print("EXFILTRATE")
             exfiltrate()
             none_frac = np.sum([x is None for x in results]) / len(results)
             print(f"None fraction: {none_frac}")
             results = [x for x in results if x is not None]
             df_results = pd.DataFrame(results)
-            df_results['column1'] = dfc.columns[i]
-            df_results['column2'] = dfc.columns[j]
+            df_results['column1']     = dfc.columns[i]
+            df_results['column2']     = dfc.columns[j]
             df_results['chunk_index'] = chunk_index
             DF_results.append(df_results)
 
 
-                                              
 #  . .     . . .o         |          o          
 # -+-+-    | | |.,---.,---|,---.. . ..,---.,---.
 # -+-+-    | | |||   ||   ||   || | |||   ||   |

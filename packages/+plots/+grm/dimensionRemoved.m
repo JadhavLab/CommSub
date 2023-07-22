@@ -1,5 +1,5 @@
 function dimensionRemoved(rt, genH)
-% DIMENSIONREMOVED 
+% DIMENSIONREMOVED Plot the performance of the model when removing
 
 rtnew  = rt(rt.method == genH,:);
 assert(~isempty(rtnew), "No data for method " + genH);
@@ -32,7 +32,8 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval",genH + ": remove dims from same+diff - zoom"),'file_type',["svg","png"]);
+g.export('file_name',figuredefine("dimensionRemoval",genH + ": remove dims from same+diff - zoom"),'file_type',"svg");
+g.export('file_name',figuredefine("dimensionRemoval",genH + ": remove dims from same+diff"),'file_type',"pdf");
 poststeps(g)
 
 %%  REMOVE PATTERN FROM SAME TARGET AREA ONLY
@@ -42,7 +43,7 @@ g = gramm(...
     'y', rtnew.performance, ...
     'color', categorical(rtnew.removePattern), ...
     'subset',rtnew.sameDirection);
-g = g.facet_grid(categorical(rtnew.basePatternLabel), categorical(rt.targetArea));
+g = g.facet_grid(categorical(rtnew.basePatternLabel), categorical(rtnew.targetArea));
 g = g.stat_summary('geom','line');
 g = g.stat_summary('geom','point');
 g = g.stat_summary('geom','errorbar','dodge',0.5);
@@ -58,7 +59,8 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval",genH + ": remove dims from same target area only"),'file_type',["pdf","svg"]);
+g.export('file_name',figuredefine("dimensionRemoval",genH + ": remove dims from same target area only"),'file_type',"pdf");
+g.export('file_name',figuredefine("dimensionRemoval",genH + ": remove dims from same target area only - zoom"),'file_type',"svg");
 poststeps(g)
 
 % REMOVE PATTERN FROM SAME TARGET AREA ONLY, zoom into [0,6]
@@ -68,7 +70,7 @@ g = gramm(...
     'y', rtnew.performance, ...
     'color', categorical(rtnew.removePattern), ...
     'subset',rtnew.sameDirection);
-g = g.facet_grid(categorical(rtnew.basePatternLabel), categorical(rt.targetArea));
+g = g.facet_grid(categorical(rtnew.basePatternLabel), categorical(rtnew.targetArea));
 g = g.stat_summary('geom','line');
 g = g.stat_summary('geom','point');
 g = g.stat_summary('geom','errorbar','dodge',0.5,'type','sem');
@@ -85,7 +87,8 @@ warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 set(g.facet_axes_handles,'xlim',[0 6])
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from same target area only - zoom"),'file_type',["pdf","svg"]);
+g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from same target area only - zoom"),'file_type',"svg");
+g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from same target area only"),'file_type',"pdf");
 poststeps(g)
 
 %% REMOVE PATTERN FROM DIFFERENT TARGET AREA
@@ -95,7 +98,7 @@ g = gramm(...
     'y', rtnew.performance, ...
     'color', categorical(rtnew.removePattern), ...
     'subset',~rtnew.sameDirection);
-g = g.facet_grid(categorical(rtnew.basePatternLabel), categorical(rt.targetArea));
+g = g.facet_grid(categorical(rtnew.basePatternLabel), categorical(rtnew.targetArea));
 g = g.stat_summary('geom','line');
 g = g.stat_summary('geom','point');
 g = g.stat_summary('geom','errorbar');
@@ -112,7 +115,8 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from different target area only"),'file_type',["pdf","svg"]);
+g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from different target area only"),       'file_type',"pdf");
+g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from different target area only - zoom"),'file_type',"svg");
 poststeps(g)
 
 %% REMOVE PATTERN FROM DIFFERENT TARGET AREA, zoom into [0,6]
@@ -122,7 +126,7 @@ g = gramm(...
     'y', rtnew.performance, ...
     'color', categorical(rtnew.removePattern), ...
     'subset',~rtnew.sameDirection);
-g = g.facet_grid(categorical(rtnew.basePatternLabel), categorical(rt.targetArea));
+g = g.facet_grid(categorical(rtnew.basePatternLabel), categorical(rtnew.targetArea));
 g = g.stat_summary('geom','line');
 g = g.stat_summary('geom','point');
 g = g.stat_summary('geom','errorbar','dodge',0.5,'type','sem');
@@ -138,7 +142,8 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from different target area only - zoom"),'file_type',["pdf","png"]);
+g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from different target area only - zoom"),'file_type',"pdf");
+g.export('file_name',figuredefine("dimensionRemoval", genH + ": remove dims from different target area only"),       'file_type',"svg");
 poststeps(g)
 
 %% Area summary
@@ -147,7 +152,7 @@ g = gramm(...
     'x',rtnew.dimensionRemoved, ...
     'marker', rtnew.targetArea,...
     'y', rtnew.performance, ...
-    'color', categorical(rtnew.sameDirectionLabel),'subset',~rt.sameDirection);
+    'color', categorical(rtnew.sameDirectionLabel),'subset',~rtnew.sameDirection);
 g = g.facet_grid([],categorical(rtnew.targetArea));
 g = g.stat_summary('geom','line');
 g = g.stat_summary('geom','point');
@@ -173,7 +178,8 @@ g.draw();
 warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
 steps()
 
-g.export("file_name", figuredefine("dimensionRemoval/", genH + ": area-summary"), "file_type", ["pdf","png"]);
+g.export("file_name", figuredefine("dimensionRemoval/", genH + ": area-summary"), "file_type", "pdf");
+g.export("file_name", figuredefine("dimensionRemoval/", genH + ": area-summary"), "file_type", "svg");
 poststeps(g)
 
     function steps()
@@ -181,9 +187,8 @@ poststeps(g)
         set(gcf, 'Position',  get(0, 'Screensize'));
     end
     function poststeps(g)
-        set(gcf, 'Position',  get(0, 'Screensize'));
-        g.export('file_name',... 
-        figuredefine("dimensionRemoval","all"),'file_type',["pdf","svg"]);
+        % g.draw();
+        % set(gcf, 'Position',  get(0, 'Screensize'));
     end
 
 end
