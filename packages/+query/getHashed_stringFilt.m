@@ -30,6 +30,8 @@ disp('');
 out = eval(evalstring);
 
 if ~isempty(Opt.mostrecent)
+    disp("Getting most recent entries:")
+    disp(out(:, [Opt.mostrecent,"timestamp"]));
     % Sort the table by the "timestamp" column in descending order
     timestamps = NaT(size(out, 1),1);
     for t = 1:numel(timestamps)
@@ -42,6 +44,8 @@ if ~isempty(Opt.mostrecent)
     [~, ia, ~] = unique(out(:, Opt.mostrecent), 'rows', 'stable');  % Adding 'stable' to preserve order
 
     out = out(ia, :);
+    disp("Most recent entries:")
+    disp(out(:, Opt.mostrecent));
 end
 
 

@@ -6,9 +6,12 @@ const = option.constants();
 table.combineAndUpdateTables("RunsSummary_*", "RunsSummary");
 load("RunsSummary.mat", "RunsSummary");
 
+% show all genH_name == wpli columns
+RunsSummary(contains(RunsSummary.genH_name, "wpli"), ["animal", "genH_name","preProcess_zscore", "hash", "timestamp"])
+
 %% load
 multi_epoch = false; % usually first 3, last 3 epochs
-zscr        = true; % zscored or not
+zscr        = false; % zscored or not
 load("RunsSummary.mat");
 disp(" ---->  Multi epoch: " + multi_epoch)
 disp(" ---->  Zscored: " + zscr)
@@ -18,6 +21,12 @@ if zscr == false
 else
     figuredefine("-clearpermfolder")
 end
+if zscr
+    disp("USING ZSCORE");
+    disp("USING ZSCORE");
+    disp("USING ZSCORE");
+end
+
 % TABLE : ACQUIRE RUNS
 % ----------------------
 % Determine keys to use : you can use this string to arbitrarily select rows
@@ -32,9 +41,9 @@ filtstring = ...
        "arrayfun(@(x)isequal($winSize(x,:), [0,0.3]), 1:size($winSize,1))'"];
 % Get the proper keys
 matching_runs = query.getHashed_stringFilt(RunsSummary, filtstring,...
-                        'mostrecent', ["animal", "generateH"]);
+                        'mostrecent', ["animal", "generateH","preProcess_zscore"]);
 disp("Number of matches found: " + height(matching_runs))
-matching_runs(:, ["animal", "generateH", "preProcess_zscore", "hash","timestamp"]) 
+matching_runs(:, ["animal", "generateH", "preProcess_zscore", "hash", "timestamp"]) 
 
 %%
 
@@ -70,7 +79,7 @@ assert(~isempty(Option), "Data is empty -- downstream code will fail")
 Patterns = nd.merge(Patterns, Option, 'only', {'animal', 'generateH', 'genH_name'}, ...
                                             'broadcastLike', true,...
                                              'overwrite', true);
-[nDataset, nPartition, ~, nResult] = size(Patterns)
+[nDataset, nPartition, ~, nResult] = size(Patterns);
 nPatterns = nResult/2;
 szPatterns = size(Patterns);
 Patterns = squeeze(Patterns);

@@ -1,6 +1,6 @@
 if ~exist('T', 'var')
     PreambFigs; % Load data
-    T(ismember(T.hash, keys), :)
+    T(ismember(T.hash, keys), ["genH_name", "preProcess_zscore", "timestamp","animal"])
     % Checkpoint to /Volumes/Ark/commsubspace/
     save(datadefine("tmpT.mat"), 'T')
     T.control = replace(T.control, ["control", "pattern activity"], ["low", "high"]);
