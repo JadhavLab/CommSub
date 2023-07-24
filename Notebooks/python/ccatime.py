@@ -270,11 +270,38 @@ from pathos.multiprocessing import ProcessingPool as Pool
 with Pool(cpu_count()) as pool:
     results = pool.map(process_pair, pairs)
 # Convert results to a dataframe
-df_results = pd.DataFrame(results)
+DF_results = pd.concat(results)
 pre = name.replace('ccatime', f'_granger_causality')
 DF_results.to_csv(os.path.join(folder, f'{pre}.csv'),
                   index=False)
 
+pre = name.replace('ccatime', f'_granger_causality')
+DF_results = pd.read_csv(os.path.join(folder, f'{pre}.csv'))
+
+df = DF_results
+from tqdm import tqdm
+tqdm.pandas()
+def directionality_test(row):
+    # Fetch the corresponding reverse row
+    reverse_row = df[(df['chunk_index'] == row['chunk_index']) & 
+                     (df['itest'] == row['itest']) &
+                     (df['lag'] == row['lag']) & 
+                     (df['column1'] == row['column2']) & 
+                     (df['column2'] == row['column1'])].iloc[0]
+    f_stat_xy, p_value_xy, r2_xy = row['F'], row['pvalue'], row['r2_xy']
+    f_stat_yx, p_value_yx, r2_yx = reverse_row['F'], reverse_row['pvalue'], reverse_row['r2_xy']  # Assuming r2_yx is stored in 'r2_xy' of the reverse row
+    direction = "x->y" if f_stat_xy > f_stat_yx else "y->x"
+    significance = "significant" if min(p_value_xy, p_value_yx) < 0.05 else "not significant"
+    magnitude = abs(r2_xy - r2_yx)
+    return pd.Series([direction, significance, magnitude])
+df[['direction', 'significance', 'magnitude']] = df.progress_apply(directionality_test, axis=1)
+
+from joblib import Parallel, delayed
+# parallel processing with joblibtotal=df.shape[0]))
+results = Parallel(n_jobs=-1)(delayed(directionality_test)(row) for _, row in tqdm(df.iterrows(), total=df.shape[0]))
+# Convert the results to a DataFrame and join with the original DataFrame
+results_df = pd.DataFrame(results, columns=['direction', 'significance', 'magnitude'])
+df = pd.concat([df, results_df], axis=1)
 
 
 #  . .     . . .o         |          o          
