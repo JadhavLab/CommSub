@@ -1,4 +1,3 @@
-# Analyzes ccatime tabular datasets
 import numpy as np
 from jax import numpy as jnp
 import cupy as cp
@@ -8,14 +7,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.stattools import grangercausalitytests
+from scipy.stats import f
 from sklearn.model_selection import TimeSeriesSplit, KFold
 import time, os
 from tqdm import tqdm
-# from pyexfiltrator import exfiltrate, exfiltrated
-# from scipy.stats import combine_pvalues
+from scipy.stats import f
+import multiprocessing, dill
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
 name   = 'ZT2coherenceccatime'
-
 def granger_causality_jax(x, y, lag_order):
     # Compute the lagged versions of x and y
     X = jnp.column_stack([x[t-lag_order:t] for t in range(lag_order, len(x))])
@@ -33,7 +32,7 @@ def granger_causality_jax(x, y, lag_order):
     # Compute the P-value
     p_value = 1 - jnp.sum(np.random.f(1, lag_order, len(Y) - 2 * lag_order) > f_stat) / len(Y)
     return f_stat, p_value
-
+# Define Granger causality function
 def granger_causality_cupy(x, y, lag_order, xtest=None, ytest=None):
     x = cp.asarray(x)
     y = cp.asarray(y)
@@ -67,82 +66,162 @@ def granger_causality_cupy(x, y, lag_order, xtest=None, ytest=None):
     # Compute the F-statistic
     f_stat = ((rss_y - rss_xy) / lag_order) / (rss_xy / (len(ytest) - 2 * lag_order))
     # Compute the P-value
-    p_value = 1 - cp.sum(cp.random.f(1, lag_order, len(ytest) - 2 * lag_order) > f_stat) / len(ytest)
+    df1 = lag_order
+    df2 = len(ytest) - 2 * lag_order
+    p_value = 1 - f.cdf(f_stat.get(), df1, df2)  # Use scipy's F-distribution CDF function
     r2_xy = 1 - rss_xy / total
     r2_y  = 1 - rss_y / total
     # Compute yhat
-    return f_stat.get(), p_value.get(), r2_xy.get(), r2_y.get()
-
+    return f_stat.get(), p_value, r2_xy.get(), r2_y.get()
+# Define directionality test function
+def directionality_test(granger_func, x, y, lag_order, xtest=None, ytest=None):
+    f_stat_xy, p_value_xy, r2_xy, r2_y = granger_func(x, y, lag_order, xtest, ytest)
+    f_stat_yx, p_value_yx, r2_yx, r2_x = granger_func(y, x, lag_order, xtest, ytest)
+    direction = "x->y" if f_stat_xy > f_stat_yx else "y->x"
+    significance = "significant" if min(p_value_xy, p_value_yx) < 0.05 else "not significant"
+    magnitude = abs(r2_xy - r2_yx)
+    return direction, significance, magnitude
 def is_continuos_var(df, col):
     return df[col].nunique() > 20 
 def get_cont_vars(df):
     return [col for col in df.columns if is_continuos_var(df, col)]
-
-# Example usage
-x = np.random.randn(100)
-y = 0.5 * x + np.random.randn(100)
-lag_order = 2
-
-start = time.time()
-result,p1, yhat_xy, yhat_y  = granger_causality_cupy(x, y, lag_order)
-end = time.time()
-result2,p2 = granger_causality_jax(x, y, lag_order)
-end2 = time.time()
-print("cupy")
-print(result)
-print("time: ", end-start)
-print("jax")
-print(result2)
-print("time: ", end2-end)
-
-
+#
+# # Example usage
+# x = np.random.randn(100)
+# y = 0.5 * x + np.random.randn(100)
+# lag_order = 2
+#
+# start = time.time()
+# result,p1, yhat_xy, yhat_y  = granger_causality_cupy(x, y, lag_order)
+# end = time.time()
+# result2,p2 = granger_causality_jax(x, y, lag_order)
+# end2 = time.time()
+# print("cupy")
+# print(result)
+# print("time: ", end-start)
+# print("jax")
+# print(result2)
+# print("time: ", end2-end)
+#
 # Load the data
 df = pd.read_csv(os.path.join(folder, f'{name}.csv'))
 cont_vars = get_cont_vars(df)
 dfc = df[cont_vars]
 # Define the lag
-maxlag = 20
+maxlag = 10
 method = 'cupy'
 gmeth = granger_causality_jax if method == 'jax' else granger_causality_cupy
-
-# # Initialize the TimeSeriesSplit object
-# n_splits = 2
-
 # Initialize the KFold object
 DF_results = []
 n_splits = 5
 tscv = TimeSeriesSplit(n_splits=n_splits)
-# Chunk size
-chunk_size = 50_000
+
+# # Chunk size
+# chunk_size = 50_000
+# num_chunks = df.shape[0] // chunk_size
+# print("num_chunks: ", num_chunks)
+# skip_until = None
+# # Prepare to loop over each pair of columns in the data frame
+# for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
+#     for j in tqdm(range(dfc.shape[1]), desc='ROW'):
+#         if i == j:
+#             continue
+#         if skip_until is not None:
+#             if (i,j) != skip_until:
+#                 continue
+#             else:
+#                 skip_until = None
+#         # Extract the time series for the pair of columns
+#         X = dfc.iloc[:, [i, j]]
+#         X = X.dropna().values
+#         if method == 'cupy':
+#             cp._default_memory_pool.free_all_blocks()
+#             X = cp.asarray(X, dtype=cp.float32)
+#         elif method == 'jax':
+#             X = jnp.asarray(X)
+#         # num_chunks = X.shape[0] // chunk_size
+#         for chunk_index in range(num_chunks):
+#             start_index = chunk_index * chunk_size
+#             end_index = min(start_index + chunk_size, X.shape[0])
+#             X_chunk = X[start_index:end_index]
+#             # Initialize a list to store the results for each split
+#             results = []
+#             s, f = 0, 0
+#             for itest, (train_index, test_index) in tqdm(enumerate(tscv.split(X_chunk)), desc='Split', total=n_splits):
+#                 # Split the data into training and test sets
+#                 X_train, X_test = X_chunk[train_index], X_chunk[test_index]
+#                 if method == 'cupy' or method == 'jax':
+#                     for lag in range(1, maxlag+1):
+#                         # try:
+#                             tup = gmeth(X_train[:, 0], X_train[:, 1], lag+1,
+#                                         xtest=X_test[:, 0], ytest=X_test[:, 1])
+#                             results.append(dict(
+#                                 lag=lag,
+#                                 pvalue=tup[1],
+#                                 F=tup[0],
+#                                 r2_xy=tup[2],
+#                                 r2_y=tup[3],
+#                                 itest=itest
+#                             ))
+#                             s += 1
+#                         # except Exception as e:
+#                         #     print(e)
+#                         #     results.append(None)
+#                         #     f += 1
+#                 else:
+#                     t1=time.time()
+#                     result = grangercausalitytests(X_train, maxlag=maxlag, verbose=False)
+#                     t2=time.time()
+#                     print("time: ", t2-t1)
+#                     pvalue = result[maxlag][0]['ssr_ftest'][1]
+#                     F = result[maxlag][0]['ssr_ftest'][0]
+#                     results.append([list(range(maxlag)), pvalue, F])
+#                     s += 1
+#             print("percent success rate: ", s/(s+f))
+#             # print("EXFILTRATE")
+#             # exfiltrate()
+#             # none_frac = np.sum([x is None for x in results]) / len(results)
+#             # print(f"None fraction: {none_frac}")
+#             results = [x for x in results if x is not None]
+#             df_results = pd.DataFrame(results)
+#             df_results['column1']     = dfc.columns[i]
+#             df_results['column2']     = dfc.columns[j]
+#             df_results['chunk_index'] = chunk_index
+#             DF_results.append(df_results)
+#
+# DF_results = pd.concat(DF_results)
+# pre = name.replace('ccatime', f'_granger_causality')
+# DF_results.to_csv(os.path.join(folder, f'{pre}.csv'),
+#                   index=False)
+
+
+# MULTI-PROCESSING
+from multiprocessing import cpu_count
+chunk_size = 240_000 // cpu_count()
 num_chunks = df.shape[0] // chunk_size
 print("num_chunks: ", num_chunks)
-skip_until = (8,7)
-
-# Prepare to loop over each pair of columns in the data frame
-for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
-    for j in tqdm(range(i+1, dfc.shape[1]), desc='ROW'):
-        if skip_until is not None:
-            if (i,j) != skip_until:
-                continue
-            else:
-                skip_until = None
+# Define a function to process a pair of columns
+def process_pair(pair):
+    with cp.cuda.Device():
+        i, j = pair
+        if i == j:
+            return None
+        print(f"Processing {i}, {j}")
         # Extract the time series for the pair of columns
         X = dfc.iloc[:, [i, j]]
         X = X.dropna().values
-        if method == 'cupy':
-            cp._default_memory_pool.free_all_blocks()
-            X = cp.asarray(X, dtype=cp.float32)
-        elif method == 'jax':
-            X = jnp.asarray(X)
         # num_chunks = X.shape[0] // chunk_size
-        for chunk_index in range(num_chunks):
+        RESULTS = []
+        for chunk_index in tqdm(range(num_chunks), desc='Chunk', total=num_chunks):
             start_index = chunk_index * chunk_size
             end_index = min(start_index + chunk_size, X.shape[0])
             X_chunk = X[start_index:end_index]
+            cp._default_memory_pool.free_all_blocks()
+            X_chunk = cp.asarray(X_chunk, dtype=cp.float32)
             # Initialize a list to store the results for each split
             results = []
             s, f = 0, 0
-            for itest, (train_index, test_index) in tqdm(enumerate(tscv.split(X_chunk)), desc='Split', total=n_splits):
+            for itest, (train_index, test_index) in enumerate(tscv.split(X_chunk)):
                 # Split the data into training and test sets
                 X_train, X_test = X_chunk[train_index], X_chunk[test_index]
                 if method == 'cupy' or method == 'jax':
@@ -156,6 +235,7 @@ for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
                                 F=tup[0],
                                 r2_xy=tup[2],
                                 r2_y=tup[3],
+                                itest=itest
                             ))
                             s += 1
                         # except Exception as e:
@@ -171,22 +251,30 @@ for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
                     F = result[maxlag][0]['ssr_ftest'][0]
                     results.append([list(range(maxlag)), pvalue, F])
                     s += 1
-            print("percent success rate: ", s/(s+f))
-            # print("EXFILTRATE")
-            # exfiltrate()
-            # none_frac = np.sum([x is None for x in results]) / len(results)
-            # print(f"None fraction: {none_frac}")
+            if f > 0:
+                print("percent success rate: ", s/(s+f))
             results = [x for x in results if x is not None]
             df_results = pd.DataFrame(results)
             df_results['column1']     = dfc.columns[i]
             df_results['column2']     = dfc.columns[j]
             df_results['chunk_index'] = chunk_index
-            DF_results.append(df_results)
-
-DF_results = pd.concat(DF_results)
+            RESULTS.append(df_results)
+    RESULTS = pd.concat(RESULTS)
+    return RESULTS
+# Serialize the function
+serialized_func = dill.dumps(process_pair)
+# Prepare a list of all pairs of column indices
+pairs = [(i, j) for i in range(dfc.shape[1]) for j in range(dfc.shape[1]) if i != j]
+# Create a pool of worker processes
+from pathos.multiprocessing import ProcessingPool as Pool
+with Pool(cpu_count()) as pool:
+    results = pool.map(process_pair, pairs)
+# Convert results to a dataframe
+df_results = pd.DataFrame(results)
 pre = name.replace('ccatime', f'_granger_causality')
 DF_results.to_csv(os.path.join(folder, f'{pre}.csv'),
                   index=False)
+
 
 
 #  . .     . . .o         |          o          
