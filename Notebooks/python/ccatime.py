@@ -9,10 +9,12 @@ import pandas as pd
 import numpy as np
 from statsmodels.tsa.stattools import grangercausalitytests
 from sklearn.model_selection import TimeSeriesSplit, KFold
-import time
+import time, os
 from tqdm import tqdm
-from pyexfiltrator import exfiltrate, exfiltrated
-from scipy.stats import combine_pvalues
+# from pyexfiltrator import exfiltrate, exfiltrated
+# from scipy.stats import combine_pvalues
+folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
+name   = 'ZT2coherenceccatime'
 
 def granger_causality_jax(x, y, lag_order):
     # Compute the lagged versions of x and y
@@ -95,11 +97,11 @@ print("time: ", end2-end)
 
 
 # Load the data
-df = pd.read_csv('/Volumes/MATLAB-Drive/Shared/figures/tables/ZT2coherenceccatime.csv')
+df = pd.read_csv(os.path.join(folder, f'{name}.csv'))
 cont_vars = get_cont_vars(df)
 dfc = df[cont_vars]
 # Define the lag
-maxlag = 100
+maxlag = 20
 method = 'cupy'
 gmeth = granger_causality_jax if method == 'jax' else granger_causality_cupy
 
@@ -107,19 +109,26 @@ gmeth = granger_causality_jax if method == 'jax' else granger_causality_cupy
 # n_splits = 2
 
 # Initialize the KFold object
+DF_results = []
 n_splits = 5
 tscv = TimeSeriesSplit(n_splits=n_splits)
 # Chunk size
-chunk_size = 45_000
+chunk_size = 50_000
 num_chunks = df.shape[0] // chunk_size
 print("num_chunks: ", num_chunks)
+skip_until = (8,7)
 
 # Prepare to loop over each pair of columns in the data frame
-DF_results = []
 for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
     for j in tqdm(range(i+1, dfc.shape[1]), desc='ROW'):
+        if skip_until is not None:
+            if (i,j) != skip_until:
+                continue
+            else:
+                skip_until = None
         # Extract the time series for the pair of columns
-        X = dfc.iloc[:, [i, j]].values
+        X = dfc.iloc[:, [i, j]]
+        X = X.dropna().values
         if method == 'cupy':
             cp._default_memory_pool.free_all_blocks()
             X = cp.asarray(X, dtype=cp.float32)
@@ -128,7 +137,7 @@ for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
         # num_chunks = X.shape[0] // chunk_size
         for chunk_index in range(num_chunks):
             start_index = chunk_index * chunk_size
-            end_index = start_index + chunk_size
+            end_index = min(start_index + chunk_size, X.shape[0])
             X_chunk = X[start_index:end_index]
             # Initialize a list to store the results for each split
             results = []
@@ -138,7 +147,7 @@ for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
                 X_train, X_test = X_chunk[train_index], X_chunk[test_index]
                 if method == 'cupy' or method == 'jax':
                     for lag in range(1, maxlag+1):
-                        try:
+                        # try:
                             tup = gmeth(X_train[:, 0], X_train[:, 1], lag+1,
                                         xtest=X_test[:, 0], ytest=X_test[:, 1])
                             results.append(dict(
@@ -149,10 +158,10 @@ for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
                                 r2_y=tup[3],
                             ))
                             s += 1
-                        except Exception as e:
-                            print(e)
-                            results.append(None)
-                            f += 1
+                        # except Exception as e:
+                        #     print(e)
+                        #     results.append(None)
+                        #     f += 1
                 else:
                     t1=time.time()
                     result = grangercausalitytests(X_train, maxlag=maxlag, verbose=False)
@@ -163,16 +172,21 @@ for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
                     results.append([list(range(maxlag)), pvalue, F])
                     s += 1
             print("percent success rate: ", s/(s+f))
-            print("EXFILTRATE")
-            exfiltrate()
-            none_frac = np.sum([x is None for x in results]) / len(results)
-            print(f"None fraction: {none_frac}")
+            # print("EXFILTRATE")
+            # exfiltrate()
+            # none_frac = np.sum([x is None for x in results]) / len(results)
+            # print(f"None fraction: {none_frac}")
             results = [x for x in results if x is not None]
             df_results = pd.DataFrame(results)
             df_results['column1']     = dfc.columns[i]
             df_results['column2']     = dfc.columns[j]
             df_results['chunk_index'] = chunk_index
             DF_results.append(df_results)
+
+DF_results = pd.concat(DF_results)
+pre = name.replace('ccatime', f'_granger_causality')
+DF_results.to_csv(os.path.join(folder, f'{pre}.csv'),
+                  index=False)
 
 
 #  . .     . . .o         |          o          

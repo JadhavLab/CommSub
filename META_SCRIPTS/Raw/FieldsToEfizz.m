@@ -2,8 +2,8 @@ commsubspaceToPath
 % Grab fields from cgramcnew and place into existing efizz structure
 % (rather than from scratch)
 
-grabfields = ["Cavg", "Ctoppair"];
-
+% grabfields = ["Cavg", "Ctoppair"];
+grabfields = ["wpli_avg", "wpli_toppair"];
 const = option.constants();
 animal_list = const.all_animals;
 animal = animal_list{1};
@@ -34,3 +34,4 @@ for i = progress(2:length(animal_list), 'Title', 'FieldsToEfizz')
     
 end
 !pushover-cli "FieldsToEfizz done"
+RunAll_wpli
