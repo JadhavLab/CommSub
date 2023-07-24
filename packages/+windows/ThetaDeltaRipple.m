@@ -188,6 +188,29 @@ if Option.singleControl  &&warnedEmptyControls
 end
 
 % -------------------------------
+% Handle Option.maxWindows
+% -------------------------------
+if Option.maxWindows > 0 && Option.maxWindows < inf
+    keyboard
+    for i = 1:length(cellOfWindows)
+        inds = randperm(size(cellOfWindows{i},1));
+        if length(inds) < Option.maxWindows
+            continue
+        end
+        n = Option.maxWindows;
+        inds = sort(inds(1:n));
+        cellOfWindows{i} = cellOfWindows{i}(inds,:);
+    end
+end
+
+% -------------------------------
+% Handle Option.minWindows
+% -------------------------------
+% This section would take any that are undersampled an progressively relax
+% the quantile threshold to bring the samples up to the minimum (if possible).
+% if this step is not possible, that's fine.
+
+% -------------------------------
 % If any cellOfWindows is empty, throw an error
 % -------------------------------
 if any(cellfun(@isempty, cellOfWindows))
