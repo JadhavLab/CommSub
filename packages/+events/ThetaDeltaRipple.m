@@ -77,7 +77,13 @@ elseif contains(Option.generateH, "fromCoherence")
         Option.frequenciesPerPattern);
 elseif contains(Option.generateH, "fromWpli")
     load(Option.animal + "spectralBehavior.mat");
-    spectrogram   = efizz.wpli;
+    if isfield(efizz, "wpli_avg")
+        disp("Using NEW average wpli field");
+        spectrogram   = efizz.wpli_avg;
+    else
+        disp("Using old wpli field");
+        spectrogram   = efizz.wpli;
+    end
     frequencyAxis = efizz.f;
     times         = efizz.t;
     [H, Hvals, Hnanlocs, times] = events.generateFromSpectra(times, ...
