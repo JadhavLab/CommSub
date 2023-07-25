@@ -25,7 +25,7 @@ RunAll % Calls TheScript using various Option struct options
 % Mostly knockoff figures from the inspired paper source 
 % (some novel)
 % -------------------------------------------------------
-SemedoPaperFigures
+SemedoPaperFigures_m
 
 % -----------------------------
 % Grammer of graphics summaries
@@ -35,7 +35,7 @@ GrammPlots
 % -----------------------------
 % Subspace angle
 % -----------------------------
-plots.paper.subspace.angle.Run;
+plots.subspace.angle.Run;
 % Python plots
 py.importlib.import_module(codedefine("Notebooks","python","create_clustergram.py"));
 py.importlib.import_module(codedefine("Notebooks","python","create_graph.py"));
@@ -44,10 +44,10 @@ py.importlib.import_module(codedefine("Notebooks","python","create_graph.py"));
 % Python figures
 % --------------
 script1 = ...
-py.importlib.import_module(codedefine("Notebooks","python","dimPred.py"))
+py.importlib.import_module(codedefine("Notebooks","python","dimPred.py"));
 script2 = ...
-py.importlib.import_module(codedefine("Notebooks","python","prediction.py"))
+py.importlib.import_module(codedefine("Notebooks","python","prediction.py"));
 script3 = ...
-py.importlib.import_module(codedefine("Notebooks","python","ccatime.py"))
+py.importlib.import_module(codedefine("Notebooks","python","ccatime.py"));
 % ----------------------------------------------
 

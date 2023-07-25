@@ -33,5 +33,6 @@ for g = uGroups'
     warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
     sgtitle("")
     g.export('file_name', get(gcf,'Name') + ".svg",skws{:})
+    g.export('file_name', get(gcf,'Name') + ".png",skws{:})
 
 end

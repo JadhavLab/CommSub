@@ -42,7 +42,7 @@ end
 % ----------------------------
 % Normalize and plot distances
 % ----------------------------
-f=figc("dimremove distances, K = " + K)
+f=figc("dimremove distances, K = " + K);
 subspaceDist = (subspaceDist-min(subspaceDist,[],'all')) ./(max(subspaceDist,[],'all')-min(subspaceDist,[],'all'));
 G = clustergram(subspaceDist, 'ColumnLabels', rowVar, 'RowLabels', rowVar, 'Colormap', cmocean('balance'));
 sgtitle(f.Name)
@@ -52,3 +52,4 @@ cgFig(1).Children(end).XTickLabelRotation=-25;
 cgFig(1).Children(end).FontSize = 14;
 
 saveas(cgFig,fullfile(figureFolder,'subspaceDistance_fromDimRemoval.svg'))
+saveas(cgFig,fullfile(figureFolder,'subspaceDistance_fromDimRemoval.png'))

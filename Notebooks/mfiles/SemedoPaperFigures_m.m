@@ -240,6 +240,9 @@ disp("Running dimension removal with zscore=" + zscr);
 plots.grm.dimensionRemoved(rt, "spec");
 plots.grm.dimensionRemoved(rt, "coh");
 plots.grm.dimensionRemoved(rt, "wpli");
+plots.subspace.pred_dim_rem.oneDimesionRemovedClustermap;
+plots.subspace.pred_dim_rem.plotDimensionRemoval_perPattern;
+plots.subspace.pred_dim_rem.plotDimensionRemoval_perPatternbyDirection;
 
 %% 
 % Now let's see how similar those curves are in dimension reduced space
