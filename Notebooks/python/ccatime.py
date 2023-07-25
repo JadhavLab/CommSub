@@ -11,10 +11,11 @@ from scipy.stats import f
 from sklearn.model_selection import TimeSeriesSplit, KFold
 import time, os
 from tqdm import tqdm
+tqdm.pandas()
 from scipy.stats import f
 import multiprocessing, dill
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
-name   = 'ZT2coherenceccatime'
+name   = 'ZT2powerccatime'
 def granger_causality_jax(x, y, lag_order):
     # Compute the lagged versions of x and y
     X = jnp.column_stack([x[t-lag_order:t] for t in range(lag_order, len(x))])
@@ -107,6 +108,8 @@ def get_cont_vars(df):
 df = pd.read_csv(os.path.join(folder, f'{name}.csv'))
 cont_vars = get_cont_vars(df)
 dfc = df[cont_vars]
+# zscore dfc columns
+dfc = dfc.apply(lambda x: (x - x.mean()) / x.std())
 # Define the lag
 maxlag = 10
 method = 'cupy'
@@ -278,31 +281,30 @@ DF_results.to_csv(os.path.join(folder, f'{pre}.csv'),
 pre = name.replace('ccatime', f'_granger_causality')
 DF_results = pd.read_csv(os.path.join(folder, f'{pre}.csv'))
 
-df = DF_results
-from tqdm import tqdm
-tqdm.pandas()
-def directionality_test(row):
-    # Fetch the corresponding reverse row
-    reverse_row = df[(df['chunk_index'] == row['chunk_index']) & 
-                     (df['itest'] == row['itest']) &
-                     (df['lag'] == row['lag']) & 
-                     (df['column1'] == row['column2']) & 
-                     (df['column2'] == row['column1'])].iloc[0]
-    f_stat_xy, p_value_xy, r2_xy = row['F'], row['pvalue'], row['r2_xy']
-    f_stat_yx, p_value_yx, r2_yx = reverse_row['F'], reverse_row['pvalue'], reverse_row['r2_xy']  # Assuming r2_yx is stored in 'r2_xy' of the reverse row
-    direction = "x->y" if f_stat_xy > f_stat_yx else "y->x"
-    significance = "significant" if min(p_value_xy, p_value_yx) < 0.05 else "not significant"
-    magnitude = abs(r2_xy - r2_yx)
-    return pd.Series([direction, significance, magnitude])
-df[['direction', 'significance', 'magnitude']] = df.progress_apply(directionality_test, axis=1)
-
-from joblib import Parallel, delayed
-# parallel processing with joblibtotal=df.shape[0]))
-results = Parallel(n_jobs=-1)(delayed(directionality_test)(row) for _, row in tqdm(df.iterrows(), total=df.shape[0]))
-# Convert the results to a DataFrame and join with the original DataFrame
-results_df = pd.DataFrame(results, columns=['direction', 'significance', 'magnitude'])
+# Let's add some summary statistics
+df['uid'] = (df['chunk_index'].astype(str) + '_' + df['lag'].astype(str) + '_'
+             + df['itest'].astype(str) + '_' + df['column1'] + '_' +
+             df['column2'])
+row_dict = df.set_index('uid').T.to_dict()
+def directionality_test_vectorized(df, row_dict):
+    uid_reverse = (df['chunk_index'].astype(str) + '_' + df['lag'].astype(str)
+                   + '_' + df['itest'].astype(str) + '_' + df['column2'] + '_'
+                   + df['column1'])
+    df_reverse = pd.DataFrame([row_dict[uid] for uid in uid_reverse])
+    f_stat_xy, p_value_xy, r2_xy, r2_y  = (df['F'], df['pvalue'], df['r2_xy'],
+                                           df['r2_y'])
+    f_stat_yx, p_value_yx, r2_yx, r2_x = (df_reverse['F'],
+                                          df_reverse['pvalue'],
+                                          df_reverse['r2_xy'],
+                                          df_reverse['r2_y'])
+    direction = np.where(f_stat_xy > f_stat_yx, "x->y", "y->x")
+    significance = np.where(np.minimum(p_value_xy, p_value_yx) < 0.05,
+                            "significant", "not significant")
+    magnitude = np.abs(r2_xy - r2_yx)
+    return pd.DataFrame({'direction': direction, 'significance': significance, 'magnitude': magnitude})
+results_df = directionality_test_vectorized(df, row_dict)
 df = pd.concat([df, results_df], axis=1)
-
+df.to_csv(os.path.join(folder, f'{pre}_directionality.csv'), index=False)
 
 #  . .     . . .o         |          o          
 # -+-+-    | | |.,---.,---|,---.. . ..,---.,---.
