@@ -13,21 +13,23 @@ function x = figuredefine(varargin)
 %
 
 persistent permfolder
-if varargin{1} == "-permfolder"
-    permfolder = varargin(2:end);
-    return
-elseif varargin{1} == "-clearpermfolder"
-    permfolder = [];
-    return
-elseif varargin{1} == "-getpermfolder"
-    x = permfolder;
-    return
+if ~isempty(varargin) 
+    if varargin{1} == "-permfolder"
+        permfolder = varargin(2:end);
+        return
+    elseif varargin{1} == "-clearpermfolder"
+        permfolder = [];
+        return
+    elseif varargin{1} == "-getpermfolder"
+        x = permfolder;
+        return
+    end
 end
 persistent creation
 if ~exist('creation','var')
     creation = false;
 end
-if varargin{1} == "-creation"
+if ~isempty(varargin) && varargin{1} == "-creation"
     creation = varargin{2};
     return
 end
