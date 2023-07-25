@@ -20,23 +20,27 @@ function [] = runChecks(Events, Spk, Patterns, Option, varargin)
 ip = inputParser();
 ip.addParameter('wait', true, @islogical);
 ip.addParameter('parallel', true, @islogical);
+ip.addParameter('visible', 'on', @ischar);
 ip.parse(varargin{:});
 Opt = ip.Results;
+
+tic
 
 cellOfWindows = Events.cellOfWindows;
 
 disp("Running checks")
 % firing rate checks
-a = @() plots.frChecks(Spk, "appendFigTitle", char(Option.animal));
+a = @() plots.frChecks(Spk, "appendFigTitle", char(Option.animal),...
+    'visible', Opt.visible);
 b = @() plots.event.plotEventDetails(Events, Option, ...
     "savePath", char(fullfile(figuredefine(), "eventDetails")), ...
     "appendFigTitle", char(Option.animal), ...
     'Spk', Spk, ...
-    'spikePlotStyle', 'heatmapBehind');
+    'spikePlotStyle', 'heatmapBehind', 'visible', Opt.visible);
 c = @() plots.event.plotSingleEvents(cellOfWindows, Events, Option, Spk, ...
     'before', 0.5, 'after', 0.5, 'appendFigTitle', char(Option.animal), ...
     'eventTypes', ["theta", "delta", "ripple"], ...
-    'displayType', 'heatmap');
+    'displayType', 'heatmap', 'visible', Opt.visible);
 % d = @() plots.event.plotSingleEvents(cellOfWindows, Events, Option, Spk, ...
 %     'before', 0.5, 'after', 0.5, 'appendFigTitle', char(Option.animal), ...
 %     'eventTypes', ["theta", "delta", "ripple"], ...
@@ -83,4 +87,5 @@ if Opt.parallel
     end
 end
 
+disp("Done running checks" + newline + toc + " seconds elapsed")
 

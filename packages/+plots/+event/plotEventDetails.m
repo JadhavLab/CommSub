@@ -1,4 +1,4 @@
-function plotEventDetails(Events, Option, varargin)
+function out = plotEventDetails(Events, Option, varargin)
 % plotEventDetails(Events, Option, varargin)
 %
 % Plots the details of the events in the Events structure.
@@ -63,7 +63,7 @@ saveas(f, file + ".svg");
 
 % Plot the events in the time series
 f=fig("Time series of events" + Opt.appendFigTitle);
-set(f, 'Position', get(0, 'Screensize'));
+set(f, 'Position', get(0, 'Screensize'), 'Visible', Opt.visible);
 spikesGiven = ~isempty(Opt.Spk);
 if spikesGiven && strcmp(Opt.spikePlotStyle, 'heatmap')
     tile = tiledlayout(nPatterns + 2, 1, ...
@@ -163,3 +163,6 @@ saveas(gcf, file + ".png");
 saveas(gcf, file + ".svg");
 
 
+out=struct();
+out.windowQ = windowQ;
+out.windowQlow = windowQlow;

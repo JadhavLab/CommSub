@@ -17,8 +17,11 @@ ip.addParameter('logAxis', [2], @isnumeric); % log delta axis
 ip.addParameter('Spk', [], @isstruct); % Spk structure -- if given, we plot the spikes
 ip.addParameter('spikePlotStyle', 'heatmapBehind', @ischar); 
 ip.addParameter('showMuaSC', true, @islogical); % show MUA spike counts
+ip.addParameter('visible', 'on', @ischar); 
 ip.parse(varargin{:});
 Opt = ip.Results;
+
+disp("FIG TITLE APPEND: " + Opt.appendFigTitle);
 
 if isempty(Opt.savePath)
     Opt.savePath = fullfile(figuredefine(), "EventDetails");

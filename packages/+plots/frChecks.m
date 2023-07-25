@@ -16,8 +16,11 @@ ip = inputParser();
 ip.addParameter('saveFigures', false, @islogical);
 ip.addParameter('appendFigTitle', '', @ischar);
 ip.addParameter('savePath', '', @ischar);
+ip.addParameter('visible', 'off', @ischar);
 ip.parse(varargin{:});
 Opt = ip.Results;
+
+disp("FIG TITLE APPEND = " + Opt.appendFigTitle);
 
 if isempty(Opt.savePath)
     Opt.savePath = fullfile(figuredefine(), "frchecks");
@@ -44,6 +47,7 @@ st = Spk.sessionTypePerBin;
 % applied throughout the entire session
 % -------------------------------------------------
 fig_smoothingthroughout = fig("smoothingthroughout" + Opt.appendFigTitle);
+set(fig_smoothingthroughout, 'visible', Opt.visible);
 tileAxes = tiledlayout(3, 1);
 nexttile;
 plot(spikeRates, "Color", [1,1,1], "LineWidth", 0.5, "LineStyle", ":")
@@ -71,7 +75,7 @@ spikeRatesSmoothedRun = smooth(spikeRatesRun, windowSize);
 % applied individually to sleep and run
 % -------------------------------------------------
 fig_smoothingindividual =  fig("smoothingindividual" + Opt.appendFigTitle);
-set(fig_smoothingindividual, 'Position', get(0, 'Screensize'));
+set(fig_smoothingindividual, 'Position', get(0, 'Screensize'), 'visible', Opt.visible);
 tileAxes = tiledlayout(2, 1);
 nexttile;
 plot(spikeRatesSleep, "Color", [1,1,1], "LineWidth", 0.5, "LineStyle", ":")

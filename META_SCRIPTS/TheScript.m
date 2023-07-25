@@ -165,6 +165,7 @@ if Option.analysis.cca
     % (append cca commsub levels during events)
     event_anal   = ... 
          analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
+    plots.plot_event_values(event_anal(2,7), 'figAppend', strjoin([Option.animal, Option.genH_name], "_"));
     Components_overall = ... 
          nd.fieldSet(Components_overall, 'event_anal', event_anal);
     % ---------------------------------------------------------------------
@@ -225,7 +226,7 @@ if Option.analysis.checks
     if strcmp(Option.animal, "JS21"); wait_state = true;
     else; wait_state = false; end
     plots.runChecks(Events, Spk, Patterns, Option, ...
-                    'parallel', true, 'wait', wait_state);
+                    'parallel', false, 'wait', wait_state, 'visible', 'off');
 end
 
 % TODO: (1) plug in JPECC version of rankRegress here

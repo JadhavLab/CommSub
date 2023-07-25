@@ -1,4 +1,4 @@
-function plotSingleEvents(cellOfWindows, ...
+function out = plotSingleEvents(cellOfWindows, ...
                           Events, Option,  Spk, varargin)
 %   PLOTSINGLEEVENTS(CELLOFWINDOWS, EVENTS, OPTION, Spk, VARARGIN)
 %   Plots the events in CELLOFWINDOWS for the given EVENTTYPE.
@@ -32,6 +32,7 @@ ip.addParameter('subspaceComponents', [], @isnumeric);
 ip.addParameter('subspaceTimes', [], @isnumeric);
 ip.addParameter('subspaceColors', 'dense', @ischar);
 ip.addParameter('subspaceSmoothing', 0, @isscalar);
+ip.addParameter('visible', 'on', @ischar);
 ip.parse(varargin{:});
 Opt = ip.Results;
 varargin = {ip.Unmatched};
@@ -64,7 +65,9 @@ for field = fieldnames(Opt2)
     Opt.(field{1}) = Opt2.(field{1});
 end
 
-for eventType = string(Opt.eventTypes)
+set(gcf, 'visible', Opt.visible)
+
+for eventType = progress(string(Opt.eventTypes), 'Title', 'Event types')
 
     % Determine which event type is considered
     switch eventType
@@ -87,7 +90,7 @@ for eventType = string(Opt.eventTypes)
 
 
     % For each window
-    for i = 1:size(windows,1)
+    for i = progress(1:size(windows,1), 'Title', 'Plotting windows')
 
         % Get the window
         window     = windows(i, :);
@@ -179,10 +182,12 @@ for eventType = string(Opt.eventTypes)
 
         % Save the figure
         saveas(gcf, fullfile(Opt.saveFolder, ...
-            eventType + "_" + num2str(i) + ".png"));
+            Opt.appendFigTitle + "_" +  eventType + "_" + num2str(i) + ".png"));
         saveas(gcf, fullfile(Opt.saveFolder, ...
-            eventType + "_" + num2str(i) + ".svg"));
+            Opt.appendFigTitle + "_" +eventType + "_" + num2str(i) + ".svg"));
 
     end % for each window
 
 end % for each event type
+
+out = struct();
