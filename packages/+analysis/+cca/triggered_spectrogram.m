@@ -96,6 +96,9 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
     for comp = progress(Opt.components(:)','Title','Components')
 
         threshold_crossed = all_threshold_crossed(:,comp);  % make sure it's a column vector
+        if ~any(threshold_crossed)
+            continue
+        end
 
         % Determine the corresponding times in efizz
         threshold_crossed_times = sp_time(threshold_crossed); 
