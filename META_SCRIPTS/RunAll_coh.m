@@ -16,9 +16,11 @@ load("RunsSummary.mat", "RunsSummary");
 %% Script parameters
 Option = option.defaults();
 Option.tableAppend = "_coh";
+% Option.analysis.cca    = true;
+% Option.analysis.checks = true;
 
 animal_list = [...
-    "JS21",...
+    % "JS21",...
     "JS15",...
     "JS14",...
     "JS13",...
@@ -99,7 +101,8 @@ for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1
                 %warning('Failed to run %s %s', Option.animal, Option.generateH);
             %end
         end
-        disp("finished " + Option.animal + " " + Option.generateH + " " + Opt.preProcess_zscore + "<---" + datestr('now'));
+        disp("finished " + Option.animal + " " + Option.generateH + " " + Option.preProcess_zscore + "<---" + string(datetime('now')));
+        close all
 end % genH
 end % animal
 end % zscore

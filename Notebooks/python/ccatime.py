@@ -306,6 +306,8 @@ results_df = directionality_test_vectorized(df, row_dict)
 df = pd.concat([df, results_df], axis=1)
 df.to_csv(os.path.join(folder, f'{pre}_directionality.csv'), index=False)
 
+# Plots
+
 #  . .     . . .o         |          o          
 # -+-+-    | | |.,---.,---|,---.. . ..,---.,---.
 # -+-+-    | | |||   ||   ||   || | |||   ||   |
