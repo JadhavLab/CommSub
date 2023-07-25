@@ -44,7 +44,7 @@ Default.positiveDerivativeCheck       = [Default.winSize(1), Default.winSize(2)/
 % used to be [-0.15, 0.15]
 Default.equalWindowsAcrossPatterns    = true; % whether all three patterns have the same #windows
 Default.quantileToMakeWindows         = 0.85; % quantile to use to make windows
-Default.maxWindows                    = 1100; % maximum number of windows to use, can make the file sizes more sane
+Default.maxWindows                    = ["ripple",1200]; % maximum number of windows to use, can make the file sizes more sane; if a number, that's the max windows. if a string, then use that patternName window count to set the max.
 
 Default.thetadelta_outlierQuantile    = [0, 0.995];     % quantile to remove outliers from theta and delta
 

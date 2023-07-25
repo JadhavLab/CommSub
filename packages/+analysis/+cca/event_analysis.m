@@ -73,7 +73,7 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
     end
 
     [i1,i2] = ind2sub(szPatterns, i);
-    i = {i1,i2};
+    i = {i1, i2};
     if i2 <= Option.nPatternAndControl
         p = i2;
     else

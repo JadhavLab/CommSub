@@ -68,8 +68,12 @@ function resultTable = ccatime(Components_overall, varargin)
                     band = Option.frequenciesPerPattern(k, :);
                     idx = efizz.f >= band(1) & efizz.f <= band(2);
                     % Default spectral fields
-                    fields = {'S1', 'S2', 'Cavg'};
+                    fields = {'S1', 'S2', 'Cavg', 'wpli_avg'};
                     for l = 1:numel(fields)
+                        disp("Adding spectral field: " + fields{l});
+                        if contains(fields{l}, 'wpli')
+                            efizz.(fields{l})(isnan(efizz.(fields{l}))) = 0;
+                        end
                         field = fields{l};
                         data = efizz.(field)(:, idx);
                         data = mean(data, 2);
@@ -96,8 +100,17 @@ function resultTable = ccatime(Components_overall, varargin)
                         data = behavior.(column);
                         % Interpolate the data if it is not aligned to the times
                         if size(data, 1) ~= size(U, 1)
+                            dataclass = class(data);
+                            data = double(data);
                             data = interp1(behavior.time, data, time, 'nearest');
+                            if dataclass == "logical"
+                                data(isnan(data)) = false;
+                                data = logical(data);
+                            else
+                                data = cast(data, dataclass);
+                            end
                         end
+                        disp("Adding behavior column: " + column + " with class " + class(data));
                         tempTable = addvars(tempTable, data, 'NewVariableNames', {column});
                     end
                 end

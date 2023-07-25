@@ -49,7 +49,8 @@ function out = combineAndUpdateTables(regex, finalFile)
             
             if isempty(idx)
                 % If the hash value does not exist, append the new row
-                out = [out; newTable(j, :)];
+                % out = [out; newTable(j, :)];
+                out = table.flexvertcat(out, newTable(j, :));
             else
                 % If the hash value exists, replace the existing row
                 for f = setdiff(fieldnames(newTable)', {'Properties', 'Row', 'Variables'})
@@ -63,6 +64,10 @@ function out = combineAndUpdateTables(regex, finalFile)
             end
         end
     end
+
+    disp("Combined " + num2str(length(newFiles)) + " tables into " + finalFile);
+    disp("Final table")
+    disp(out)
     
     % Save the updated table
     finalFile = replace(finalFile, '.mat', '');

@@ -56,39 +56,76 @@ if numel(varargin) == 2
     try
         [A, B] = table.alignTables(A, B, 'aggressive', true);
         new_table = [A; B];
-    catch ME
-        keyboard
+    catch ME1
+        % try
+            new_table = aggressive_match(A, B);
+        % catch ME2
+        %     keyboard
+        % end
     end
     return;
 
-    % if numel(old_columns) < numel(new_columns)
-    %     add_columns = setdiff(new_columns, old_columns);
-    %     new_table = old_table;
-    %     for i = 1:numel(add_columns)
-    %         new_columnName = add_columns{i};
-    %         new_table.(new_columnName) = nan(height(new_table),1);
-    %     end
-    %     % new_table = [new_table; new_subTable];
-    %     new_table = util.cell.icat({new_table, new_subTable}, ...
-    %                                 'fieldCombine', 'union');
-    % else
-    %     add_columns = setdiff(old_columns, new_columns);
-    %     new_table = new_subTable;
-    %     for i = 1:numel(add_columns)
-    %         new_columnName = add_columns{i};
-    %         new_table.(new_columnName) = nan(height(new_table),1);
-    %     end
-    %     % new_table = [old_table; new_table];
-    %     new_table = util.table.icat({old_table, new_subTable}, ...
-    %                                 'fieldCombine', 'union');
-    %     
-    % end
-    else
-        new_table = varargin{1};
-        for i = 2:numel(varargin)
-            new_table = table.flexvertcat(new_table, varargin{i});
-        end
+else
+    new_table = varargin{1};
+    for i = 2:numel(varargin)
+        new_table = table.flexvertcat(new_table, varargin{i});
     end
-
 end
 
+function C = aggressive_match(A, B)
+    % Assuming that 'A' and 'B' are your tables
+    % Get sizes of A and B
+    [~, num_cols_A] = size(A);
+    [~, num_cols_B] = size(B);
+
+    if num_cols_A ~= num_cols_B
+        error('The tables have different number of columns and cannot be concatenated.')
+    else
+        % Iterate through each column and check the data type
+        F = setdiff(fieldnames(A), {'Properties', 'Row', 'VarNames', 'Variables'});
+        F = F(:)';
+        for f = F
+            col_A = A.(f{1});
+            col_B = B.(f{1});
+            try
+                [col_A; col_B];
+                concatable = true;
+            catch
+                concatable = false;
+            end
+            
+            % If the data types do not match
+            if ~concatable || ~strcmp(class(col_A), class(col_B))
+                of1 = A.Properties.VariableNames;
+                of2 = B.Properties.VariableNames;
+                assert(numel(setdiff(of1, of2))==0, ...
+                    'The tables have different column names and cannot be concatenated.')
+                % Remove the column from the table
+                A(:, f{1}) = [];
+                B(:, f{1}) = [];
+                % Convert the columns to strings in both tables
+                try
+                    col_A = string(col_A);
+                    col_B = string(col_B);
+                catch
+                    continue
+                end
+                ncolsA = size(col_A(1,:));
+                ncolsB = size(col_B(1,:));
+                if ~isequal(ncolsA, ncolsB)
+                    if any(ncolsA > ncolsB)
+                        col_B = repmat(col_B, 1, ncolsA(2) - ncolsB(2) + 1);
+                    elseif any(ncolsA < ncolsB)
+                        col_A = repmat(col_A, 1, ncolsB(2) - ncolsA(2) + 1);
+                    end
+                end
+                A.(f{1}) = col_A;
+                B.(f{1}) = col_B;
+                % Set order
+                A = A(:, of1);
+                B = B(:, of2);
+            end
+        end
+    end
+    % Concatenate the tables
+    C = [A; B];

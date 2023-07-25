@@ -150,7 +150,11 @@ if Option.analysis.factorAnalysis
 end
 
 if Option.analysis.cca
+    running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
+    [behavior, thrown_out_times] = table.behavior.lookup(Option.animal, ...
+                                                         running_times);
     % ---------------------------------------------------------------------
+    % (Subspaces acquired here)
     % Patterns         = analysis.cca(Patterns, Option);
     Patterns_overall = analysis.cca(Patterns_overall, Option);
     % Copy over the components
@@ -158,45 +162,49 @@ if Option.analysis.cca
          nd.fieldSet(Components_overall, 'cca', Patterns_overall);
     % ---------------------------------------------------------------------
     % Event analysis ------------------------------------------------------
+    % (append cca commsub levels during events)
     event_anal   = ... 
          analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
     Components_overall = ... 
          nd.fieldSet(Components_overall, 'event_anal', event_anal);
     % ---------------------------------------------------------------------
     % Create table of results ---------------------------------------------
-    table.analyses.ccatime(Patterns_overall, efizz, Option, behavior,...
-                          'behaviorColumns', {'vel', 'accel', 'lindist', 'rewarded', 'trajbound'});
-    % ---------------------------------------------------------------------
-    % Triggered spectrogram -----------------------------------------------
+    % (create a table regarding cca versus efizz and behavior)
     efizz = load(Option.animal + "spectralBehavior.mat", "efizz");
     efizz = efizz.efizz;
+    table.analyses.ccatime(Patterns_overall, efizz, Option, behavior,...
+                          'behaviorColumns', {'vel', 'accel', 'lindist', 'rewarded', 'trajbound','inBoundChoiceTimes','outBoundChoiceTimes','rewardTimes'});
+    % ---------------------------------------------------------------------
+    % Triggered spectrogram -----------------------------------------------
+    % (create compute triggered spectrograms for commsubs)
     disp("Running triggered spectrogram - run")
+    close all
     triggered_spectrogram_run = ...
          analysis.cca.triggered_spectrogram(Patterns_overall, Spk, efizz,...
             'ploton', true, ... 
             'figAppend', strjoin([Option.animal,Option.genH_name], "_"), ...
             'runtype', 1);
-    disp("Running triggered spectrogram - sleep")
-    triggered_spectrogram_sleep = ...
-         analysis.cca.triggered_spectrogram(Patterns_overall, Spk, efizz,...
-            'ploton', true, ... 
-            'figAppend', strjoin([Option.animal,Option.genH_name], "_"), ...
-            'runtype', 0);
-    for i = 1:numel(Patterns_overall)
-        Patterns_overall(i).triggered_spectrogram_run   = triggered_spectrogram_run(i,:);
-        Patterns_overall(i).triggered_spectrogram_sleep = triggered_spectrogram_sleep(i,:);
-    end
+    % disp("Running triggered spectrogram - sleep")
+    % triggered_spectrogram_sleep = ...
+    %      analysis.cca.triggered_spectrogram(Patterns_overall, Spk, efizz,...
+    %         'ploton', true, ... 
+    %         'figAppend', strjoin([Option.animal,Option.genH_name], "_"), ...
+    %         'runtype', 0);
+    % for i = 1:numel(Patterns_overall)
+    %     Patterns_overall(i).triggered_spectrogram_run   = triggered_spectrogram_run(i,:);
+    %     Patterns_overall(i).triggered_spectrogram_sleep = triggered_spectrogram_sleep(i,:);
+    % end
     % ---------------------------------------------------------------------
 end
 
 if Option.analysis.timeVarying
+    running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
+    [behavior, thrown_out_times] = table.behavior.lookup(Option.animal, ...
+                                                         running_times);
     % How much spiking moment to moment is explained by subspace
     % Requirements: Option.analysis.cca
     % TODO: 1 .also return epochwise zscored neural firing matching
     %       2. return timeseries of smoothed firing rate
-    running_times = Spk.timeBinMidPoints(Spk.sessionTypePerBin == 1);
-    [behavior, thrown_out_times] = table.behavior.lookup(Option.animal, ...
-                                                         running_times);
     % Component matching over time
     rrr = analysis.match_rrr(Patterns_overall, Option, Spk);
     cca = analysis.match_cca(Patterns_overall, Option, Spk);

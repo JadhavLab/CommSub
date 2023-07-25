@@ -13,8 +13,8 @@ function out = triggered_spectrogram(Patterns_overall, Spk, efizz, varargin)
 ip = inputParser();
 ip.addParameter('ploton', false, @islogical);
 ip.addParameter('windowsize', 50, @isnumeric);
-ip.addParameter('specNames',  {'S1', 'S2', 'Cavg','Ctoppair'}, @iscellstr);
-ip.addParameter('components', [1,2,3,4,5,6,7,8], @isnumeric);
+ip.addParameter('specNames',  {'S1', 'S2', 'Cavg','wpli_avg'}, @iscellstr);
+ip.addParameter('components', [1,2,3,4], @isnumeric);
 ip.addParameter('figAppend', "", @(x) isstring(x));
 ip.addParameter('folder', "triggered_spectrogram", @(x) isstring(x));
 ip.addParameter('quantile_threshold', 0.95, @isnumeric);
@@ -46,6 +46,9 @@ disp("Starting with " + length(Patterns_overall) + " patterns and " + ...
 Opt.means = [];
 Opt.mins = [];
 for field = Opt.specNames
+    if contains(field, "wpli")
+        efizz.(field{:})(isnan(efizz.(field{:}))) = 0;
+    end
     Opt.means.(field{:}) = mean(efizz.(field{:}), 1);
     Opt.mins.(field{:}) = min(efizz.(field{:}), [], 1);
 end
@@ -116,9 +119,9 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
         % Find start/stop times for spike windows
         sp_start_indices = interp1(sp_time, 1:numel(sp_time), efizz.t(efizz_indices+window_size), 'nearest');
         sp_start_indices = sp_start_indices(:);
-        sp_stop_indices = interp1(sp_time, 1:numel(sp_time), efizz.t(efizz_indices+window_size), 'nearest');
-        sp_stop_indices = sp_stop_indices(:);
-        sp_win_size = mode(abs([sp_stop_indices - spike_indices; spike_indices - sp_start_indices]))+1;
+        sp_stop_indices  = interp1(sp_time, 1:numel(sp_time), efizz.t(efizz_indices+window_size), 'nearest');
+        sp_stop_indices  = sp_stop_indices(:);
+        sp_win_size      = mode(abs([sp_stop_indices - spike_indices; spike_indices - sp_start_indices]))+1;
         total_sp_win_size = 2 * sp_win_size + 1;
 
         % Initialize empty matrices to store the data segments for each efizz

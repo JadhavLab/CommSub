@@ -190,15 +190,26 @@ end
 % -------------------------------
 % Handle Option.maxWindows
 % -------------------------------
-if Option.maxWindows > 0 && Option.maxWindows < inf
-    keyboard
+maxWindows = Option.maxWindows;
+if numel(maxWindows) == 2
+    disp("maxWindows is a cell, looking for pattern name = " + maxWindows{1})
+    assert(isa(maxWindows(1), "string") || isa(maxWindows(1), "char"),...
+        "maxWindows{1} must be a string")
+    maxWindows = string(maxWindows);
+    maxWindows = size(cellOfWindows{Option.patternNames == maxWindows(1)}, 1);
+    maxWindows = min(maxWindows, str2double(Option.maxWindows(2)));
+elseif isa(maxWindows, "string") || isa(maxWindows, "char") 
+    disp("maxWindows is a string, looking for pattern name = " + maxWindows)
+    maxWindows = size(cellOfWindows{Option.patternNames == maxWindows}, 1);
+end
+if maxWindows > 0 && maxWindows < inf
     for i = 1:length(cellOfWindows)
         inds = randperm(size(cellOfWindows{i},1));
-        if length(inds) < Option.maxWindows
+        if length(inds) <= maxWindows
             continue
         end
-        n = Option.maxWindows;
-        inds = sort(inds(1:n));
+        disp("Throwing out " + num2str(length(inds) - maxWindows) + " windows for " + Option.patternNames{i})
+        inds = sort(inds(1:maxWindows));
         cellOfWindows{i} = cellOfWindows{i}(inds,:);
     end
 end
