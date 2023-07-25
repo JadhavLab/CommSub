@@ -99,6 +99,7 @@ for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1
                 %warning('Failed to run %s %s', Option.animal, Option.generateH);
             %end
         end
+        disp("finished " + Option.animal + " " + Option.generateH + " " + Opt.preProcess_zscore + "<---" + datestr('now'));
 end % genH
 end % animal
 end % zscore

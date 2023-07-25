@@ -1,3 +1,6 @@
+py = pyenv("Version", "~/miniconda3/bin/python")
+disp(pyversion); % Check python version
+
 % HOUSES A FLOW TO RECREATE ANALYSES/FIGS
                                                 
 % o  /    ,---.          |                        
@@ -29,13 +32,22 @@ SemedoPaperFigures
 % -----------------------------
 GrammPlots
 
+% -----------------------------
+% Subspace angle
+% -----------------------------
+plots.paper.subspace.angle.Run;
+% Python plots
+py.importlib.import_module(codedefine("Notebooks","python","create_clustergram.py"));
+py.importlib.import_module(codedefine("Notebooks","python","create_graph.py"));
+
 % --------------
 % Python figures
 % --------------
-py = pyenv("Version", "~/miniconda3/bin/python")
-disp(pyversion); % Check python version
 script1 = ...
 py.importlib.import_module(codedefine("Notebooks","python","dimPred.py"))
 script2 = ...
 py.importlib.import_module(codedefine("Notebooks","python","prediction.py"))
+script3 = ...
+py.importlib.import_module(codedefine("Notebooks","python","ccatime.py"))
 % ----------------------------------------------
+

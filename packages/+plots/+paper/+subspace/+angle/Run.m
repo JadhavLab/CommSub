@@ -4,7 +4,8 @@
 onlyCoh = true;
 Patterns = Patterns_AllAnimals;
 directionality = ["hpc-hpc","hpc-pfc"];
-patternNames = ["theta", "delta", "ripples","theta-control", "delta-control", "ripples-control"];
+patternNames = ["theta", "delta", "ripples","theta-control",...
+                "delta-control", "ripples-control"];
 genH           = shortcut.generateH(Option.generateH);
 direct         = shortcut.directionality(directionality);
 patternSymbols = shortcut.patternSymbols(patternNames, 2);

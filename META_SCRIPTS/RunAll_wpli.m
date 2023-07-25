@@ -32,11 +32,13 @@ h_methods = [  ...
              ..."fromCoherence  fromRipTimes"... COHERENCE
             "fromWpli  fromRipTimes", ...    WPLI
             ];
+zvals = [true, false];
 
 %% Print what we're doing
 disp(" ----------- RunAll ----------------------")
 disp("Running " + numel(animal_list) + " animals");
 disp("with " + numel(h_methods) + " methods");
+disp(" and " + numel(zvals) + " zscore options");
 disp("and Option struct ")
 disp(rmfield(Option, {'animal', 'generateH'}));
 disp("and analysis struct ")
@@ -52,14 +54,14 @@ if dopar
 end
 
 %% Run
-X = datetime('now') - days(10);
+X = datetime('now') - hours(3);
 dates = NaT(numel(RunsSummary.timestamp),1);
 for i = 1:numel(RunsSummary.timestamp)
     dates(i) = datetime(RunsSummary.timestamp(i));
 end
 [cntAn, cntH, cntZ]         = deal(0);
 tableCheck = false; % Set to true if you want to check RunsSummary tableRunaLl
-for zsc = progress([false],'Title','zscore');  cntZ = cntZ + 1;
+for zsc = progress(zvals,'Title','zscore');  cntZ = cntZ + 1;
 for genH_= progress(h_methods,'Title','genH method'); cntH = cntH + 1;
 for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1;
         Option.preProcess_zscore = zsc;
@@ -67,8 +69,8 @@ for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1
         Option.generateH = genH_;
         if tableCheck
             % Check if the combination of animal and generateH exists in RunsSummary and its timestamp is not older than X
-            mask = RunsSummary.animal            == Option.animal & ... 
-                   RunsSummary.generateH         == Option.generateH & ...
+            mask = RunsSummary.animal == Option.animal & ... 
+                   RunsSummary.generateH == Option.generateH & ...
                    RunsSummary.preProcess_zscore == Option.preProcess_zscore & ...
                    dates > X;
             if any(mask)
@@ -99,6 +101,7 @@ for iAnimal = progress(1:numel(animal_list),'Title','Animal'); cntAn = cntAn + 1
             %end
         end
         table.combineAndUpdateTables("RunsSummary_*", "RunsSummary");
+        disp("finished " + Option.animal + " " + Option.generateH + "<---" + datestr('now'));
 end % genH
 end % animal
 end % zscore
