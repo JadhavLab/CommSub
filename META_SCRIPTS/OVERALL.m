@@ -12,7 +12,14 @@ disp(pyversion); % Check python version
 RunAll % Calls TheScript using various Option struct options
 % RunAll_spectra
 % RunAll_coh
+
+% RunAll* calls TheScript over various Option struct regimes, 
+% individual animals and network pattern types. These can generate
+% plots about those specific runs, and save processed data as hashed
+% matfiles, a log of the run, and record the hash and all general
+% details about the run into a tabular database.
                                        
+addpath(hashdefine())
 % o  /    ,---.o                         
 %   /     |__. .,---..   .,---.,---.,---.
 %  /      |    ||   ||   ||    |---'`---.
@@ -21,7 +28,9 @@ RunAll % Calls TheScript using various Option struct options
 % Documentation of the data generated per animal
 % (... more to come ... )
 
-% -------------------------------------------------------
+PreambFigs; % Setup for figures
+
+% ------------------------------------------------------s
 % Mostly knockoff figures from the inspired paper source 
 % (some novel)
 % -------------------------------------------------------

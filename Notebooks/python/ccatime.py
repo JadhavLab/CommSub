@@ -100,7 +100,7 @@ x = np.random.randn(100)
 y = 0.5 * x + np.random.randn(100)
 lag_order = 5
 start = time.time()
-results  = granger_causality_cupy(x, y, lag_order)
+result  = granger_causality_cupy(x, y, lag_order)
 end = time.time()
 result2,p2 = granger_causality_jax(x, y, lag_order)
 end2 = time.time()
@@ -120,6 +120,7 @@ print("time: ", end3-end2)
 df = pd.read_csv(os.path.join(folder, f'{name}.csv'))
 cont_vars = get_cont_vars(df)
 dfc = df[cont_vars]
+dfc = dfc.drop(["time"],axis=1)
 # zscore dfc columns
 dfc = dfc.apply(lambda x: (x - x.mean()) / x.std())
 # Define the lag
@@ -131,74 +132,52 @@ DF_results = []
 n_splits = 5
 tscv = TimeSeriesSplit(n_splits=n_splits)
 
-# MULTI-PROCESSING
+from statsmodels.tsa.stattools import grangercausalitytests
+from PyIF import te_compute as te
 from multiprocessing import cpu_count
+import pandas as pd
+import numpy as np
 chunk_size = 240_000 // cpu_count()
 num_chunks = df.shape[0] // chunk_size
 print("num_chunks: ", num_chunks)
-# Define a function to process a pair of columns
-def process_pair(pair):
-    with cp.cuda.Device():
-        i, j = pair
-        if i == j:
-            return None
-        print(f"Processing {i}, {j}")
-        # Extract the time series for the pair of columns
-        X = dfc.iloc[:, [i, j]]
-        X = X.dropna().values
-        # num_chunks = X.shape[0] // chunk_size
-        RESULTS = []
-        for chunk_index in tqdm(range(num_chunks), desc='Chunk', total=num_chunks):
-            start_index = chunk_index * chunk_size
-            end_index = min(start_index + chunk_size, X.shape[0])
-            X_chunk = X[start_index:end_index]
-            cp._default_memory_pool.free_all_blocks()
-            X_chunk = cp.asarray(X_chunk, dtype=cp.float32)
-            # Initialize a list to store the results for each split
-            results = []
-            s, f = 0, 0
-            for itest, (train_index, test_index) in enumerate(tscv.split(X_chunk)):
-                # Split the data into training and test sets
-                X_train, X_test = X_chunk[train_index], X_chunk[test_index]
-                if method == 'cupy' or method == 'jax':
-                    for lag in range(1, maxlag+1):
-                        # try:
-                            tup = gmeth(X_train[:, 0], X_train[:, 1], lag+1,
-                                        xtest=X_test[:, 0], ytest=X_test[:, 1])
-                            results.append(dict(
-                                lag=lag,
-                                pvalue=tup[1],
-                                F=tup[0],
-                                r2_xy=tup[2],
-                                r2_y=tup[3],
-                                r2_xy_p=tup[4],
-                                LR=tup[5],
-                                itest=itest
-                            ))
-                            s += 1
-                        # except Exception as e:
-                        #     print(e)
-                        #     results.append(None)
-                        #     f += 1
-                else:
-                    t1=time.time()
-                    result = grangercausalitytests(X_train, maxlag=maxlag, verbose=False)
-                    t2=time.time()
-                    print("time: ", t2-t1)
-                    pvalue = result[maxlag][0]['ssr_ftest'][1]
-                    F = result[maxlag][0]['ssr_ftest'][0]
-                    results.append([list(range(maxlag)), pvalue, F])
-                    s += 1
-            if f > 0:
-                print("percent success rate: ", s/(s+f))
-            results = [x for x in results if x is not None]
-            df_results = pd.DataFrame(results)
-            df_results['column1']     = dfc.columns[i]
-            df_results['column2']     = dfc.columns[j]
-            df_results['chunk_index'] = chunk_index
-            RESULTS.append(df_results)
+
+def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=True, GPU=False, 
+                 calc_te=True):
+    i, j = pair
+    if i == j:
+        return None
+    print(f"Processing {i}, {j}")
+    X = dfc.iloc[:, [i, j]]
+    X = X.dropna().values
+    RESULTS = []
+    for chunk_index in tqdm(range(num_chunks), 
+                            total=num_chunks, desc=f"{i}, {j}"):
+        start_index = chunk_index * chunk_size
+        end_index = min(start_index + chunk_size, X.shape[0])
+        X_chunk = X[start_index:end_index]
+        results = grangercausalitytests(X_chunk, maxlag=max_lag, verbose=False)
+        df_results = pd.DataFrame({
+            'lag': range(1, max_lag+1),
+            'pvalue': [results[lag][0]['ssr_ftest'][1] for lag in range(1, max_lag+1)],
+            'F': [results[lag][0]['ssr_ftest'][0] for lag in range(1, max_lag+1)],
+            'ssr_chi2test': [results[lag][0]['ssr_chi2test'][0] for lag in range(1, max_lag+1)],
+            'ssr_chi2test_pvalue': [results[lag][0]['ssr_chi2test'][1] for lag in range(1, max_lag+1)],
+            'lrtest': [results[lag][0]['lrtest'][0] for lag in range(1, max_lag+1)],
+            'lrtest_pvalue': [results[lag][0]['lrtest'][1] for lag in range(1, max_lag+1)],
+            'params_ftest': [results[lag][0]['params_ftest'][0] for lag in range(1, max_lag+1)],
+            'params_ftest_pvalue': [results[lag][0]['params_ftest'][1] for lag in range(1, max_lag+1)],
+        })
+        if calc_te:
+            df_results['transfer_entropy'] = te.te_compute(X_chunk[:, 0], X_chunk[:, 1], k, max_lag, safetyCheck, GPU)
+        df_results['column1'] = dfc.columns[i]
+        df_results['column2'] = dfc.columns[j]
+        df_results['chunk_index'] = chunk_index
+        RESULTS.append(df_results)
     RESULTS = pd.concat(RESULTS)
     return RESULTS
+
+test = process_pair((1,2))
+
 # Serialize the function
 serialized_func = dill.dumps(process_pair)
 # Prepare a list of all pairs of column indices
@@ -207,6 +186,7 @@ pairs = [(i, j) for i in range(dfc.shape[1]) for j in range(dfc.shape[1]) if i !
 from pathos.multiprocessing import ProcessingPool as Pool
 with Pool(cpu_count()) as pool:
     results = pool.map(process_pair, pairs)
+
 # Convert results to a dataframe
 DF_results = pd.concat(results)
 pre = name.replace('ccatime', f'_granger_causality')
@@ -230,20 +210,17 @@ def directionality_test_vectorized(df, row_dict):
     import pdb; pdb.set_trace()
     df_reverse = pd.DataFrame([row_dict[uid] for uid in uid_reverse])
     print("found reverse...")
-    f_stat_xy, p_value_xy, r2_xy, r2_y  = (df['F'], df['pvalue'], df['r2_xy'],
-                                           df['r2_y'])
-    f_stat_yx, p_value_yx, r2_yx, r2_x = (df_reverse['F'],
-                                          df_reverse['pvalue'],
-                                          df_reverse['r2_xy'],
-                                          df_reverse['r2_y'])
+    f_stat_xy, p_value_xy = (df['F'], df['pvalue'])
+    f_stat_yx, p_value_yx = (df_reverse['F'], df_reverse['pvalue'])
     print("calculating directionality")
     direction = np.where(f_stat_xy > f_stat_yx, "x->y", "y->x")
     print("calculating significance")
     significance = np.where(np.minimum(p_value_xy, p_value_yx) < 0.05,
                             "significant", "not significant")
     print("calculating magnitude")
-    magnitude = np.abs(r2_xy - r2_yx)
-    return pd.DataFrame({'direction': direction, 'significance': significance, 'magnitude': magnitude})
+    magnitude = np.abs(f_stat_xy - f_stat_yx)
+    return pd.DataFrame({'direction': direction, 'significance': significance,
+                         'magnitude': magnitude})
 df_results = directionality_test_vectorized(DF_results, row_dict)
 assert DF_results.shape[0] == df.shape[0]
 DF_results = pd.concat([DF_results, df_results], axis=1)

@@ -1,6 +1,9 @@
 % paths
-addpath(genpath(codedefine()))
-addpath(hashdefine())
+if ~exist('csubpath', 'var')
+    commsubspaceToPath;
+    addpath(hashdefine())
+    csubpath=true;
+end
 const = option.constants();
 %% Combine tables if they exist
 table.combineAndUpdateTables("RunsSummary_*", "RunsSummary");

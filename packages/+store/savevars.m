@@ -10,6 +10,7 @@ disp("... " + toc + " seconds");
 % link most recent state
 pushd(hashdefine());
 recencyName = Option.animal + "_" + replace(Option.generateH," ", "") + ...
+	    "_zscore_" +  Option.preProcess_Zscore + ...
 	    "_mostRecentState.mat";
 system("ln -sf " + hash + ".mat " + recencyName);
 popd()
