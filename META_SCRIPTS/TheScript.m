@@ -165,7 +165,8 @@ if Option.analysis.cca
     % (append cca commsub levels during events)
     event_anal   = ... 
          analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
-    plots.plot_event_values(event_anal(2,7), 'figAppend', strjoin([Option.animal, Option.genH_name], "_"));
+    plots.plot_event_values(event_anal(2,7), 'figAppend', ...
+    strjoin([Option.animal, Option.genH_name], "_"));
     Components_overall = ... 
          nd.fieldSet(Components_overall, 'event_anal', event_anal);
     % ---------------------------------------------------------------------
@@ -174,7 +175,9 @@ if Option.analysis.cca
     efizz = load(Option.animal + "spectralBehavior.mat", "efizz");
     efizz = efizz.efizz;
     table.analyses.ccatime(Patterns_overall, efizz, Option, behavior,...
-                          'behaviorColumns', {'vel', 'accel', 'lindist', 'rewarded', 'trajbound','inBoundChoiceTimes','outBoundChoiceTimes','rewardTimes'});
+                          'behaviorColumns', ...
+    {'vel', 'accel', 'lindist', 'rewarded', ...
+    'trajbound','inBoundChoiceTimes','outBoundChoiceTimes','rewardTimes'});
     % ---------------------------------------------------------------------
     % Triggered spectrogram -----------------------------------------------
     % (create compute triggered spectrograms for commsubs)
@@ -248,4 +251,6 @@ if Option.save
         saveVars.Components_overall = Components_overall;
     end
     store.savevars(Option, Events, Spk, saveVars);
+    disp("...done")
+    !pushover-cli "finished saving"
 end

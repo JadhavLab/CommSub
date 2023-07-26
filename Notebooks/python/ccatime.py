@@ -64,46 +64,58 @@ def granger_causality_cupy(x, y, lag_order, xtest=None, ytest=None):
     total   = cp.sum((ytest - cp.mean(ytest))**2)
     rss_xy  = cp.sum((ytest - yhat_xy)**2)
     rss_y   = cp.sum((ytest - yhat_y)**2)
+    n = len(ytest)
+    sigma_sq = rss_xy / (n - 2 * lag_order)
+    LR = (rss_y - rss_xy) / sigma_sq
     # Compute the F-statistic
     f_stat = ((rss_y - rss_xy) / lag_order) / (rss_xy / (len(ytest) - 2 * lag_order))
     # Compute the P-value
     df1 = lag_order
     df2 = len(ytest) - 2 * lag_order
     p_value = 1 - f.cdf(f_stat.get(), df1, df2)  # Use scipy's F-distribution CDF function
-    r2_xy = 1 - rss_xy / total
-    r2_y  = 1 - rss_y / total
+    r2_xy = 1 - rss_xy / total # Compute r2 for x->y
+    r2_y  = 1 - rss_y / total # Compute r2 for y
+    # r2_xyfrac = r2_xy / (r2_xy + r2_y) # Compute fraction of variance explained by x->y
+    r2_xy_part = 1 - (rss_y - rss_xy) / total # Compute fraction of variance explained by x->y
     # Compute yhat
-    return f_stat.get(), p_value, r2_xy.get(), r2_y.get()
+    return f_stat.get(), p_value, r2_xy.get(), r2_y.get(), r2_xy_part.get(), LR.get()
 # Define directionality test function
 def directionality_test(granger_func, x, y, lag_order, xtest=None, ytest=None):
-    f_stat_xy, p_value_xy, r2_xy, r2_y = granger_func(x, y, lag_order, xtest, ytest)
-    f_stat_yx, p_value_yx, r2_yx, r2_x = granger_func(y, x, lag_order, xtest, ytest)
+    f_stat_xy, p_value_xy, r2_xy, r2_y, r2_xy_p = granger_func(x, y, lag_order, xtest, ytest)
+    f_stat_yx, p_value_yx, r2_yx, r2_x, r2_yx_p = granger_func(y, x, lag_order, xtest, ytest)
     direction = "x->y" if f_stat_xy > f_stat_yx else "y->x"
     significance = "significant" if min(p_value_xy, p_value_yx) < 0.05 else "not significant"
     magnitude = abs(r2_xy - r2_yx)
-    return direction, significance, magnitude
+    magnitude_p = abs(r2_xy_p - r2_yx_p)
+    return direction, significance, magnitude, magnitude_p
 def is_continuos_var(df, col):
     return df[col].nunique() > 20 
 def get_cont_vars(df):
     return [col for col in df.columns if is_continuos_var(df, col)]
-#
-# # Example usage
-# x = np.random.randn(100)
-# y = 0.5 * x + np.random.randn(100)
-# lag_order = 2
-#
-# start = time.time()
-# result,p1, yhat_xy, yhat_y  = granger_causality_cupy(x, y, lag_order)
-# end = time.time()
-# result2,p2 = granger_causality_jax(x, y, lag_order)
-# end2 = time.time()
-# print("cupy")
-# print(result)
-# print("time: ", end-start)
-# print("jax")
-# print(result2)
-# print("time: ", end2-end)
-#
+
+
+
+# Example usage
+x = np.random.randn(100)
+y = 0.5 * x + np.random.randn(100)
+lag_order = 5
+start = time.time()
+results  = granger_causality_cupy(x, y, lag_order)
+end = time.time()
+result2,p2 = granger_causality_jax(x, y, lag_order)
+end2 = time.time()
+result3 = grangercausalitytests(np.column_stack([x,y]), lag_order, verbose=False)
+end3 = time.time()
+print(result)
+print(result2)
+print(result3)
+print("cupy")
+print("time: ", end-start)
+print("jax")
+print("time: ", end2-end)
+print("statsmodels")
+print("time: ", end3-end2)
+
 # Load the data
 df = pd.read_csv(os.path.join(folder, f'{name}.csv'))
 cont_vars = get_cont_vars(df)
@@ -118,85 +130,6 @@ gmeth = granger_causality_jax if method == 'jax' else granger_causality_cupy
 DF_results = []
 n_splits = 5
 tscv = TimeSeriesSplit(n_splits=n_splits)
-
-# # Chunk size
-# chunk_size = 50_000
-# num_chunks = df.shape[0] // chunk_size
-# print("num_chunks: ", num_chunks)
-# skip_until = None
-# # Prepare to loop over each pair of columns in the data frame
-# for i in tqdm(range(dfc.shape[1]), desc='COLUMN', total=df.shape[1]):
-#     for j in tqdm(range(dfc.shape[1]), desc='ROW'):
-#         if i == j:
-#             continue
-#         if skip_until is not None:
-#             if (i,j) != skip_until:
-#                 continue
-#             else:
-#                 skip_until = None
-#         # Extract the time series for the pair of columns
-#         X = dfc.iloc[:, [i, j]]
-#         X = X.dropna().values
-#         if method == 'cupy':
-#             cp._default_memory_pool.free_all_blocks()
-#             X = cp.asarray(X, dtype=cp.float32)
-#         elif method == 'jax':
-#             X = jnp.asarray(X)
-#         # num_chunks = X.shape[0] // chunk_size
-#         for chunk_index in range(num_chunks):
-#             start_index = chunk_index * chunk_size
-#             end_index = min(start_index + chunk_size, X.shape[0])
-#             X_chunk = X[start_index:end_index]
-#             # Initialize a list to store the results for each split
-#             results = []
-#             s, f = 0, 0
-#             for itest, (train_index, test_index) in tqdm(enumerate(tscv.split(X_chunk)), desc='Split', total=n_splits):
-#                 # Split the data into training and test sets
-#                 X_train, X_test = X_chunk[train_index], X_chunk[test_index]
-#                 if method == 'cupy' or method == 'jax':
-#                     for lag in range(1, maxlag+1):
-#                         # try:
-#                             tup = gmeth(X_train[:, 0], X_train[:, 1], lag+1,
-#                                         xtest=X_test[:, 0], ytest=X_test[:, 1])
-#                             results.append(dict(
-#                                 lag=lag,
-#                                 pvalue=tup[1],
-#                                 F=tup[0],
-#                                 r2_xy=tup[2],
-#                                 r2_y=tup[3],
-#                                 itest=itest
-#                             ))
-#                             s += 1
-#                         # except Exception as e:
-#                         #     print(e)
-#                         #     results.append(None)
-#                         #     f += 1
-#                 else:
-#                     t1=time.time()
-#                     result = grangercausalitytests(X_train, maxlag=maxlag, verbose=False)
-#                     t2=time.time()
-#                     print("time: ", t2-t1)
-#                     pvalue = result[maxlag][0]['ssr_ftest'][1]
-#                     F = result[maxlag][0]['ssr_ftest'][0]
-#                     results.append([list(range(maxlag)), pvalue, F])
-#                     s += 1
-#             print("percent success rate: ", s/(s+f))
-#             # print("EXFILTRATE")
-#             # exfiltrate()
-#             # none_frac = np.sum([x is None for x in results]) / len(results)
-#             # print(f"None fraction: {none_frac}")
-#             results = [x for x in results if x is not None]
-#             df_results = pd.DataFrame(results)
-#             df_results['column1']     = dfc.columns[i]
-#             df_results['column2']     = dfc.columns[j]
-#             df_results['chunk_index'] = chunk_index
-#             DF_results.append(df_results)
-#
-# DF_results = pd.concat(DF_results)
-# pre = name.replace('ccatime', f'_granger_causality')
-# DF_results.to_csv(os.path.join(folder, f'{pre}.csv'),
-#                   index=False)
-
 
 # MULTI-PROCESSING
 from multiprocessing import cpu_count
@@ -238,6 +171,8 @@ def process_pair(pair):
                                 F=tup[0],
                                 r2_xy=tup[2],
                                 r2_y=tup[3],
+                                r2_xy_p=tup[4],
+                                LR=tup[5],
                                 itest=itest
                             ))
                             s += 1
@@ -278,33 +213,42 @@ pre = name.replace('ccatime', f'_granger_causality')
 DF_results.to_csv(os.path.join(folder, f'{pre}.csv'),
                   index=False)
 
+# Let's add some summary statistics
 pre = name.replace('ccatime', f'_granger_causality')
 DF_results = pd.read_csv(os.path.join(folder, f'{pre}.csv'))
-
-# Let's add some summary statistics
+df = DF_results
 df['uid'] = (df['chunk_index'].astype(str) + '_' + df['lag'].astype(str) + '_'
              + df['itest'].astype(str) + '_' + df['column1'] + '_' +
              df['column2'])
 row_dict = df.set_index('uid').T.to_dict()
 def directionality_test_vectorized(df, row_dict):
+    print("Running directionality test")
     uid_reverse = (df['chunk_index'].astype(str) + '_' + df['lag'].astype(str)
                    + '_' + df['itest'].astype(str) + '_' + df['column2'] + '_'
                    + df['column1'])
+    print("finding reverse")
+    import pdb; pdb.set_trace()
     df_reverse = pd.DataFrame([row_dict[uid] for uid in uid_reverse])
+    print("found reverse...")
     f_stat_xy, p_value_xy, r2_xy, r2_y  = (df['F'], df['pvalue'], df['r2_xy'],
                                            df['r2_y'])
     f_stat_yx, p_value_yx, r2_yx, r2_x = (df_reverse['F'],
                                           df_reverse['pvalue'],
                                           df_reverse['r2_xy'],
                                           df_reverse['r2_y'])
+    print("calculating directionality")
     direction = np.where(f_stat_xy > f_stat_yx, "x->y", "y->x")
+    print("calculating significance")
     significance = np.where(np.minimum(p_value_xy, p_value_yx) < 0.05,
                             "significant", "not significant")
+    print("calculating magnitude")
     magnitude = np.abs(r2_xy - r2_yx)
     return pd.DataFrame({'direction': direction, 'significance': significance, 'magnitude': magnitude})
-results_df = directionality_test_vectorized(df, row_dict)
-df = pd.concat([df, results_df], axis=1)
-df.to_csv(os.path.join(folder, f'{pre}_directionality.csv'), index=False)
+df_results = directionality_test_vectorized(DF_results, row_dict)
+assert DF_results.shape[0] == df.shape[0]
+DF_results = pd.concat([DF_results, df_results], axis=1)
+print(f"saving {pre}_directionality.csv")
+DF_results.to_csv(os.path.join(folder, f'{pre}_directionality.csv'), index=False)
 
 # Plots
 
@@ -315,6 +259,10 @@ df.to_csv(os.path.join(folder, f'{pre}_directionality.csv'), index=False)
 #                                          `---'
 
 def capture_windows(df, trigger_column, quantile, w):
+
+    # Remove df columns that are not numeric
+    df = df.select_dtypes(include=[np.number])
+
     # Normalize all columns to be between 0 and 1
     df_normalized = (df - df.min()) / (df.max() - df.min())
 
@@ -335,6 +283,9 @@ def capture_windows(df, trigger_column, quantile, w):
                 windows.append(window)
 
     return windows
+
+wins = capture_windows(df, 'U1', 0.9, 15)
+
 
 def plot_windows_heatmap(windows):
     # Compute the mean of each column in each window
