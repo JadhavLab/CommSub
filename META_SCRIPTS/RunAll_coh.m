@@ -16,7 +16,7 @@ load("RunsSummary.mat", "RunsSummary");
 %% Script parameters
 Option = option.defaults();
 Option.tableAppend = "_coh";
-% Option.analysis.cca    = true;
+Option.analysis.cca    = true;
 % Option.analysis.checks = true;
 
 animal_list = [...
