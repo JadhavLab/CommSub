@@ -32,7 +32,7 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
     data_trajbound["lindist_bin"] = pd.cut(data_trajbound["lindist"], bins=n_bins)
     
     for bin_label in tqdm(data_trajbound["lindist_bin"].unique().categories, desc="lindist_bin", total=n_bins):
-        for column in columns_to_bootstrap:
+        for (iboot,column) in enumerate(columns_to_bootstrap):
             # Get the data for this bin and column
             data = data_trajbound.loc[data_trajbound["lindist_bin"] == bin_label, column]
             # Generate bootstrap samples and compute their means
@@ -40,6 +40,7 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
             # Add the results to the DataFrame
             for bootstrap_mean in bootstrap_means:
                 bootstrap_means_combined.append({
+                    "iboot": iboot,
                     "lindist_bin": bin_label,
                     "column": column,
                     "bootstrap_mean": bootstrap_mean,
@@ -48,10 +49,19 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
 
 # Convert the list of dictionaries to a DataFrame
 bootstrap_means_combined = pd.DataFrame(bootstrap_means_combined)
-bootstrap_means_combined.to_csv(os.path.join(folder, f'{name}_bootstrap.csv'), index=False)
-# ----------------------------------------------------
+# Create a new lindist_bin_ind column
+bootstrap_means_combined["lindist_bin_ind"] = bootstrap_means_combined["lindist_bin"].apply(lambda x: x.right)
 
+# Smooth
+bootstrap_means_combined.sort_values(by=["column", "trajbound", "iboot", "lindist_bin_ind"], inplace=True)
+bootstrap_means_combined["bootstrap_mean"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(3, 1).mean())
+bootstrap_means_combined["bootstrap_mean"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.interpolate())
+
+bootstrap_means_combined.to_csv(os.path.join(folder, f'{name}_bootstrap.csv'), index=False)
+
+# ----------------------------------------------------
 # Normalize the bootstrap_mean values
+# ----------------------------------------------------
 scaler = MinMaxScaler()
 for column in tqdm(columns_to_bootstrap, desc="feature engineering", total=len(columns_to_bootstrap)):
     # Get the data for this column
@@ -65,14 +75,21 @@ bootstrap_means_combined.head()
 bootstrap_means_combined.to_csv(os.path.join(folder, f'{name}_bootstrap_normalized.csv'), index=False)
 # ----------------------------------------------------
 
+# Define the trajbounds for each column of the subplot grid
+column_trajbounds = [0, 1]
 
 # Update the components for each row of the subplot grid
-row_components = [["U1", "U2", "U3"], ["V1", "V2", "V3"], ["Cavgtheta", "S1theta", "S2theta", "wpli_avgtheta"],
-                  ["Cavgdelta", "S1delta", "S2delta", "wpli_avgdelta"], ["Cavgripple", "S1ripple", "S2ripple", "wpli_avgripple"]]
+row_components = [["U1", "U2", "U3"], ["V1", "V2", "V3"], ["Cavgtheta",
+                                                           "S1theta",
+                                                           "S2theta",
+                                                           "wpli_avgtheta"],
+                  ["Cavgdelta", "S1delta", "S2delta", "wpli_avgdelta"],
+                  ["Cavgripple", "S1ripple", "S2ripple", "wpli_avgripple"]]
 
 
 # Add the lindist_bin_mid column back to the DataFrame
-bootstrap_means_combined["lindist_bin_mid"] = bootstrap_means_combined["lindist_bin"].apply(lambda x: x.mid)
+bootstrap_means_combined["lindist_bin_mid"] = \
+    bootstrap_means_combined["lindist_bin"].apply(lambda x: x.mid)
 
 # Create a 5x2 grid of subplots
 fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(15, 25))
@@ -88,7 +105,8 @@ for i, components in enumerate(row_components):
             (bootstrap_means_combined["trajbound"] == trajbound)
         ]
         # Create the subplot
-        sns.lineplot(x="lindist_bin_mid", y="bootstrap_mean", hue="column", data=data, ax=axes[i, j])
+        sns.lineplot(x="lindist_bin_mid", y="bootstrap_mean", hue="column",
+                     data=data, ax=axes[i, j])
         # Set the title and labels
         axes[i, j].set_title(f'Trajbound = {trajbound}')
         axes[i, j].set_xlabel("Lindist Bin Midpoint")
@@ -105,8 +123,35 @@ plt.show()
 # ----------------------------------------------------
 
 # Set the flag for shading the confidence intervals to False
-shade_confidence_intervals = False
+shade_confidence_intervals   = False
 stratify_spectral_components = True  # Change this to False if you don't want to stratify and shade the spectral components
+
+component_colors = {
+    "U1": "darkred", "U2": "red", "U3": "lightcoral",
+    "V1": "darkblue", "V2": "blue", "V3": "lightblue",
+    "Cavgtheta": "black", "Cavgdelta": "black", "Cavgripple": "black",
+    "S1theta": "darkred", "S1delta": "darkred", "S1ripple": "darkred",
+    "S2theta": "darkblue", "S2delta": "darkblue", "S2ripple": "darkblue",
+    "wpli_avgtheta": "black", "wpli_avgdelta": "black", "wpli_avgripple": "black"
+}
+
+component_fill_bases = {
+    "U1": 0, "U2": 1, "U3": 2,
+    "V1": 0, "V2": 1, "V3": 2,
+    "Cavgtheta": 0, "Cavgdelta": 0, "Cavgripple": 0,
+    "S1theta": 1, "S1delta": 1, "S1ripple": 1,
+    "S2theta": 1, "S2delta": 1, "S2ripple": 1,
+    "wpli_avgtheta": 0, "wpli_avgdelta": 0, "wpli_avgripple": 0
+}
+
+line_styles = {
+    "U1": "-", "U2": "-", "U3": "-",
+    "V1": "-", "V2": "-", "V3": "-",
+    "Cavgtheta": "-", "Cavgdelta": "-", "Cavgripple": "-",
+    "S1theta": "-", "S1delta": "-", "S1ripple": "-",
+    "S2theta": "-", "S2delta": "-", "S2ripple": "-",
+    "wpli_avgtheta": "--", "wpli_avgdelta": "--", "wpli_avgripple": "--"
+}
 
 # Create a 5x2 grid of subplots
 fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(15, 25))
@@ -125,10 +170,11 @@ for i, components in enumerate(row_components):
         for component in components:
             component_data = data[data["column"] == component].sort_values(by="lindist_bin_mid")
             # Add the base value to the bootstrap_mean if stratification is active
-            if stratify_spectral_components and component.startswith(("S1", "S2")):
+            if stratify_spectral_components and component.startswith(("S1", "S2","U", "V")):
                 component_data["bootstrap_mean"] += component_fill_bases[component]
             # Plot the curve
-            axes[i, j].plot(component_data["lindist_bin_mid"], component_data["bootstrap_mean"], color=component_colors[component], label=component)
+            axes[i, j].plot(component_data["lindist_bin_mid"], component_data["bootstrap_mean"], color=component_colors[component], label=component,
+                            linestyle=line_styles[component])
             # Fill under the curve based on the component type and the flag
             if component in ["U1", "U2", "U3", "V1", "V2", "V3"] or (stratify_spectral_components and component.startswith(("S1", "S2"))):
                 axes[i, j].fill_between(component_data["lindist_bin_mid"], component_fill_bases[component], component_data["bootstrap_mean"], color=component_colors[component], alpha=0.3)
@@ -152,3 +198,9 @@ plt.tight_layout()
 fig.subplots_adjust(top=0.92)
 plt.show()
 
+figfolder = '/Volumes/MATLAB-Drive/Shared/figures/lindist_bootstrap/'
+if not os.path.exists(figfolder):
+    os.makedirs(figfolder)
+plt.savefig(figfolder + 'lindist_bootstrap.png', dpi=300)
+plt.savefig(figfolder + 'lindist_bootstrap.svg', dpi=300)
+plt.savefig(figfolder + 'lindist_bootstrap.pdf', dpi=300)
