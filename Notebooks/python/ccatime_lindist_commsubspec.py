@@ -195,7 +195,7 @@ for i, components in enumerate(row_components):
 # Improve the layout
 plt.tight_layout()
 # Add space for the overall title
-fig.subplots_adjust(top=0.92)
+# fig.subplots_adjust(top=0.92)
 plt.show()
 
 figfolder = '/Volumes/MATLAB-Drive/Shared/figures/lindist_bootstrap/'
