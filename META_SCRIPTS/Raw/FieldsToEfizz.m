@@ -4,7 +4,7 @@ commsubspaceToPath
 
 % grabfields = ["Cavg", "Ctoppair"];
 % grabfields = ["wpli_avg", "wpli_toppair"];
-grabfields = ["S1_avg", "phi"];
+grabfields = ["phi"];
 const = option.constants();
 animal_list = const.all_animals;
 animal = animal_list{1};
@@ -35,4 +35,4 @@ for i = progress(2:length(animal_list), 'Title', 'FieldsToEfizz')
     
 end
 !pushover-cli "FieldsToEfizz done"
-RunAll_wpli
+% RunAll_wpli
