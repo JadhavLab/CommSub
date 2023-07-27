@@ -4,7 +4,7 @@ function triggered_spectrogram(efizz, specs, oneDplots, varargin)
 ip = inputParser;
 ip.addParameter('time',       [], @isnumeric);
 ip.addParameter('thresholds', [], @isstruct);
-ip.addParameter('means',     [], @isstruct);
+ip.addParameter('means',      [], @isstruct);
 ip.addParameter('zscore',     [], @(x) iscellstr(x) || isstring(x));
 ip.addParameter('nolog',      [], @(x) iscellstr(x) || isstring(x));
 ip.addParameter('freqs',      [], @isnumeric); % frequencies to mean over if plotting specs
@@ -21,7 +21,7 @@ if isempty(Opt.time)
     Opt.time = 1:size(specs.(fields{1}),1);
 end
 tiledlayout(length(fields)+length(oneDplots), 1)
-fg = gcf; clf
+fg = gcf; clf;
 % set(fg, 'Position', get(0,'Screensize'))
 axs = gobjects(length(fields), 1);
 for i = 1:length(fields)
