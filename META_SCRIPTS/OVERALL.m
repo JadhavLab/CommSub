@@ -42,15 +42,15 @@ SemedoPaperFigures_m
 GrammPlots
 
 % -----------------------------
-% Subspace angle
+% Subspace angle 
 % -----------------------------
-plots.subspace.angle.Run;
+plots.subspace.angle.Run; % do this   !!! 
 % Python plots
 py.importlib.import_module(codedefine("Notebooks","python","create_clustergram.py"));
 py.importlib.import_module(codedefine("Notebooks","python","create_graph.py"));
 
 % --------------
-% Python figures
+% Python  figures
 % --------------
 script1 = ...
 py.importlib.import_module(codedefine("Notebooks","python","dimPred.py"));
