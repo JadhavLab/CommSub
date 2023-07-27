@@ -3,7 +3,8 @@ commsubspaceToPath
 % (rather than from scratch)
 
 % grabfields = ["Cavg", "Ctoppair"];
-grabfields = ["wpli_avg", "wpli_toppair"];
+% grabfields = ["wpli_avg", "wpli_toppair"];
+grabfields = ["S1_avg", "phi"];
 const = option.constants();
 animal_list = const.all_animals;
 animal = animal_list{1};
