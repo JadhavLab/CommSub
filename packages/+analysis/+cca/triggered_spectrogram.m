@@ -13,16 +13,17 @@ function out = triggered_spectrogram(Patterns_overall, Spk, efizz, varargin)
 ip = inputParser();
 ip.addParameter('ploton', false, @islogical);
 ip.addParameter('windowsize', 50, @isnumeric);
-ip.addParameter('specNames',  {'S1', 'S2', 'Cavg','wpli_avg'}, @iscellstr);
+ip.addParameter('specNames',  {'S1','S2','Cavg','wpli_avg','phi'}, @iscellstr);
 ip.addParameter('components', [1,2,3,4,5], @isnumeric);
 ip.addParameter('figAppend', "", @(x) isstring(x));
 ip.addParameter('folder', "triggered_spectrogram", @(x) isstring(x));
 ip.addParameter('quantile_threshold', 0.95, @isnumeric);
 ip.addParameter('runtype', 1, @isnumeric); % 1 = run, 0 = rest
+ip.addParameter('boots', 200, @isnumeric);
 ip.parse(varargin{:});
 Opt = ip.Results;
-
 Opt.folder = string(Opt.folder) + "_run=" + Opt.runtype + filesep;
+boots = Opt.boots;
 
 if ~exist(figuredefine(Opt.folder), 'dir')
     mkdir(figuredefine(Opt.folder));
@@ -173,7 +174,21 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
         for j = 1:length(Opt.specNames)
             s=segments{j};
             s=s(:,:,~isnan(s(1,1,:)));
-            spec_avg.(Opt.specNames{j}) = mean(s, 3);
+            disp("...stats for " + Opt.specNames{j});
+            disp("")
+            if Opt.specNames{j} == "phi"
+                spec_avg.(Opt.specNames{j})      = angle(mean(exp(1i*s), 3));
+                spec_stderr.(Opt.specNames{j})   = std(exp(1i*s), 0, 3) / sqrt(size(s, 3));
+                disp("...calculating confidence intervals for " + Opt.specNames{j});
+                spec_ci_upper.(Opt.specNames{j}) = bootci(boots, @(x) angle(mean(exp(1i*x), 1)), s);
+                spec_ci_lower.(Opt.specNames{j}) = bootci(boots, @(x) angle(mean(exp(1i*x), 1)), s);
+            else
+                spec_avg.(Opt.specNames{j})      = mean(s, 3);
+                spec_stderr.(Opt.specNames{j})   = std(s, 0, 3) / sqrt(size(s, 3));
+                disp("...calculating confidence intervals for " + Opt.specNames{j});
+                spec_ci_upper.(Opt.specNames{j}) = bootci(boots, @(x) mean(x, 1), s);
+                spec_ci_lower.(Opt.specNames{j}) = bootci(boots, @(x) mean(x, 1), s);
+            end
         end
         time_segments = time_segments(:,~isnan(time_segments(1,:)));
         time_avg = mean(time_segments, 2);
@@ -185,8 +200,10 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
         v_average  = mean(v_segments, 3);
         u_stderr   = std(u_segments, 0, 3) / sqrt(size(u_segments, 3));
         v_stderr   = std(v_segments, 0, 3) / sqrt(size(v_segments, 3));
-        u_ci_upper = bootci(1000, @(x) mean(x, 1), u_segments);
-        v_ci_upper = bootci(1000, @(x) mean(x, 1), v_segments);
+        disp("bootstrapping...")
+        u_ci_upper = bootci(boots, @(x) mean(x, 1), u_segments);
+        v_ci_upper = bootci(boots, @(x) mean(x, 1), v_segments);
+        disp("...done!")
 
         out(i,comp).spec_avg = spec_avg;
         out(i,comp).threshold_crossed_times = threshold_crossed_times;
