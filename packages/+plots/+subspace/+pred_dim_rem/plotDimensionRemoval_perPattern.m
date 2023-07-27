@@ -4,7 +4,7 @@ if ~exist(figFolder)
 end
 skws = {'export_path',figFolder};
 
-[groups, genHs] = findgroups(rt.genHshort);
+[groups, genHs] = findgroups(rt.genH);
 uGroups = unique(groups);
 for g = uGroups'
 

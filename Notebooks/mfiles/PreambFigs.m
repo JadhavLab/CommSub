@@ -106,7 +106,7 @@ end
 regions = [const.HPC, const.PFC];
 
 % No idea why sometimes this is fulla nans
-if any(isnan(Option(1).patternNamesFull))
+if any(ismissing(Option(1).patternNamesFull))
     trans = @(x,y) x + " " + y;
     Option = nd.apply(Option, "patternNamesFull-patternNames,genH_name", trans);
     Option = nd.apply(Option, "patterNamesFull-patternNames,genH_name", trans);

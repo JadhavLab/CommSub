@@ -233,35 +233,36 @@ writetable(rt, figuredefine("tables", "rt.csv"), 'WriteRowNames',true)
 %  Remove tuples of (targetArea,pattern) from a given (targetArea, pattern)
 disp("Running dimension removal with zscore=" + zscr);
 % plot with grm
-plots.grm.dimensionRemoved(rt, "spec");
-plots.grm.dimensionRemoved(rt, "coh");
-plots.grm.dimensionRemoved(rt, "wpli");
-plots.subspace.pred_dim_rem.oneDimesionRemovedClustermap;
-plots.subspace.pred_dim_rem.plotDimensionRemoval_perPattern;
-plots.subspace.pred_dim_rem.plotDimensionRemoval_perPatternbyDirection;
+if zscr; figAppend = "zscore"; else; figAppend = ""; end
+plots.grm.dimensionRemoved(rt, "spec", 'figAppend', figAppend);
+plots.grm.dimensionRemoved(rt, "coh", 'figAppend', figAppend);
+plots.grm.dimensionRemoved(rt, "wpli", 'figAppend', figAppend);
+plots.subspace.pred_dim_rem.oneDimesionRemovedClustermap; % changed this:: ask ziyi if she has missing function
+% plots.subspace.pred_dim_rem.plotDimensionRemoval_perPattern; # not used
+plots.subspace.pred_dim_rem.plotDimensionRemoval_perPatternbyDirection; % important
 
 %% 
 % Now let's see how similar those curves are in dimension reduced space
 
 
-%% Figure 7
+%% Figure 7 (REQUIRES FACTOR ANALYSIS)
 % 
 % A: Dominant dimension predicitions
 
-numUsedForPrediction = min(nTarget,nSource);
-% make the averaged version
-curr_cvLoss = cell(10,2,3);
-curr_qOptDim = cell(10,2,3);
-for p = 1:10
-    for i = 1:nPatterns
-        for j = 1:2
-            if ~Patterns(p,j,i).singularWarning
-                curr_cvLoss{p,j,i} = Patterns(p,j,i).factorAnalysis.cvLoss;
-                curr_qOptDim{p,j,i} = Patterns(p,j,i).factorAnalysis.optDimFactorRegress;
-            end
-        end
-    end
-end
+% numUsedForPrediction = min(nTarget,nSource);
+% % make the averaged version
+% curr_cvLoss = cell(10,2,3);
+% curr_qOptDim = cell(10,2,3);
+% for p = 1:10
+%     for i = 1:nPatterns
+%         for j = 1:2
+%             if ~Patterns(p,j,i).singularWarning
+%                 curr_cvLoss{p,j,i} = Patterns(p,j,i).factorAnalysis.cvLoss;
+%                 curr_qOptDim{p,j,i} = Patterns(p,j,i).factorAnalysis.optDimFactorRegress;
+%             end
+%         end
+%     end
+% end
 %%
 figure(750)
 clf

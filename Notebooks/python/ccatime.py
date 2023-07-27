@@ -16,70 +16,6 @@ from scipy.stats import f
 import multiprocessing, dill
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
 name   = 'ZT2powerccatime'
-def granger_causality_jax(x, y, lag_order):
-    # Compute the lagged versions of x and y
-    X = jnp.column_stack([x[t-lag_order:t] for t in range(lag_order, len(x))])
-    Y = y[None, lag_order:]
-    X = X.T
-    Y = Y.T
-    # Estimate the autoregressive models
-    model_xy = jnp.linalg.lstsq(X, Y, rcond=None)[0]
-    model_y  = jnp.linalg.lstsq(X[:, 1:], Y, rcond=None)[0]
-    # Compute the residual sum of squares
-    rss_xy = jnp.sum((Y - jnp.dot(X, model_xy))**2)
-    rss_y  = jnp.sum((Y - jnp.dot(X[:, 1:], model_y))**2)
-    # Compute the F-statistic
-    f_stat = ((rss_y - rss_xy) / lag_order) / (rss_xy / (len(Y) - 2 * lag_order))
-    # Compute the P-value
-    p_value = 1 - jnp.sum(np.random.f(1, lag_order, len(Y) - 2 * lag_order) > f_stat) / len(Y)
-    return f_stat, p_value
-# Define Granger causality function
-def granger_causality_cupy(x, y, lag_order, xtest=None, ytest=None):
-    x = cp.asarray(x)
-    y = cp.asarray(y)
-    # Compute the lagged versions of x and y
-    X = cp.column_stack([x[t-lag_order:t] for t in range(lag_order, len(x))])
-    Y = y[None, lag_order:]
-    X = X.T
-    Y = Y.T
-    # Estimate the autoregressive models
-    model_xy = cp.linalg.lstsq(X, Y, rcond=None)[0]
-    model_y = cp.linalg.lstsq(X[:, 1:], Y, rcond=None)[0]
-    # Compute the residual sum of squares
-    if xtest is None:
-        yhat_xy = cp.dot(X, model_xy)
-        yhat_y  = cp.dot(X[:, 1:], model_y)
-    else:
-        xtest = cp.asarray(xtest)
-        xtest = cp.column_stack([xtest[t-lag_order:t] for t in range(lag_order, len(xtest))])
-        xtest = xtest.T
-        yhat_xy = cp.dot(xtest, model_xy)
-        yhat_y  = cp.dot(xtest[:, 1:], model_y)
-    if ytest is None:
-        ytest = Y
-    else:
-        ytest = cp.asarray(ytest)
-        ytest = ytest[None, lag_order:]
-        ytest = ytest.T
-    total   = cp.sum((ytest - cp.mean(ytest))**2)
-    rss_xy  = cp.sum((ytest - yhat_xy)**2)
-    rss_y   = cp.sum((ytest - yhat_y)**2)
-    n = len(ytest)
-    sigma_sq = rss_xy / (n - 2 * lag_order)
-    LR = (rss_y - rss_xy) / sigma_sq
-    # Compute the F-statistic
-    f_stat = ((rss_y - rss_xy) / lag_order) / (rss_xy / (len(ytest) - 2 * lag_order))
-    # Compute the P-value
-    df1 = lag_order
-    df2 = len(ytest) - 2 * lag_order
-    p_value = 1 - f.cdf(f_stat.get(), df1, df2)  # Use scipy's F-distribution CDF function
-    r2_xy = 1 - rss_xy / total # Compute r2 for x->y
-    r2_y  = 1 - rss_y / total # Compute r2 for y
-    # r2_xyfrac = r2_xy / (r2_xy + r2_y) # Compute fraction of variance explained by x->y
-    r2_xy_part = 1 - (rss_y - rss_xy) / total # Compute fraction of variance explained by x->y
-    # Compute yhat
-    return f_stat.get(), p_value, r2_xy.get(), r2_y.get(), r2_xy_part.get(), LR.get()
-# Define directionality test function
 def directionality_test(granger_func, x, y, lag_order, xtest=None, ytest=None):
     f_stat_xy, p_value_xy, r2_xy, r2_y, r2_xy_p = granger_func(x, y, lag_order, xtest, ytest)
     f_stat_yx, p_value_yx, r2_yx, r2_x, r2_yx_p = granger_func(y, x, lag_order, xtest, ytest)
@@ -93,56 +29,52 @@ def is_continuos_var(df, col):
 def get_cont_vars(df):
     return [col for col in df.columns if is_continuos_var(df, col)]
 
-
-
-# Example usage
-x = np.random.randn(100)
-y = 0.5 * x + np.random.randn(100)
-lag_order = 5
-start = time.time()
-result  = granger_causality_cupy(x, y, lag_order)
-end = time.time()
-result2,p2 = granger_causality_jax(x, y, lag_order)
-end2 = time.time()
-result3 = grangercausalitytests(np.column_stack([x,y]), lag_order, verbose=False)
-end3 = time.time()
-print(result)
-print(result2)
-print(result3)
-print("cupy")
-print("time: ", end-start)
-print("jax")
-print("time: ", end2-end)
-print("statsmodels")
-print("time: ", end3-end2)
+# # Example usage
+# x = np.random.randn(100)
+# y = 0.5 * x + np.random.randn(100)
+# lag_order = 5
+# start = time.time()
+# result  = granger_causality_cupy(x, y, lag_order)
+# end = time.time()
+# result2,p2 = granger_causality_jax(x, y, lag_order)
+# end2 = time.time()
+# result3 = grangercausalitytests(np.column_stack([x,y]), lag_order, verbose=False)
+# end3 = time.time()
+# print(result)
+# print(result2)
+# print(result3)
+# print("cupy")
+# print("time: ", end-start)
+# print("jax")
+# print("time: ", end2-end)
+# print("statsmodels")
+# print("time: ", end3-end2)
 
 # Load the data
 df = pd.read_csv(os.path.join(folder, f'{name}.csv'))
 cont_vars = get_cont_vars(df)
 dfc = df[cont_vars]
 dfc = dfc.drop(["time"],axis=1)
+# add these columns back from df: 'rewarded', 'trajbound', 'inBoundChoiceTimes', 'outBoundChoiceTimes', 'rewardTimes'
+dfc = pd.concat([dfc, df[['rewarded', 'trajbound', 'inBoundChoiceTimes', 'outBoundChoiceTimes', 'rewardTimes']]], axis=1)
 # zscore dfc columns
 dfc = dfc.apply(lambda x: (x - x.mean()) / x.std())
 # Define the lag
 maxlag = 10
-method = 'cupy'
-gmeth = granger_causality_jax if method == 'jax' else granger_causality_cupy
-# Initialize the KFold object
-DF_results = []
-n_splits = 5
-tscv = TimeSeriesSplit(n_splits=n_splits)
 
+# Initialize the KFold object
 from statsmodels.tsa.stattools import grangercausalitytests
 from PyIF import te_compute as te
+from sklearn.model_selection import TimeSeriesSplit
 from multiprocessing import cpu_count
 import pandas as pd
 import numpy as np
 chunk_size = 240_000 // cpu_count()
 num_chunks = df.shape[0] // chunk_size
 print("num_chunks: ", num_chunks)
-
-def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=True, GPU=False, 
-                 calc_te=True):
+# n_splits = 2
+# tscv = TimeSeriesSplit(n_splits=n_splits)
+def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=True, GPU=False, calc_te=True):
     i, j = pair
     if i == j:
         return None
@@ -150,8 +82,7 @@ def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=True, GPU=False,
     X = dfc.iloc[:, [i, j]]
     X = X.dropna().values
     RESULTS = []
-    for chunk_index in tqdm(range(num_chunks), 
-                            total=num_chunks, desc=f"{i}, {j}"):
+    for chunk_index in tqdm(range(num_chunks), total=num_chunks, desc=f"{i}, {j}"):
         start_index = chunk_index * chunk_size
         end_index = min(start_index + chunk_size, X.shape[0])
         X_chunk = X[start_index:end_index]
@@ -181,7 +112,8 @@ test = process_pair((1,2))
 # Serialize the function
 serialized_func = dill.dumps(process_pair)
 # Prepare a list of all pairs of column indices
-pairs = [(i, j) for i in range(dfc.shape[1]) for j in range(dfc.shape[1]) if i != j]
+pairs = [(i, j) for i in range(dfc.shape[1]) for j in range(dfc.shape[1]) 
+         if i != j]
 # Create a pool of worker processes
 from pathos.multiprocessing import ProcessingPool as Pool
 with Pool(cpu_count()) as pool:
@@ -198,16 +130,15 @@ pre = name.replace('ccatime', f'_granger_causality')
 DF_results = pd.read_csv(os.path.join(folder, f'{pre}.csv'))
 df = DF_results
 df['uid'] = (df['chunk_index'].astype(str) + '_' + df['lag'].astype(str) + '_'
-             + df['itest'].astype(str) + '_' + df['column1'] + '_' +
+             + df['column1'] + '_' +
              df['column2'])
 row_dict = df.set_index('uid').T.to_dict()
 def directionality_test_vectorized(df, row_dict):
     print("Running directionality test")
     uid_reverse = (df['chunk_index'].astype(str) + '_' + df['lag'].astype(str)
-                   + '_' + df['itest'].astype(str) + '_' + df['column2'] + '_'
+                   + '_' + df['column2'] + '_'
                    + df['column1'])
     print("finding reverse")
-    import pdb; pdb.set_trace()
     df_reverse = pd.DataFrame([row_dict[uid] for uid in uid_reverse])
     print("found reverse...")
     f_stat_xy, p_value_xy = (df['F'], df['pvalue'])
@@ -225,9 +156,8 @@ df_results = directionality_test_vectorized(DF_results, row_dict)
 assert DF_results.shape[0] == df.shape[0]
 DF_results = pd.concat([DF_results, df_results], axis=1)
 print(f"saving {pre}_directionality.csv")
-DF_results.to_csv(os.path.join(folder, f'{pre}_directionality.csv'), index=False)
-
-# Plots
+DF_results.to_csv(os.path.join(folder, f'{pre}_directionality.csv'),
+                  index=False)
 
 #  . .     . . .o         |          o          
 # -+-+-    | | |.,---.,---|,---.. . ..,---.,---.

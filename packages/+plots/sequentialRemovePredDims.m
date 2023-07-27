@@ -1,7 +1,5 @@
 function [performance, full_model] = sequentialRemovePredDims(X_source, X_target,...
     B_, optDim, cvLoss, numDimsUsedForPrediction, fromMostPredicitive, varargin)
-
-
 % sequentially removing the most predicitive dimensions
 % by taking away the largest eigen-vectores from the V matrix
 
@@ -29,16 +27,16 @@ full_model = plots.plotPredictiveDimensions(numDimsUsedForPrediction,...
 for k= 1:optDim
     if ~fromMostPredicitive
         try
-            V_removed = V(:, (optDim - (k-1)):end); % change
+            V_kept = V(:, (optDim - (k-1)):end); % change
         catch
             keyboard
         end
     else
-        V_removed = V(:, k:end);
+        V_kept = V(:, k:end);
     end
     
-    V_removed = V(:, k:end);
-    Xhat = X_source' * V_removed;
+    V_kept = V(:, k:end); % v because b_'
+    Xhat = X_source' * V_kept;
     
     optDimLambdaReducedRankRegress = ModelSelect...
         (cvLoss, numDimsUsedForPrediction);

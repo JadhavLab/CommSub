@@ -4,7 +4,7 @@ if ~exist(figFolder)
 end
 skws = {'export_path',figFolder};
 
-[groups, genHs] = findgroups(rt.genHshort);
+[groups, genHs] = findgroups(rt.method);
 uGroups = unique(groups);
 for G = uGroups'
 
@@ -37,7 +37,7 @@ for G = uGroups'
     g = g.set_color_options(); % Restore default color
     g.draw();
     warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
-    sgtitle("")
+    sgtitle("dimensionRemoval perPattern" + genHs(G));
     g.export('file_name', get(gcf,'Name') + ".svg",skws{:})
     g.export('file_name', get(gcf,'Name') + ".png",skws{:})
 end

@@ -5,6 +5,7 @@ import seaborn as sns
 from statsmodels.stats.multitest import multipletests
 from scipy.stats import combine_pvalues
 import scipy
+import warnings
 
 # Reload the data
 
@@ -23,9 +24,16 @@ def get_significant_interactions(df, max_lag_order=df['lag'].max(),
     grouped_max_lag = df_max_lag.groupby(['column1', 'column2', 'direction'])
     # Combine p-values and calculate average magnitude
     def combine_and_average(group):
-        combined_pvalue, _ = combine_pvalues(group['pvalue'], method='fisher')
+        combined_pstat, combined_pvalue = combine_pvalues(group['pvalue'], method='fisher')
         avg_magnitude = group['magnitude'].mean()
-        return pd.Series([combined_pvalue, avg_magnitude, combined_pvalue < 0.05], index=['combined_pvalue', 'avg_magnitude', 'is_significant'])
+        if group.direction.iloc[0] == "x->y":
+            pass
+        elif group.direction.iloc[0] == "y->x":
+            avg_magnitude = -avg_magnitude
+            combined_pstat = -combined_pstat
+        else:
+            raise ValueError(f"Invalid direction: {direction}")
+        return pd.Series([combined_pstat, combined_pvalue, avg_magnitude, combined_pvalue < 0.05], index=['combined_pstat', 'combined_pvalue', 'avg_magnitude', 'is_significant'])
     # Apply the function to each group
     combined_max_lag = grouped_max_lag.apply(combine_and_average)
     # Filter out the non-significant combinations
@@ -49,10 +57,15 @@ def get_significant_interactions(df, max_lag_order=df['lag'].max(),
     heatmap_data = flexdrop(heatmap_data, drop_columns, 1)
     heatmap_data_signed_log = flexdrop(heatmap_data_signed_log, drop_columns, 0)
     heatmap_data = flexdrop(heatmap_data, drop_columns, 0)
+    if heatmap_data.empty:
+        warnings.warn('No significant interactions found.')
+    significant_max_lag = significant_max_lag.reset_index()
+    heatmap_data_signed_log = heatmap_data_signed_log.reset_index()
+    heatmap_data = heatmap_data.reset_index()
     return significant_max_lag, heatmap_data, heatmap_data_signed_log
 
 sml, hd, hds = dict(), dict(), dict()
-for lag in range(1, df['lag'].max()):
+for lag in range(1, df['lag'].max()+1):
     significant_max_lag, heatmap_data, heatmap_data_signed_log = get_significant_interactions(df, max_lag_order=lag)
     print(f'lag: {lag}')
     print(f'number of significant interactions: {len(significant_max_lag)}')
@@ -86,6 +99,12 @@ plot_heatmap(hds[3])
 plot_heatmap(hds[4])
 plot_heatmap(hds[5])
 plot_heatmap(hds[6])
+plot_heatmap(hds[7])
+plot_heatmap(hds[8])
+plot_heatmap(hds[9])
+plot_heatmap(hds[10])
+
+# TODO: average the lower diagonal with inverse of upper diagonal
 
 # --------------------------------------------------------------------------
 # Granger causality heatmap with zones
@@ -103,7 +122,9 @@ zone_mapping = {'Cavg': ['Cavgtheta', 'Cavgdelta', 'Cavgripple'],
                 'behavior': ['vel', 'accel', 'lindist']}
 
 # Define the order of the columns based on the zones
-column_order = [column for zone in zones for column in sorted(heatmap_data_signed_log.columns) if column in zone_mapping[zone]]
+column_order = [column for zone in zones for column in
+                sorted(heatmap_data_signed_log.columns) if column in
+                zone_mapping[zone]]
 
 # Reorder the columns
 heatmap_data_signed_log = heatmap_data_signed_log[column_order]
@@ -113,7 +134,9 @@ zone_lines = []
 
 # Calculate the position of the lines
 for i in range(1, len(zones)):
-    zone_lines.append(heatmap_data_signed_log.columns.get_loc(zone_mapping[zones[i]][0]) - 0.5)
+    zone_lines.append(
+            heatmap_data_signed_log.columns.get_loc(
+                zone_mapping[zones[i]][0]) - 0.5)
 
 # Set up the matplotlib figure
 f, ax = plt.subplots(figsize=(14, 11))
