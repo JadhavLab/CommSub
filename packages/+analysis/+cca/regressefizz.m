@@ -109,10 +109,12 @@ function out = regressefizz(efizz, Patterns_overall, field, varargin)
             pvalue_U_y(isnan(pvalue_U_y)) = 1;
             pvalue_V_x(isnan(pvalue_V_x)) = 1;
             pvalue_U_x(isnan(pvalue_U_x)) = 1;
-            for i = 1:numel(pvalue_U_x)
-                pvalue_U(i) = pfast([pvalue_U_x(i); pvalue_U_y(i)]);
-                pvalue_V(i) = pfast([pvalue_V_x(i); pvalue_V_y(i)]);
+            for j = 1:numel(pvalue_U_x)
+                pvalue_U(j) = pfast([pvalue_U_x(j); pvalue_U_y(j)]);
+                pvalue_V(j) = pfast([pvalue_V_x(j); pvalue_V_y(j)]);
             end
+            pvalue_V = pvalue_V(:);
+            pvalue_U = pvalue_U(:);
         end
 
         out(i).F_U = F_U(2:end);
@@ -126,7 +128,11 @@ function out = regressefizz(efizz, Patterns_overall, field, varargin)
         out(i).field = repmat(string(field), numel(F_U(2:end)), 1);
     end
 
-    tab = struct2table(out(1), 'AsArray', false);
+    tab = cell(5, 1);
+    for i = 1:5
+        tab{i} = struct2table(out(i), 'AsArray', false);
+    end
+    tab = vertcat(tab{:});
     Opt.tabPrepend = Opt.tabPrepend + "_" + field;
     Opt.tabPrepend = Opt.tabPrepend + "_faxis=" + Opt.faxis;
     writetable(tab, figuredefine('tables', Opt.tabPrepend + "_regress.csv"));

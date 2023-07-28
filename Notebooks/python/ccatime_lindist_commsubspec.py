@@ -3,18 +3,20 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import glob
 from sklearn.utils import resample
 from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
-name   = 'ZT2powerccatime'
+# name   = 'ZT2powerccatime'
+name   = 'powerccatime'
 datafile = os.path.join(folder, f'{name}.*')
 datafile = glob.glob(datafile)[0]
 if os.path.splitext(datafile)[1] == '.csv':
-    df_csv = pd.read_csv(datafile)
+    df = pd.read_csv(datafile)
 elif os.path.splitext(datafile)[1] == '.parquet':
-    df_csv = pd.read_parquet(datafile)
+    df = pd.read_parquet(datafile)
 else:
     raise ValueError(f'Unknown file extension: {os.path.splitext(datafile)[1]}')
 
@@ -34,7 +36,7 @@ bootstrap_means_combined = []
 # Rerun the bootstrap for each bin and each column, for each trajectory bound
 for trajbound in tqdm([0, 1], desc="trajbound", total=2):
     # Filter the data based on trajbound
-    data_trajbound = df_csv[df_csv["trajbound"] == trajbound]
+    data_trajbound = df[df["trajbound"] == trajbound]
     # Bin the lindist data
     data_trajbound["lindist_bin"] = pd.cut(data_trajbound["lindist"], bins=n_bins)
     
