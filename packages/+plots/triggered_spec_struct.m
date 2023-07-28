@@ -7,6 +7,7 @@ ip.addParameter('figAppend', '');
 ip.addParameter('means', []);
 ip.addParameter('mins', []);
 ip.addParameter('freqs', []);
+ip.addParameter('freq_ylims', []);
 ip.KeepUnmatched = true;
 ip.parse(varargin{:});
 Opt = ip.Results;
@@ -34,7 +35,8 @@ for i = 1:size(out,1)
         UV = struct('u', u_average, 'v', v_average);
         fig("spec avg direction " + d + " comp " + comp + " " + name); clf;
         plots.triggered_spectrogram(efizz, spec_avg, uv, 'thresholds', thresholds,...
-            'nolog', ["Cavg", "Ctoppair"], 'time', time_avg, 'freqs', Opt.freqs);
+            'nolog', ["Cavg", "Ctoppair","phi"], 'time', time_avg, 'freqs', Opt.freqs,...
+            'freq_ylims', Opt.freq_ylims);
         sgtit = "spec avg direction " + name + newline + d + " comp " + comp;
         sgtitle(sgtit);
         sz  = get(0, 'Screensize');

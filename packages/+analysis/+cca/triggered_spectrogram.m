@@ -14,12 +14,13 @@ ip = inputParser();
 ip.addParameter('ploton', false, @islogical);
 ip.addParameter('windowsize', 50, @isnumeric);
 ip.addParameter('specNames',  {'S1','S2','Cavg','wpli_avg','phi'}, @iscellstr);
+ip.addParameter('freq_ylims', [0, 50], @isnumeric);
 ip.addParameter('components', [1,2,3,4,5], @isnumeric);
 ip.addParameter('figAppend', "", @(x) isstring(x));
 ip.addParameter('folder', "triggered_spectrogram", @(x) isstring(x));
 ip.addParameter('quantile_threshold', 0.95, @isnumeric);
 ip.addParameter('runtype', 1, @isnumeric); % 1 = run, 0 = rest
-ip.addParameter('boots', 200, @isnumeric);
+ip.addParameter('boots', 0, @isnumeric);
 ip.parse(varargin{:});
 Opt = ip.Results;
 Opt.folder = string(Opt.folder) + "_run=" + Opt.runtype + filesep;
@@ -179,19 +180,23 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
             if Opt.specNames{j} == "phi"
                 spec_avg.(Opt.specNames{j})      = angle(mean(exp(1i*s), 3));
                 spec_stderr.(Opt.specNames{j})   = std(exp(1i*s), 0, 3) / sqrt(size(s, 3));
-                disp("...calculating confidence intervals for " + Opt.specNames{j});
-                spec_ci_upper.(Opt.specNames{j}) = bootci(boots, @(x) angle(mean(exp(1i*x), 1)), s);
-                spec_ci_lower.(Opt.specNames{j}) = bootci(boots, @(x) angle(mean(exp(1i*x), 1)), s);
+                if boots
+                    disp("...calculating boots=" + boots + " confidence intervals for " + Opt.specNames{j});
+                    spec_ci_upper.(Opt.specNames{j}) = bootci(boots, @(x) angle(mean(exp(1i*x), 1)), s);
+                    spec_ci_lower.(Opt.specNames{j}) = bootci(boots, @(x) angle(mean(exp(1i*x), 1)), s);
+                end
             else
                 spec_avg.(Opt.specNames{j})      = mean(s, 3);
                 spec_stderr.(Opt.specNames{j})   = std(s, 0, 3) / sqrt(size(s, 3));
-                disp("...calculating confidence intervals for " + Opt.specNames{j});
-                spec_ci_upper.(Opt.specNames{j}) = bootci(boots, @(x) mean(x, 1), s);
-                spec_ci_lower.(Opt.specNames{j}) = bootci(boots, @(x) mean(x, 1), s);
+                if boots
+                    disp("...calculating boots=" + boots + " confidence intervals for " + Opt.specNames{j});
+                    spec_ci_upper.(Opt.specNames{j}) = bootci(boots, @(x) mean(x, 1), s);
+                    spec_ci_lower.(Opt.specNames{j}) = bootci(boots, @(x) mean(x, 1), s);
+                end
             end
         end
         time_segments = time_segments(:,~isnan(time_segments(1,:)));
-        time_avg = mean(time_segments, 2);
+        time_avg      = mean(time_segments, 2);
 
         % Length
         u_segments = u_segments(:,:,~isnan(u_segments(1,1,:)));
@@ -200,12 +205,19 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
         v_average  = mean(v_segments, 3);
         u_stderr   = std(u_segments, 0, 3) / sqrt(size(u_segments, 3));
         v_stderr   = std(v_segments, 0, 3) / sqrt(size(v_segments, 3));
-        disp("bootstrapping...")
-        u_ci_upper = bootci(boots, @(x) mean(x, 1), u_segments);
-        v_ci_upper = bootci(boots, @(x) mean(x, 1), v_segments);
-        disp("...done!")
+        if boots
+            disp("bootstrapping boot=" + boots + " ci...")
+            u_ci_upper = bootci(boots, @(x) mean(x, 1), u_segments);
+            v_ci_upper = bootci(boots, @(x) mean(x, 1), v_segments);
+            disp("...done!")
+        end
 
         out(i,comp).spec_avg = spec_avg;
+        out(i,comp).spec_stderr = spec_stderr;
+        if boots
+            out(i,comp).spec_ci_upper = spec_ci_upper;
+            out(i,comp).spec_ci_lower = spec_ci_lower;
+        end
         out(i,comp).threshold_crossed_times = threshold_crossed_times;
         out(i,comp).u_average = u_average;
         out(i,comp).v_average = v_average;
@@ -213,8 +225,10 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
         out(i,comp).v_stderr = v_stderr;
         out(i,comp).u_threshold = u_threshold(comp);
         out(i,comp).v_threshold = v_threshold(comp);
-        out(i,comp).u_ci_upper = u_ci_upper;
-        out(i,comp).v_ci_upper = v_ci_upper;
+        if boots
+            out(i,comp).u_ci_upper = u_ci_upper;
+            out(i,comp).v_ci_upper = v_ci_upper;
+        end
         out(i,comp).time_avg = time_avg;
         out(i,comp).name = name;
         out(i,comp).comp = comp;

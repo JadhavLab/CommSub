@@ -18,13 +18,16 @@ dfs = {}
 for file in tqdm(files, desc="Reading files", total=len(files)):
     # The key will be the rat's name, extracted from the filename
     key = os.path.splitext(file)[0].replace("powerccatime", "")
-    
+    key = os.path.basename(key)
     # Read the file into a dataframe and store it in the dictionary
     dfs[key] = pd.read_csv(file)
 
 # Concatenate all the dataframes together
-dfs = pd.concat(dfs)
+dfs = pd.concat(dfs.values())
+dfs.head()
+dfs.drop(columns=["animalnames"], inplace=True) # already an animal column
 
 # Save the result to a feather file
-dfs.to_feather("powerccatime.feather")
+dfs.to_parquet(os.path.join(folder, "powerccatime.parquet"))
+
 del dfs

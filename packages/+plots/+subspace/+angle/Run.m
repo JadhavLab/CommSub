@@ -53,13 +53,19 @@ n.animals = length(unique([Patterns.animal]));
 n.genH = length(unique([Patterns.genH_name]));
 P=reshape(Patterns, [n.animals,n.genH,n.partition,n.dir,n.patterns]);
 assert(length(unique([P(1,:,:,:,:,:).animal])) == 1, "Reshape failed")
-disp("Size of Patterns: " + join(string(size(Patterns)), "x"))
+disp("Reshape 1: Size of Patterns: " + join(string(size(P)), "x"))
+% switch the animal and genH dimensions
+P=permute(P,[2,1,3,4,5]);
+disp("Permute: Size of Patterns: " + join(string(size(P)), "x"))
+% and now finally collapse animals into partition dimension
+P=reshape(P,[n.genH,n.animals*n.partition,n.dir,n.patterns]);
+disp("Reshape 2: Size of Patterns: " + join(string(size(P)), "x"))
 
 % ----------------------------
 % Yank out the relevant data
 % ----------------------------
 rankRegress = nd.fieldGet(P,'rankRegress');
-rankRegress = ndb.toNd(rankRegress);
+assert(all(cellfun(@isempty,{rankRegress.B}) == 0), "missing rankRegress.B")
 B_ = nd.fieldGetCell(rankRegress,'B_');
 V  = nd.fieldGetCell(rankRegress,"V");
 sourceIndex = nd.fieldGetCell(P,'index_source');
@@ -82,28 +88,33 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", "frobenius_similar
                 I = num2cell(index);
                 thisB_ = B_{I{:}};
                 thisV = V{ I{:} }; % V is the same for all indices
-                B{I{:}} = thisB_(:,1:k) * thisV(:,1:k)'; % B = B_ * V' (dim-reduced)
+                tmp  = thisB_(:,1:k) * thisV(:,1:k)'; % B = B_ * V' (dim-reduced)
+                tmp = munge.alignToAreaMatrices(tmp, Spk);
+                B{I{:}} = tmp;
             end
 
 
             % Munge the shapes used to compute distances here
             partitionDim = 2;
             genHDim = 1; dirDim = 3; patternDim = 4;
+            indices = nd.indicesMatrixForm(rankRegress);
             partitions = unique(indices(:,partitionDim));
             indices = unique(indices(:,[genHDim,dirDim,patternDim]),'rows');
             indices = indices(indices(:,end)<4,:);
-            
+            assert(~isempty(indices), "No indices found")
             if onlyCoh
                 genHs = genH(indices(:, genHDim));
-                genHfilter = find(genHs == "filtered");
+                genHfilter = find(genHs == "coherence");
                 indices = indices(genHfilter, :);
+                assert(~isempty(indices), "No indices found")
             end
             
-            subspaceDist = zeros(numel(partitions),size(indices,1),size(indices,1));
+            subspaceDist = zeros(numel(partitions),...
+                            size(indices, 1), size(indices, 1));
             rowVar = string([]);
-            getInd = @(part,rest) [rest(1) part rest(2:end)];
-            
-            
+            % expects a row vector ndim == ndims(B) == ndims(P)
+            getInd = @(part,rest) [rest(1) part rest(2:end)]; 
+
             % -----------------------------
             % Compute angle of each subpace
             % -----------------------------
@@ -115,14 +126,16 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", "frobenius_similar
             else
                 error("You spelled it wrong")
             end
+            assert(~isempty(indices), "No indices found")
             for part = progress(partitions','Title','Partitions')
                 for i = 1:size(indices,1)
                     for j = 1:size(indices,1)
-                        I1 = getInd(part,indices(i,:));
-                        I2 = getInd(part,indices(j,:));
+                        I1 = getInd(part, indices(i,:));
+                        I2 = getInd(part, indices(j,:));
                         I1 = num2cell(I1);
                         I2 = num2cell(I2);
-                        subspaceDist(part,i,j) = subspace(B{I1{:}}, B{I2{:}}, ang_method);
+                        x = B{I1{:}}; y = B{I2{:}};
+                        subspaceDist(part,i,j) = subspace(x, y, ang_method);
                     end
 
                     [x, ~, y, z] = deal(I1{:});

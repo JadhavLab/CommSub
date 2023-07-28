@@ -10,6 +10,7 @@ ip.addParameter('nolog',      [], @(x) iscellstr(x) || isstring(x));
 ip.addParameter('freqs',      [], @isnumeric); % frequencies to mean over if plotting specs
 ip.addParameter('subtract_mins', true, @islogical);
 ip.addParameter('log_yaxis', false, @islogical);
+ip.addParameter('freq_ylims',      [], @isnumeric);
 ip.addParameter('upperylim', 160, @isnumeric);
 ip.parse(varargin{:});
 Opt = ip.Results;
@@ -28,12 +29,13 @@ for i = 1:length(fields)
     axs(i) = nexttile;
     f = fields{i};
     s = specs.(f);
-    if ~isempty(Opt.means) && isfield(Opt.means, f)
+    if ~isempty(Opt.means) && isfield(Opt.means, f) && f ~= "phi"
         s = s - Opt.means.(f);
     end
-    if Opt.subtract_mins
+    if Opt.subtract_mins && f ~= "phi"
         s = s - min(s, [], 1);
     end
+    Opt.time = Opt.time - mean(Opt.time); % center time axis
     if f == "wpli_avg" || f == "Cavg"
         s = imgaussfilt(s, 2);
     end
@@ -45,6 +47,9 @@ for i = 1:length(fields)
         imagesc(Opt.time, efizz.f, s')
     else
         imagesc(Opt.time, efizz.f, signedlog(s)')
+    end
+    if f == "phi"
+        cmocean('phase')
     end
     set(gca, 'YDir', 'normal')
     if ~isempty(Opt.upperylim)
@@ -62,6 +67,9 @@ for i = 1:length(fields)
     end
 end
 linkaxes(axs, 'xy')
+if ~isempty(Opt.freq_ylims)
+    set(gca, 'YLim', Opt.freq_ylims)
+end
 if Opt.log_yaxis
     set(findobj(gcf,'type','axes'), 'YScale', 'log')
 end

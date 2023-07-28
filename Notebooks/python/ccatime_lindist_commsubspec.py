@@ -9,7 +9,14 @@ from tqdm import tqdm
 
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
 name   = 'ZT2powerccatime'
-df_csv = pd.read_csv(os.path.join(folder, f'{name}.csv'))
+datafile = os.path.join(folder, f'{name}.*')
+datafile = glob.glob(datafile)[0]
+if os.path.splitext(datafile)[1] == '.csv':
+    df_csv = pd.read_csv(datafile)
+elif os.path.splitext(datafile)[1] == '.parquet':
+    df_csv = pd.read_parquet(datafile)
+else:
+    raise ValueError(f'Unknown file extension: {os.path.splitext(datafile)[1]}')
 
 # Number of bins and bootstrap samples
 n_bins = 100
