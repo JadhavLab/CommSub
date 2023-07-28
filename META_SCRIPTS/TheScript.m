@@ -193,7 +193,7 @@ if Option.analysis.cca
     dcnt=0;
     for d = progress([inf, 50], 'Title', 'Regress-faxis'); dcnt=dcnt+1;
     for i = progress(1:size(Patterns_overall,2), 'Title', 'Regress')
-    for f = progress(["S1","S2","Cavg","wpli_avg"],'Title', 'Regress-field')
+    for f = progress(["S1","S2","Cavg","wpli_avg","phi"],'Title', 'Regress-field')
         Patterns_overall(2,i).regress(dcnt).(f) = ... 
         analysis.cca.regressefizz(efizz, Patterns_overall(2,i), f,...
                         'faxis', d, "tabPrepend", figAppend, 'ploton', true);

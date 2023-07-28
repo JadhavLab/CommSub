@@ -38,6 +38,21 @@ if ischar(field) || numel(field) == 1
         out = cat(1, out{:});
         out = reshape(out, [outersize, innersize]);
     catch ME
+        disp("Error concatenating output. Trying flexible solve...")
+        try
+            tmp = repmat(nd.emptyLike(out{1}), outersize);
+            for i = progress(1:numel(tmp), 'Title', 'Copying fields')
+                fields = string(fieldnames(out{i}));
+                for f = string(fields(:))' % loop over fields, not over
+                    if isfield(out{i}, f)
+                        tmp(i).(f) = out{i}.(f);
+                    end
+                end
+            end
+            out = tmp;
+        catch ME
+            disp("Error, returning cell array")
+        end
     end
 else
     out = cell(1,numel(field));

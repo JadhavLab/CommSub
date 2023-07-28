@@ -37,7 +37,7 @@ specific context and requirements of the problem you are trying to solve.
 % -------------
 % Shortcut vars
 % -------------
-onlyCoh = true;
+onlyCoh = false;
 directionality = ["hpc-hpc","hpc-pfc"];
 patternNames = ["theta", "delta", "ripples","theta-control",...
                 "delta-control", "ripples-control"];
@@ -70,12 +70,16 @@ B_ = nd.fieldGetCell(rankRegress,'B_');
 V  = nd.fieldGetCell(rankRegress,"V");
 sourceIndex = nd.fieldGetCell(P,'index_source');
 targetIndex = nd.fieldGetCell(P,'index_target');
+smax = max(cellfun(@max, sourceIndex),[],'all');
+tmax = max(cellfun(@max, targetIndex),[],'all');
+
 
 % ----------------------------
 % How many components?
 % ----------------------------
 K = 1:6;
-for measurement = ["princ_similarity" ,"princ_dissimilarity", "frobenius_similarity", "frobenius_dissimilarity"]
+for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
+                   "frobenius_similarity", "frobenius_dissimilarity"]
     for normalize = [false, true]
         for k = progress(K, 'Title','K')
 
@@ -89,7 +93,7 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", "frobenius_similar
                 thisB_ = B_{I{:}};
                 thisV = V{ I{:} }; % V is the same for all indices
                 tmp  = thisB_(:,1:k) * thisV(:,1:k)'; % B = B_ * V' (dim-reduced)
-                tmp = munge.alignToAreaMatrices(tmp, Spk);
+                tmp = munge.alignToAreaMatrices(tmp, sourceIndex{I{:}}, targetIndex{I{:}}, smax, tmax); %ry 2023
                 B{I{:}} = tmp;
             end
 
@@ -135,7 +139,8 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", "frobenius_similar
                         I1 = num2cell(I1);
                         I2 = num2cell(I2);
                         x = B{I1{:}}; y = B{I2{:}};
-                        subspaceDist(part,i,j) = subspace(x, y, ang_method);
+                        % subspaceDist(part,i,j) = subspace(x, y, ang_method);
+                        subspaceDist(part,i,j) = subspaceang(x, y, ang_method);
                     end
 
                     [x, ~, y, z] = deal(I1{:});
@@ -144,10 +149,10 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", "frobenius_similar
 
                 end
             end
-            if measurement == "similarity"
+            if endsWith(measurement, "similarity")
                 subspaceDist = squeeze(median(subspaceDist,1));
                 subspaceDist = subspaceDist + abs(min(subspaceDist,[],'all'));
-            elseif measurement == "dissimilarity"
+            elseif endsWith(measurement, "dissimilarity")
                 subspaceDist = squeeze(median(subspaceDist,1));
             else
                 error("You spelled it wrong")
@@ -159,24 +164,28 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", "frobenius_similar
                 % NOTHING :)
             end
             rowVar = cellstr(rowVar);
-            analysisName = sprintf('%s%ssubspaceDist_K=%d_norm=%d_measure=%s.mat',...
-                figureFolder,  filesep, k, normalize, measurement);
+            analysisName = sprintf('subspaceDist_K=%d_norm=%d_measure=%s.mat',...
+                k, normalize, measurement);
+            if ~exist('analysisName','dir')
+                mkdir(figuredefine("onlyCoh="+onlyCoh))
+            end
+            analysisName = figuredefine("onlyCoh="+onlyCoh, analysisName);
             save(analysisName, 'subspaceDist', 'rowVar');
 
             % ----------------------------
             % Normalize and plot distances
             % ----------------------------
-            f = figc("subpsace distances, " + analysisName);
-            G = clustergram(subspaceDist, 'ColumnLabels', rowVar, 'RowLabels', rowVar, 'Colormap', cmocean('balance'));
-%             set(G, 'Colormap', crameri('lajolla'))
-%             set(G, 'Colormap', crameri('-grayC'))
-            set(G, 'Colormap', crameri('acton'))
-            sgtitle(f.Name)
-            cgFig = findall(0,'Type','Figure','Tag','Clustergram'); %handle to clustergram figure
-            cgFig(1).Children(end).YTickLabelRotation=35;
-            cgFig(1).Children(end).XTickLabelRotation=-25;
-            cgFig(1).Children(end).FontSize=16;
-            saveas(cgFig(1),fullfile(figureFolder,sprintf('subspaceDistance_K=%d.svg',k)));
+%             f = figc("subpsace distances, " + analysisName);
+%             G = clustergram(subspaceDist, 'ColumnLabels', rowVar, 'RowLabels', rowVar, 'Colormap', cmocean('balance'));
+% %             set(G, 'Colormap', crameri('lajolla'))
+% %             set(G, 'Colormap', crameri('-grayC'))
+%             set(G, 'Colormap', crameri('acton'))
+%             sgtitle(f.Name)
+%             cgFig = findall(0,'Type','Figure','Tag','Clustergram'); %handle to clustergram figure
+%             cgFig(1).Children(end).YTickLabelRotation=35;
+%             cgFig(1).Children(end).XTickLabelRotation=-25;
+%             cgFig(1).Children(end).FontSize=16;
+%             saveas(cgFig(1),fullfile(figureFolder,sprintf('subspaceDistance_K=%d.svg',k)));
 
         end
     end

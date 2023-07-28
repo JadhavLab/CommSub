@@ -2,7 +2,7 @@ figFolder = fullfile(figuredefine, 'dimensionRemoval');
 if ~exist(figFolder)
     mkdir(figFolder);
 end
-skws = {'export_path',figFolder};
+skws = {};
 
 [groups, genHs] = findgroups(rt.method);
 uGroups = unique(groups);
@@ -38,6 +38,6 @@ for G = uGroups'
     g.draw();
     warning off; set(g.facet_axes_handles, 'yscale','log'); warning on;
     sgtitle("dimensionRemoval perPattern" + genHs(G));
-    g.export('file_name', get(gcf,'Name') + ".svg",skws{:})
-    g.export('file_name', get(gcf,'Name') + ".png",skws{:})
+    g.export('file_name', figuredefine("dimensionRemoval", get(gcf,'Name') + ".svg"),skws{:})
+    g.export('file_name', figuredefine("dimensionRemoval", get(gcf,'Name') + ".png"),skws{:})
 end

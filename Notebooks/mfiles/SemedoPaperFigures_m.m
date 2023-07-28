@@ -264,7 +264,7 @@ plots.subspace.pred_dim_rem.plotDimensionRemoval_perPatternbyDirection; % import
 %     end
 % end
 %%
-figure(750)
+fig("Model performance versus factor analysis dimension")
 clf
 full_model_performance = [];
 
