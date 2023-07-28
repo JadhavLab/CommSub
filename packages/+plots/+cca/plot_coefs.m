@@ -1,4 +1,11 @@
-function plot_coefs(out, efizz, alpha)
+function plot_coefs(out, alpha, varargin)
+
+    ip = inputParser;
+    ip.addParameter('figAppend', "");
+    ip.parse(varargin{:});
+    Opt = ip.Results;
+
+
     if nargin < 3
         alpha = 0.05;
     end
@@ -7,7 +14,7 @@ function plot_coefs(out, efizz, alpha)
     num_plots = numel(out);
 
     % Extract frequencies
-    freqs = efizz.f;
+    freqs = out(1).f;
 
     for i = 1:num_plots
         % Create subplot
@@ -24,10 +31,10 @@ function plot_coefs(out, efizz, alpha)
         coef_V(pvalue_V > alpha) = NaN;
 
         % Stem and scatter plot for coefficients
-        stem(freqs, coef_U(2:end), 'b');
+        stem(freqs, coef_U, 'b');
         hold on;
         % scatter(freqs, coef_U(2:end), 'b', 'filled', 'SizeData', 4);
-        stem(freqs, coef_V(2:end), 'r');
+        stem(freqs, coef_V, 'r');
         % scatter(freqs, coef_V(2:end), 'r', 'filled', 'SizeData', 4);
         hold off;
 
@@ -42,6 +49,14 @@ function plot_coefs(out, efizz, alpha)
         sz = [sz(3)+10, sz(4)+10, sz(3)/10, sz(4)];
         set(gcf, 'Position', sz);
     end
-    sgtitle("Canonical Coefficients: " + out(1).name);
-end
+    sgtitle("Canonical Coefficients: " + out(1).field(1));
+
+    dirname = figuredefine("cca_regress");
+    if ~exist(dirname, 'dir')
+        mkdir(dirname);
+    end
+    saveas(gcf, figuredefine("cca_regress", Opt.figAppend  + ".png"));
+    saveas(gcf, figuredefine("cca_regress", Opt.figAppend  + ".fig"));
+    saveas(gcf, figuredefine("cca_regress", Opt.figAppend  + ".pdf"));
+
 

@@ -1,7 +1,45 @@
-function out = regressefizz(efizz, Patterns_overall, field)
+function out = regressefizz(efizz, Patterns_overall, field, varargin)
+    % Input parser
+    p = inputParser;
+    addParameter(p, 'faxis', inf, @isnumeric);
+    addParameter(p, 'tabPrepend', "");
+    addParameter(p, 'ploton', false, @islogical);
+    parse(p, varargin{:});
+    Opt = p.Results;
+    
+    % Get the downsampling factor
+    d_factor = p.Results.faxis;
+
     % Extract time series
     efizz_t = efizz.t;
     Patterns_overall_t = Patterns_overall.X_time;
+
+    % If downsampling is required in frequency domain
+    if ~isempty(d_factor) && d_factor > 1 && d_factor ~= inf
+        % Get the number of samples in the original data
+        original_samples = size(efizz.(field), 2);
+
+        % Create a vector of original sample points
+        original_sample_points = linspace(min(efizz.f), max(efizz.f), original_samples);
+        % Create a vector of desired sample points
+        desired_sample_points = linspace(min(efizz.f), max(efizz.f), d_factor);
+        % Interpolate the data to the desired number of sample points
+        if strcmp(field, 'phi')
+            % If the field is 'phi', we interpolate real and imaginary parts separately
+            real_part = interp1(original_sample_points, real(exp(1i*efizz.(field))), desired_sample_points);
+            imag_part = interp1(original_sample_points, imag(exp(1i*efizz.(field))), desired_sample_points);
+            efizz.(field) = angle(real_part + 1i*imag_part);
+        else
+            % For other fields, we can interpolate directly
+            tmp = zeros(size(efizz.(field), 1), d_factor);
+            for i = progress(1:size(efizz.(field), 1))
+                tmp(i, :) = interp1(original_sample_points, efizz.(field)(i, :), desired_sample_points);
+            end
+            efizz.(field) = tmp;
+        end
+    else
+        desired_sample_points = efizz.f;
+    end
 
     % Interpolate to align the time series
     aligned_efizz = interp1(efizz_t, efizz.(field), Patterns_overall_t, 'nearest', 'extrap');
@@ -69,14 +107,27 @@ function out = regressefizz(efizz, Patterns_overall, field)
             pvalue_V = (1-erf(sum(sqrt(2) * erfinv(1-2*[pvalue_V_x, pvalue_V_y]))/sqrt(2*2)))/2;
         end
 
-        out(i).F_U = F_U;
-        out(i).pvalue_U = pvalue_U;
-        out(i).F_V = F_V;
-        out(i).pvalue_V = pvalue_V;
-        out(i).coef_U = coef_U;
-        out(i).coef_V = coef_V;
-        out(i).name = field;
-        out(i).coef_i = i;
+        out(i).F_U = F_U(2:end);
+        out(i).pvalue_U = pvalue_U(2:end);
+        out(i).F_V = F_V(2:end);
+        out(i).pvalue_V = pvalue_V(2:end);
+        out(i).coef_U = coef_U(2:end);
+        out(i).coef_V = coef_V(2:end);
+        out(i).coef_i = repmat(i, numel(F_U(2:end)), 1);
+        out(i).f = desired_sample_points(:);
+        out(i).field = repmat(string(field), numel(F_U(2:end)), 1);
     end
+
+    tab = struct2table(out(1), 'AsArray', false);
+    Opt.tabPrepend = Opt.tabPrepend + "_" + field;
+    Opt.tabPrepend = Opt.tabPrepend + "_faxis=" + Opt.faxis;
+    writetable(tab, figuredefine('tables', Opt.tabPrepend + "_regress.csv"));
+
+    if Opt.ploton
+        fig(Opt.tabPrepend + "_" + field + "_regress_faxis=" + Opt.faxis);
+        plots.cca.plot_coefs(out, 0.01, 'figAppend', Opt.tabPrepend+"_regress");
+    end
+
+
 end
 

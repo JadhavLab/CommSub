@@ -228,7 +228,7 @@ pfcQoptDims = mean(temp3,2);
 %% 
 % *Pattern Specific* 
 plots.pred.removePred
-writetable(rt, figuredefine("tables", "rt.csv"), 'WriteRowNames',true)
+writetable(rt, figuredefine("tables", "rt_zscr="+zscr+".csv"), 'WriteRowNames',true)
 
 %  Remove tuples of (targetArea,pattern) from a given (targetArea, pattern)
 disp("Running dimension removal with zscore=" + zscr);

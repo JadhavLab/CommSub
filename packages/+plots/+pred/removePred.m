@@ -1,6 +1,9 @@
 
 %%
-tmp = ndb.toNd(nd.fieldGet(Patterns,'rankRegress'));
+tmp = nd.fieldGet(Patterns,'rankRegress');
+if iscell(tmp)
+    tmp = ndb.toNd(tmp);
+end
 optDim = nd.fieldGet(tmp,'optDimReducedRankRegress');
 optDim = floor(median(optDim, 1));
 optDim = max(optDim,[],'all');
