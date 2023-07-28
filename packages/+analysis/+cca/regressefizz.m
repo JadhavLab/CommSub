@@ -78,33 +78,41 @@ function out = regressefizz(efizz, Patterns_overall, field, varargin)
             x = cosd(aligned_efizz);
             y = sind(aligned_efizz);
             % Perform regression for U
-            model_U_x = fitlm(U, x);
-            model_U_y = fitlm(U, y);
+            model_U_x = fitlm(x, U(:, i));
+            model_U_y = fitlm(y, U(:, i));
             % Perform regression for V
-            model_V_x = fitlm(V, x);
-            model_V_y = fitlm(V, y);
+            model_V_x = fitlm(x, V(:, i));
+            model_V_y = fitlm(y, V(:, i));
             % Get coefficients
             coef_U_x = model_U_x.Coefficients.Estimate;
             coef_U_y = model_U_y.Coefficients.Estimate;
             coef_V_x = model_V_x.Coefficients.Estimate;
             coef_V_y = model_V_y.Coefficients.Estimate;
-            coef_U = sqrt(coef_U_x^2 + coef_U_y^2);
-            coef_V = sqrt(coef_V_x^2 + coef_V_y^2);
+            coef_U = sqrt(coef_U_x.^2 + coef_U_y.^2);
+            coef_V = sqrt(coef_V_x.^2 + coef_V_y.^2);
             % Get F-statistics and p-values
             F_U_x = model_U_x.Coefficients.tStat;
             F_U_y = model_U_y.Coefficients.tStat;
             F_V_x = model_V_x.Coefficients.tStat;
             F_V_y = model_V_y.Coefficients.tStat;
-            F_U = sqrt(F_U_x^2 + F_U_y^2);
-            F_V = sqrt(F_V_x^2 + F_V_y^2);
+            F_U = sqrt(F_U_x.^2 + F_U_y.^2);
+            F_V = sqrt(F_V_x.^2 + F_V_y.^2);
             pvalue_U_x = model_U_x.Coefficients.pValue;
             pvalue_U_y = model_U_y.Coefficients.pValue;
             pvalue_V_x = model_V_x.Coefficients.pValue;
             pvalue_V_y = model_V_y.Coefficients.pValue;
             % combine p-values with souffers method
             % pcomb = (1-erf(sum(sqrt(2) * erfinv(1-2*p))/sqrt(2*length(p))))/2;
-            pvalue_U = (1-erf(sum(sqrt(2) * erfinv(1-2*[pvalue_U_x, pvalue_U_y]))/sqrt(2*2)))/2;
-            pvalue_V = (1-erf(sum(sqrt(2) * erfinv(1-2*[pvalue_V_x, pvalue_V_y]))/sqrt(2*2)))/2;
+            % pvalue_U = (1-erf(sum(sqrt(2) .* erfinv(1-2.*[pvalue_U_x, pvalue_U_y]))/sqrt(2*2)))/2;
+            % pvalue_V = (1-erf(sum(sqrt(2) .* erfinv(1-2.*[pvalue_V_x, pvalue_V_y]))/sqrt(2*2)))/2;
+            pvalue_V_y(isnan(pvalue_V_y)) = 1;
+            pvalue_U_y(isnan(pvalue_U_y)) = 1;
+            pvalue_V_x(isnan(pvalue_V_x)) = 1;
+            pvalue_U_x(isnan(pvalue_U_x)) = 1;
+            for i = 1:numel(pvalue_U_x)
+                pvalue_U(i) = pfast([pvalue_U_x(i); pvalue_U_y(i)]);
+                pvalue_V(i) = pfast([pvalue_V_x(i); pvalue_V_y(i)]);
+            end
         end
 
         out(i).F_U = F_U(2:end);
@@ -129,5 +137,25 @@ function out = regressefizz(efizz, Patterns_overall, field, varargin)
     end
 
 
-end
-
+function p = pfast(p)
+% Fisher's (1925) method for combination of independent p-values
+% Code adapted from Bailey and Gribskov (1998)
+    product=prod(p);
+    n=length(p);
+    if n<=0
+        error('pfast was passed an empty array of p-values')
+    elseif n==1
+        p = product;
+        return
+    elseif product == 0
+        p = 0;
+        return
+    else
+        x = -log(product);
+        t=product;
+        p=product;
+        for i = 1:n-1
+            t = t * x / i;
+            p = p + t;
+        end
+    end
