@@ -11,6 +11,7 @@ from tqdm import tqdm
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
 # name   = 'ZT2powerccatime'
 name   = 'powerccatime'
+append = '_50bin'
 datafile = os.path.join(folder, f'{name}.*')
 datafile = glob.glob(datafile)[0]
 if os.path.splitext(datafile)[1] == '.csv':
@@ -21,7 +22,7 @@ else:
     raise ValueError(f'Unknown file extension: {os.path.splitext(datafile)[1]}')
 
 # Number of bins and bootstrap samples
-n_bins = 100
+n_bins = 50
 n_bootstrap_samples = 1000
 
 # Update the columns to bootstrap
@@ -60,13 +61,13 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
 bootstrap_means_combined = pd.DataFrame(bootstrap_means_combined)
 # Create a new lindist_bin_ind column
 bootstrap_means_combined["lindist_bin_ind"] = bootstrap_means_combined["lindist_bin"].apply(lambda x: x.right)
+bootstrap_means_combined.to_csv(os.path.join(folder, f'{name}_bootstrap{append}.csv'), index=False)
 
 # Smooth
 bootstrap_means_combined.sort_values(by=["column", "trajbound", "iboot", "lindist_bin_ind"], inplace=True)
-bootstrap_means_combined["bootstrap_mean"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(3, 1).mean())
+bootstrap_means_combined["bootstrap_mean"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(7, 1).mean())
 bootstrap_means_combined["bootstrap_mean"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.interpolate())
 
-bootstrap_means_combined.to_csv(os.path.join(folder, f'{name}_bootstrap.csv'), index=False)
 
 # ----------------------------------------------------
 # Normalize the bootstrap_mean values
@@ -81,7 +82,7 @@ for column in tqdm(columns_to_bootstrap, desc="feature engineering", total=len(c
     bootstrap_means_combined.loc[bootstrap_means_combined["column"] == column, "bootstrap_mean"] = scaled_data
 
 bootstrap_means_combined.head()
-bootstrap_means_combined.to_csv(os.path.join(folder, f'{name}_bootstrap_normalized.csv'), index=False)
+bootstrap_means_combined.to_csv(os.path.join(folder, f'{name}_bootstrap_normalized{append}.csv'), index=False)
 # ----------------------------------------------------
 
 # Define the trajbounds for each column of the subplot grid
@@ -100,33 +101,33 @@ row_components = [["U1", "U2", "U3"], ["V1", "V2", "V3"], ["Cavgtheta",
 bootstrap_means_combined["lindist_bin_mid"] = \
     bootstrap_means_combined["lindist_bin"].apply(lambda x: x.mid)
 
-# Create a 5x2 grid of subplots
-fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(15, 25))
-
-# Set the overall title
-fig.suptitle('Normalized Bootstrap Means for Different Components and Trajectories', fontsize=20)
-
-for i, components in enumerate(row_components):
-    for j, trajbound in enumerate(column_trajbounds):
-        # Get the data for this subplot
-        data = bootstrap_means_combined[
-            bootstrap_means_combined["column"].isin(components) &
-            (bootstrap_means_combined["trajbound"] == trajbound)
-        ]
-        # Create the subplot
-        sns.lineplot(x="lindist_bin_mid", y="bootstrap_mean", hue="column",
-                     data=data, ax=axes[i, j])
-        # Set the title and labels
-        axes[i, j].set_title(f'Trajbound = {trajbound}')
-        axes[i, j].set_xlabel("Lindist Bin Midpoint")
-        axes[i, j].set_ylabel("Normalized Bootstrap Mean")
-        # Rotate the x-axis labels for readability
-        axes[i, j].tick_params(axis='x', rotation=45)
-
-# Improve the layout
-plt.tight_layout()
-# Add space for the overall title
-fig.subplots_adjust(top=0.92)
+# # Create a 5x2 grid of subplots
+# fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(15, 25))
+#
+# # Set the overall title
+# fig.suptitle('Normalized Bootstrap Means for Different Components and Trajectories', fontsize=20)
+#
+# for i, components in enumerate(row_components):
+#     for j, trajbound in enumerate(column_trajbounds):
+#         # Get the data for this subplot
+#         data = bootstrap_means_combined[
+#             bootstrap_means_combined["column"].isin(components) &
+#             (bootstrap_means_combined["trajbound"] == trajbound)
+#         ]
+#         # Create the subplot
+#         sns.lineplot(x="lindist_bin_mid", y="bootstrap_mean", hue="column",
+#                      data=data, ax=axes[i, j])
+#         # Set the title and labels
+#         axes[i, j].set_title(f'Trajbound = {trajbound}')
+#         axes[i, j].set_xlabel("Lindist Bin Midpoint")
+#         axes[i, j].set_ylabel("Normalized Bootstrap Mean")
+#         # Rotate the x-axis labels for readability
+#         axes[i, j].tick_params(axis='x', rotation=45)
+#
+# # Improve the layout
+# plt.tight_layout()
+# # Add space for the overall title
+# fig.subplots_adjust(top=0.92)
 plt.show()
 
 # ----------------------------------------------------
@@ -210,6 +211,6 @@ plt.show()
 figfolder = '/Volumes/MATLAB-Drive/Shared/figures/lindist_bootstrap/'
 if not os.path.exists(figfolder):
     os.makedirs(figfolder)
-plt.savefig(figfolder + 'lindist_bootstrap.png', dpi=300)
-plt.savefig(figfolder + 'lindist_bootstrap.svg', dpi=300)
-plt.savefig(figfolder + 'lindist_bootstrap.pdf', dpi=300)
+plt.savefig(figfolder + f'lindist_bootstrap{append}.png', dpi=300)
+plt.savefig(figfolder + f'lindist_bootstrap{append}.svg', dpi=300)
+plt.savefig(figfolder + f'lindist_bootstrap{append}.pdf', dpi=300)

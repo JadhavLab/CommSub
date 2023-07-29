@@ -26,22 +26,18 @@ space of all \( k \)-dimensional subspaces in \( \mathbb{R}^n \) (or \(
 between two subspaces as the geodesic distance between the two points on the
 manifold representing the subspaces. This distance can be calculated from the
 principal angles.
-
-Note that these methods may give different results because they define the
-angle in slightly different ways. The best method to use depends on the
-specific context and requirements of the problem you are trying to solve.
-
 %}
 
 
 % -------------
 % Shortcut vars
 % -------------
-onlyCoh = false;
+selectGenH    = "coherence";
 directionality = ["hpc-hpc","hpc-pfc"];
-patternNames = ["theta", "delta", "ripples","theta-control",...
+patternNames   = ["theta", "delta", "ripples","theta-control",...
                 "delta-control", "ripples-control"];
 genH           = shortcut.generateH([Option.generateH]);
+genH           = unique(genH);
 direct         = shortcut.directionality(directionality);
 patternSymbols = shortcut.patternSymbols(patternNames, 2);
 figureFolder   = fullfile(figuredefine, 'subspaceAngle');
@@ -78,8 +74,10 @@ tmax = max(cellfun(@max, targetIndex),[],'all');
 % How many components?
 % ----------------------------
 K = 1:6;
+for selectGenH  = ["coherence", "fft", "wpli"]
 for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
-                   "frobenius_similarity", "frobenius_dissimilarity"]
+                   ..."frobenius_similarity", "frobenius_dissimilarity"...
+                ]
     for normalize = [false, true]
         for k = progress(K, 'Title','K')
 
@@ -103,12 +101,13 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
             genHDim = 1; dirDim = 3; patternDim = 4;
             indices = nd.indicesMatrixForm(rankRegress);
             partitions = unique(indices(:,partitionDim));
+            % only keep the indices that are in the first 3 partitions
             indices = unique(indices(:,[genHDim,dirDim,patternDim]),'rows');
-            indices = indices(indices(:,end)<4,:);
+            indices = indices(indices(:,end)<4,:); % selecting only the first 3 patterns
             assert(~isempty(indices), "No indices found")
-            if onlyCoh
+            if ~isempty(selectGenH)
                 genHs = genH(indices(:, genHDim));
-                genHfilter = find(genHs == "coherence");
+                genHfilter = find(genHs == selectGenH);
                 indices = indices(genHfilter, :);
                 assert(~isempty(indices), "No indices found")
             end
@@ -166,29 +165,52 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
             rowVar = cellstr(rowVar);
             analysisName = sprintf('subspaceDist_K=%d_norm=%d_measure=%s.mat',...
                 k, normalize, measurement);
-            if ~exist('analysisName','dir')
-                mkdir(figuredefine("onlyCoh="+onlyCoh))
+            if ~exist(figuredefine("subspaceAngle","type="+selectGenH), 'dir')
+                mkdir(figuredefine("subspaceAngle","type="+selectGenH))
             end
-            analysisName = figuredefine("onlyCoh="+onlyCoh, analysisName);
+            analysisName = figuredefine("subspaceAngle","onlyCoh="+onlyCoh, analysisName);
             save(analysisName, 'subspaceDist', 'rowVar');
+        end
+    end
+end
+end
 
+K = 2:7;
+figureFolder = figuredefine("subspaceAngle","onlyCoh="+onlyCoh);
+for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
+                   "frobenius_similarity", "frobenius_dissimilarity"]
+    for normalize = [false, true]
+        for k = progress(K, 'Title','K')
+            analysisName = sprintf('subspaceDist_K=%d_norm=%d_measure=%s.mat',...
+                k, normalize, measurement);
+            if ~exist(figuredefine("subspaceAngle","type="+selectGenH), 'dir')
+                mkdir(figuredefine("subspaceAngle","type="+selectGenH))
+            end
+            analysisName = figuredefine("subspaceAngle","type="+selectGenH,...
+                                        analysisName);
+            load(analysisName, 'subspaceDist', 'rowVar');
             % ----------------------------
             % Normalize and plot distances
             % ----------------------------
-%             f = figc("subpsace distances, " + analysisName);
-%             G = clustergram(subspaceDist, 'ColumnLabels', rowVar, 'RowLabels', rowVar, 'Colormap', cmocean('balance'));
-% %             set(G, 'Colormap', crameri('lajolla'))
-% %             set(G, 'Colormap', crameri('-grayC'))
-%             set(G, 'Colormap', crameri('acton'))
-%             sgtitle(f.Name)
-%             cgFig = findall(0,'Type','Figure','Tag','Clustergram'); %handle to clustergram figure
-%             cgFig(1).Children(end).YTickLabelRotation=35;
-%             cgFig(1).Children(end).XTickLabelRotation=-25;
-%             cgFig(1).Children(end).FontSize=16;
-%             saveas(cgFig(1),fullfile(figureFolder,sprintf('subspaceDistance_K=%d.svg',k)));
-
-        end
-    end
+            f = figc("subpsace distances, " + analysisName);
+            for i = 1:size(subspaceDist,1)
+                for j = 1:size(subspaceDist,2)
+                    if i==j
+                        subspaceDist(i,j) = 0;
+                    end
+                end
+            end
+            G = clustergram(subspaceDist, 'ColumnLabels', rowVar, 'RowLabels', rowVar, 'Colormap', crameri('acton'), 'symmetric', true);
+%             set(G, 'Colormap', crameri('lajolla'))
+%             set(G, 'Colormap', crameri('-grayC'))
+            cgFig = findall(0,'Type','Figure','Tag','Clustergram'); %handle to clustergram figure
+            cgFig(1).Children(end).YTickLabelRotation=35;
+            cgFig(1).Children(end).XTickLabelRotation=-25;
+            cgFig(1).Children(end).FontSize=16;
+            G.addTitle("subspace distance, K="+k + ", " + measurement + ", " + normalize)
+            saveas(cgFig(1),fullfile(figureFolder,sprintf('subspaceDistance_K=%d.svg',k)));
+end
+end
 end
 
 %ax = findobj(gcf,'type','axes');

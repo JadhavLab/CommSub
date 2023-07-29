@@ -4,7 +4,7 @@ if nargin < 2
     K = inf;
 end
 
-rt = rt(rt.K <= K, :);
+rt = rt(rt.dimensionRemoved <= K, :);
 
 % Get unique combinations of baseDirection, basePattern, and method
 groups = unique(rt(:, ["baseDirection", "basePattern", "method"]));
@@ -45,7 +45,7 @@ for i = 1:height(groups)
         if i == j
             continue
         end
-        subspaceDist(i, j) = pdist2(performanceVectors{i}(:)', performanceVectors{j}(:)', "euclidean")
+        subspaceDist(i, j) = pdist2(performanceVectors{i}(:)', performanceVectors{j}(:)', "euclidean");
     end
 end
 

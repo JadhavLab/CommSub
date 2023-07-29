@@ -33,7 +33,6 @@ plots.grm.plotPattern(T, "wpli",      "hpc-hpc");
 
 % ------------------------------------------------------------
 % Compare dimensionality for each pattern hpc-hpc vs hpc-pfc
-
 plots.grm.compareField(T, "power",     "field", "rrDim")
 plots.grm.compareField(T, "coherence", "field", "rrDim")
 plots.grm.compareField(T, "power",     "field", "percMax_rrDim")
@@ -41,7 +40,6 @@ plots.grm.compareField(T, "coherence", "field", "percMax_rrDim")
 plots.grm.compareField(T, "wpli",      "field", "percMax_rrDim")
 plots.grm.compareField(T, "wpli",      "field", "percMax_rrDim")
 % plots.grm.compareField(T, "wpli", "field", "rrDim")
-
 % ------------------------------------------------------------
 % Test percMax_rrDim
 % ------------------------------------------------------------
