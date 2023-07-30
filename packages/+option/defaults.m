@@ -39,6 +39,7 @@ Default.winSize                       = [0, 0.300];   % size of the
                                                          % full-wave trial
                                                          % window -- OVERAL
                                                          % LTRIAL WINDOW
+                                                         % first num is negative, second positive
 Default.positiveDerivativeCheck       = [Default.winSize(1), Default.winSize(2)/2]; % period of window with enforced positive derivative
 
 % used to be [-0.15, 0.15]

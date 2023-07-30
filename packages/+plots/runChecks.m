@@ -53,7 +53,7 @@ else
     disp("Parallel processing - disabled")
 end
 
-func_list = {a, b, c};
+func_list = {a, b, c, d};
 out_list = cell(1, length(func_list));
 func_names = cellfun(@func2str, func_list, 'UniformOutput', false);
 
@@ -89,3 +89,9 @@ end
 
 disp("Done running checks" + newline + toc + " seconds elapsed")
 
+function out= d()
+    out=struct();
+    fig("event timeseries"); events.plot_events(Events, 'rewardTimes');
+    fig("iei"); events.plotIEI(Events, 'NumBins', 1000);
+    fig("cross iei"); events.plotCrossIEI(Events, 'NumBins', 1000, 'layout', 'matrix');
+end

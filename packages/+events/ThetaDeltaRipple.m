@@ -128,3 +128,4 @@ Events.Hvals = Hvals;
 Events.Hnanlocs = Hnanlocs;
 Events.minRippleThreshold = minRippleThreshold;
 disp("Event matrix generated " + toc + " seconds");
+Events.cellOfWin_varnames = {"theta", "delta", "ripple","theta","delta","ripple"};
