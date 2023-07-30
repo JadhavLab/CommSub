@@ -101,7 +101,11 @@ function [triggerTimes, triggerWindows] = getTriggerTimesAndWindows(behavior, tr
     triggerTimes = behavior.time([false; triggerEvents]);  % Assuming 'time' is a variable in the behavior table
 
     % Calculate start and end times for each window
-    startTimes = triggerTimes - windowParameters(1);
+    if windowParameters(1) > 0
+        startTimes = triggerTimes - windowParameters(1);
+    else
+        startTimes = triggerTimes + windowParameters(1);
+    end
     endTimes = triggerTimes + windowParameters(2);
     triggerWindows = [startTimes, endTimes];
 end

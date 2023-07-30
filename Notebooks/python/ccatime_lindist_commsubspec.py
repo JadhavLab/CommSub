@@ -229,6 +229,6 @@ plt.show()
 figfolder = '/Volumes/MATLAB-Drive/Shared/figures/lindist_bootstrap/'
 if not os.path.exists(figfolder):
     os.makedirs(figfolder)
-plt.savefig(figfolder + f'lindist_bootstrap{append}.png', dpi=300)
-plt.savefig(figfolder + f'lindist_bootstrap{append}.svg', dpi=300)
-plt.savefig(figfolder + f'lindist_bootstrap{append}.pdf', dpi=300)
+plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.png', dpi=300)
+plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.svg', dpi=300)
+plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.pdf', dpi=300)
