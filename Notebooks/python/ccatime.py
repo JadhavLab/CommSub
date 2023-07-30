@@ -10,6 +10,7 @@ from statsmodels.tsa.stattools import grangercausalitytests
 from scipy.stats import f
 from sklearn.model_selection import TimeSeriesSplit, KFold
 import time, os
+from PyIF import te_compute as te
 from tqdm import tqdm
 tqdm.pandas()
 from scipy.stats import f
@@ -56,25 +57,29 @@ cont_vars = get_cont_vars(df)
 dfc = df[cont_vars]
 dfc = dfc.drop(["time"],axis=1)
 # add these columns back from df: 'rewarded', 'trajbound', 'inBoundChoiceTimes', 'outBoundChoiceTimes', 'rewardTimes'
-dfc = pd.concat([dfc, df[['rewarded', 'trajbound', 'inBoundChoiceTimes', 'outBoundChoiceTimes', 'rewardTimes']]], axis=1)
+# dfc = pd.concat([dfc, df[['rewarded', 'trajbound', 'inBoundChoiceTimes', 'outBoundChoiceTimes', 'rewardTimes','animal']]], axis=1)
+dfc = pd.concat([dfc, df[['animal']]], axis=1)
 # zscore dfc columns
 dfc = dfc.apply(lambda x: (x - x.mean()) / x.std())
 # Define the lag
 maxlag = 10
+animals = df['animal'].unique()
+i_list_startswith = ["U","V","S","Cavg","wpli_avg"]
 
 def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=False, GPU=False, calc_te=True):
     i, j = pair
-    if i == j:
+    if i == j or not any(dfc.columns[i].startswith(x) for x in i_list_startswith):
         return None
     print(f"Processing {i}, {j}")
     X = dfc.iloc[:, [i, j]]  # dfc should contain 'animal' column 
+    if "animal" in X.columns:
+        return None
     X = X.dropna().values
     RESULTS = []
-    for animal in df['animal'].unique():  # loop through each unique animal
+    for animal in tqdm(df['animal'].unique(),total=len(animals)):  # loop through each unique animal
         X_animal = X[df['animal'] == animal]  # filter data for the current animal
         num_chunks = X_animal.shape[0] // chunk_size  # calculate num_chunks for the current animal
-        for chunk_index in tqdm(
-            range(num_chunks), total=num_chunks, desc=f"{i}, {j}"): 
+        for chunk_index in range(num_chunks): 
             start_index = chunk_index * chunk_size
             end_index = min(start_index + chunk_size, X.shape[0])
             X_chunk = X[start_index:end_index]
