@@ -15,7 +15,7 @@ tqdm.pandas()
 from scipy.stats import f
 import multiprocessing, dill
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
-name   = 'ZT2powerccatime'
+name   = 'powerccatime'
 def directionality_test(granger_func, x, y, lag_order, xtest=None, ytest=None):
     f_stat_xy, p_value_xy, r2_xy, r2_y, r2_xy_p = granger_func(x, y, lag_order, xtest, ytest)
     f_stat_yx, p_value_yx, r2_yx, r2_x, r2_yx_p = granger_func(y, x, lag_order, xtest, ytest)
@@ -51,7 +51,7 @@ def get_cont_vars(df):
 # print("time: ", end3-end2)
 
 # Load the data
-df = pd.read_csv(os.path.join(folder, f'{name}.csv'))
+df = pd.read_parquet(os.path.join(folder, f'{name}.parquet'))
 cont_vars = get_cont_vars(df)
 dfc = df[cont_vars]
 dfc = dfc.drop(["time"],axis=1)
@@ -62,48 +62,43 @@ dfc = dfc.apply(lambda x: (x - x.mean()) / x.std())
 # Define the lag
 maxlag = 10
 
-# Initialize the KFold object
-from statsmodels.tsa.stattools import grangercausalitytests
-from PyIF import te_compute as te
-from sklearn.model_selection import TimeSeriesSplit
-from multiprocessing import cpu_count
-import pandas as pd
-import numpy as np
-chunk_size = 240_000 // cpu_count()
-num_chunks = df.shape[0] // chunk_size
-print("num_chunks: ", num_chunks)
-# n_splits = 2
-# tscv = TimeSeriesSplit(n_splits=n_splits)
-def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=True, GPU=False, calc_te=True):
+def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=False, GPU=False, calc_te=True):
     i, j = pair
     if i == j:
         return None
     print(f"Processing {i}, {j}")
-    X = dfc.iloc[:, [i, j]]
+    X = dfc.iloc[:, [i, j]]  # dfc should contain 'animal' column 
     X = X.dropna().values
     RESULTS = []
-    for chunk_index in tqdm(range(num_chunks), total=num_chunks, desc=f"{i}, {j}"):
-        start_index = chunk_index * chunk_size
-        end_index = min(start_index + chunk_size, X.shape[0])
-        X_chunk = X[start_index:end_index]
-        results = grangercausalitytests(X_chunk, maxlag=max_lag, verbose=False)
-        df_results = pd.DataFrame({
-            'lag': range(1, max_lag+1),
-            'pvalue': [results[lag][0]['ssr_ftest'][1] for lag in range(1, max_lag+1)],
-            'F': [results[lag][0]['ssr_ftest'][0] for lag in range(1, max_lag+1)],
-            'ssr_chi2test': [results[lag][0]['ssr_chi2test'][0] for lag in range(1, max_lag+1)],
-            'ssr_chi2test_pvalue': [results[lag][0]['ssr_chi2test'][1] for lag in range(1, max_lag+1)],
-            'lrtest': [results[lag][0]['lrtest'][0] for lag in range(1, max_lag+1)],
-            'lrtest_pvalue': [results[lag][0]['lrtest'][1] for lag in range(1, max_lag+1)],
-            'params_ftest': [results[lag][0]['params_ftest'][0] for lag in range(1, max_lag+1)],
-            'params_ftest_pvalue': [results[lag][0]['params_ftest'][1] for lag in range(1, max_lag+1)],
-        })
-        if calc_te:
-            df_results['transfer_entropy'] = te.te_compute(X_chunk[:, 0], X_chunk[:, 1], k, max_lag, safetyCheck, GPU)
-        df_results['column1'] = dfc.columns[i]
-        df_results['column2'] = dfc.columns[j]
-        df_results['chunk_index'] = chunk_index
-        RESULTS.append(df_results)
+    for animal in df['animal'].unique():  # loop through each unique animal
+        X_animal = X[df['animal'] == animal]  # filter data for the current animal
+        num_chunks = X_animal.shape[0] // chunk_size  # calculate num_chunks for the current animal
+        for chunk_index in tqdm(
+            range(num_chunks), total=num_chunks, desc=f"{i}, {j}"): 
+            start_index = chunk_index * chunk_size
+            end_index = min(start_index + chunk_size, X.shape[0])
+            X_chunk = X[start_index:end_index]
+            results = grangercausalitytests(X_chunk, maxlag=max_lag, verbose=False)
+            df_results = pd.DataFrame({
+                'lag': range(1, max_lag+1),
+                'pvalue': [results[lag][0]['ssr_ftest'][1] for lag in range(1, max_lag+1)],
+                'F': [results[lag][0]['ssr_ftest'][0] for lag in range(1, max_lag+1)],
+                'ssr_chi2test': [results[lag][0]['ssr_chi2test'][0] for lag in range(1, max_lag+1)],
+                'ssr_chi2test_pvalue': [results[lag][0]['ssr_chi2test'][1] for lag in range(1, max_lag+1)],
+                'lrtest': [results[lag][0]['lrtest'][0] for lag in range(1, max_lag+1)],
+                'lrtest_pvalue': [results[lag][0]['lrtest'][1] for lag in range(1, max_lag+1)],
+                'params_ftest': [results[lag][0]['params_ftest'][0] for lag in range(1, max_lag+1)],
+                'params_ftest_pvalue': [results[lag][0]['params_ftest'][1] for lag in range(1, max_lag+1)],
+                'animal': animal,  # add 'animal' to the results
+            })
+            if calc_te:
+                df_results['transfer_entropy'] = te.te_compute(X_chunk[:, 0], X_chunk[:, 1], k, max_lag, safetyCheck, GPU)
+                # Compute surrogate transfer entropy with negative lag
+                df_results['surrogate_transfer_entropy'] = te.te_compute(X_chunk[::-1, 0], X_chunk[::-1, 1], k, max_lag, safetyCheck, GPU)
+            df_results['column1'] = dfc.columns[i]
+            df_results['column2'] = dfc.columns[j]
+            df_results['chunk_index'] = chunk_index
+            RESULTS.append(df_results)
     RESULTS = pd.concat(RESULTS)
     return RESULTS
 

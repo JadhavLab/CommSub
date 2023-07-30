@@ -43,7 +43,8 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
     data_trajbound["lindist_bin"] = pd.cut(data_trajbound["lindist"], bins=n_bins)
     
     # Loop over the unique combinations of column, trajbound, and lindist_bin
-    for column, trajbound, bin_label in tqdm(list(itertools.product(columns_to_bootstrap, [0, 1], data_trajbound["lindist_bin"].unique().categories)), desc="column, trajbound, lindist_bin"):
+    iters = list(itertools.product(columns_to_bootstrap, [0, 1], data_trajbound["lindist_bin"].unique().categories))
+    for column, trajbound, bin_label in tqdm(iters, desc="column, trajbound, lindist_bin", total=len(iters)):
         # Get the data for this column, trajbound, and bin_label
         data = data_trajbound.loc[(data_trajbound["lindist_bin"] == bin_label), ["animal",column]]
         
@@ -63,7 +64,7 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
             bootstrap_sample = pd.concat(bootstrap_sample)
             
             # Compute the mean of the bootstrap sample
-            bootstrap_mean = bootstrap_sample.mean()
+            bootstrap_mean = bootstrap_sample.mean(numeric_only=True)
             
             # Add the result to the DataFrame
             bootstrap_means_combined.append({
