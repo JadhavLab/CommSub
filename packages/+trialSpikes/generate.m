@@ -161,6 +161,9 @@ for iPattern = 1:numResult
     Spk.spikeSampleMatrix{iPattern} = Spk.spikeSampleMatrix{iPattern}(good_neurons,:);
     Spk.spikeSampleTensor{iPattern} = Spk.spikeSampleTensor{iPattern}(good_neurons,:,:);
 end
+
+% Remove bad neurons from existing variables
+
 Spk.spikeCountMatrix = Spk.spikeCountMatrix(good_neurons,:);
 Spk.spikeRateMatrix  = Spk.spikeRateMatrix(good_neurons,:);
 Spk.areaPerNeuron    = Spk.areaPerNeuron(good_neurons);

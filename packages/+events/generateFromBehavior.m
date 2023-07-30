@@ -19,6 +19,7 @@ function Events = generateFromBehavior(behavior, varnames, Events, varargin)
     defaultTriggerOffVarnames = {''};
     defaultTriggerVars = {''};
     defaultTriggerVarLambdas = {@(x) false};
+    defaultMaxWindows = [];
 
     % Add optional parameters to the input parser
     addOptional(p, 'windowParameters', defaultWindowParameters);
@@ -28,6 +29,7 @@ function Events = generateFromBehavior(behavior, varnames, Events, varargin)
     addOptional(p, 'triggerOffVarnames', defaultTriggerOffVarnames);
     addOptional(p, 'triggerVars', defaultTriggerVars);
     addOptional(p, 'triggerVarLambdas', defaultTriggerVarLambdas);
+    addOptional(p, 'maxWindows', defaultMaxWindows);
 
     % Parse the inputs
     parse(p, varargin{:});
@@ -44,6 +46,7 @@ function Events = generateFromBehavior(behavior, varnames, Events, varargin)
 
     % Get the window parameters
     windowParameters = p.Results.windowParameters;
+    maxWindows  = p.Results.maxWindows;
 
     % If TriggerOn values and varnames are specified, trigger events based on the detection of the TriggerOn values
     triggerOnVarnames = p.Results.triggerOnVarnames;
@@ -55,7 +58,7 @@ function Events = generateFromBehavior(behavior, varnames, Events, varargin)
             triggerCondition = ... 
             @(behavior) (behavior.(field)(2:end) == triggerOnValues{i}) & ...
             (behavior.(field)(1:end-1) ~= triggerOnValues{i});  % Assuming 'vel' is the triggerOnVarname
-            [triggerOnTimes, triggerOnWindows] = getTriggerTimesAndWindows(behavior, triggerCondition, windowParameters);
+            [triggerOnTimes, triggerOnWindows] = getTriggerTimesAndWindows(behavior, triggerCondition, windowParameters, maxWindows);
             Events.cellOfWindows = [Events.cellOfWindows; {triggerOnWindows}];
             % Record the variable name used to generate the event
             Events.cellOfWin_varnames{end+1} = triggerOnVarnames{i};
@@ -72,7 +75,7 @@ function Events = generateFromBehavior(behavior, varnames, Events, varargin)
             field = triggerOffVarnames{i};
             triggerCondition = @(behavior) ...
             (behavior.(field)(2:end) ~= triggerOffValues{i}) & (behavior.(field)(1:end-1) == triggerOffValues{i});  % Assuming 'vel' is the triggerOffVarname
-            [triggerOffTimes, triggerOffWindows] = getTriggerTimesAndWindows(behavior, triggerCondition, windowParameters);
+            [triggerOffTimes, triggerOffWindows] = getTriggerTimesAndWindows(behavior, triggerCondition, windowParameters, maxWindows);
             Events.cellOfWindows = [Events.cellOfWindows; {triggerOffWindows}];
             Events.cellOfWin_varnames{end+1} = triggerOffVarnames{i};
         end
@@ -86,19 +89,26 @@ function Events = generateFromBehavior(behavior, varnames, Events, varargin)
             disp("Triggering on " + triggerVars{i});
             % For the TriggerLambda situation:
             triggerCondition = triggerVarLambdas{i};  % Assuming triggerVarLambdas{i} is a function handle that takes as input the behavior data and returns a logical array
-            [triggerLambdaTimes, triggerLambdaWindows] = getTriggerTimesAndWindows(behavior, triggerCondition, windowParameters);
+            [triggerLambdaTimes, triggerLambdaWindows] = getTriggerTimesAndWindows(behavior, triggerCondition, windowParameters, maxWindows);
             Events.cellOfWindows = [Events.cellOfWindows; {triggerLambdaWindows}]; 
             Events.cellOfWin_varnames{end+1} = triggerVars{i};
         end
     end
 end
 
-function [triggerTimes, triggerWindows] = getTriggerTimesAndWindows(behavior, triggerCondition, windowParameters)
+function [triggerTimes, triggerWindows] = getTriggerTimesAndWindows(behavior, triggerCondition, windowParameters, maxWindows)
     % Check the condition for triggering the event
     triggerEvents = triggerCondition(behavior);
 
     % Get the times when the events are triggered
     triggerTimes = behavior.time([false; triggerEvents]);  % Assuming 'time' is a variable in the behavior table
+
+    if ~isempty(maxWindows) && maxWindows > 0 && ... 
+        length(triggerTimes) > maxWindows
+        randomize = randperm(length(triggerTimes));
+        triggerTimes = triggerTimes(randomize(1:maxWindows));
+        triggerTimes = sort(triggerTimes);
+    end
 
     % Calculate start and end times for each window
     if windowParameters(1) > 0
@@ -108,5 +118,6 @@ function [triggerTimes, triggerWindows] = getTriggerTimesAndWindows(behavior, tr
     end
     endTimes = triggerTimes + windowParameters(2);
     triggerWindows = [startTimes, endTimes];
+
 end
 
