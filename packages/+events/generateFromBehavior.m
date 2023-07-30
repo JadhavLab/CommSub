@@ -70,7 +70,8 @@ function Events = generateFromBehavior(behavior, varnames, Events, varargin)
             % For the TriggerOff situation:
             disp("Triggering off " + triggerOffVarnames{i} + " = " + triggerOffValues{i});
             field = triggerOffVarnames{i};
-            triggerCondition = @(behavior) (behavior.(field)(1:end-1) ~= triggerOffValues{i}) & (behavior.(field)(2:end) == triggerOffValues{i});  % Assuming 'vel' is the triggerOffVarname
+            triggerCondition = @(behavior) ...
+            (behavior.(field)(2:end) ~= triggerOffValues{i}) & (behavior.(field)(1:end-1) == triggerOffValues{i});  % Assuming 'vel' is the triggerOffVarname
             [triggerOffTimes, triggerOffWindows] = getTriggerTimesAndWindows(behavior, triggerCondition, windowParameters);
             Events.cellOfWindows = [Events.cellOfWindows; {triggerOffWindows}];
             Events.cellOfWin_varnames{end+1} = triggerOffVarnames{i};

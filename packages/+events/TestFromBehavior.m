@@ -1,5 +1,4 @@
 Events = events.initEvents();
-
 % Test case 1: TriggerOn when velocity (vel) exceeds a certain threshold
 varnames = {'trajbound'};
 triggerOnValues = {1};  % Set the threshold to 2 (outbound)

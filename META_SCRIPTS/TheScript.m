@@ -189,7 +189,8 @@ if Option.analysis.cca
             'ploton', true, ... 
             'figAppend', figAppend, ...
             'runtype', 1);
-    save(figuredefine("data", figAppend), "Option", "triggered_spectrogram_run");
+    if ~exist(figuredefine("data"), 'dir'); mkdir(figuredefine("data")); end
+    save(figuredefine("data", "trigspec_" + figAppend), "Option", "triggered_spectrogram_run");
     dcnt=0;
     for d = progress([inf, 50], 'Title', 'Regress-faxis'); dcnt=dcnt+1;
     for i = progress(1:size(Patterns_overall,2), 'Title', 'Regress')

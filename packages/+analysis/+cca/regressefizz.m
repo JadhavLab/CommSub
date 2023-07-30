@@ -26,9 +26,13 @@ function out = regressefizz(efizz, Patterns_overall, field, varargin)
         % Interpolate the data to the desired number of sample points
         if strcmp(field, 'phi')
             % If the field is 'phi', we interpolate real and imaginary parts separately
-            real_part = interp1(original_sample_points, real(exp(1i*efizz.(field))), desired_sample_points);
-            imag_part = interp1(original_sample_points, imag(exp(1i*efizz.(field))), desired_sample_points);
-            efizz.(field) = angle(real_part + 1i*imag_part);
+            tmp  = zeros(size(efizz.(field), 1), d_factor);
+            for row = progress(1:size(efizz.(field), 1))
+                real_part = interp1(original_sample_points(:), real(exp(1i*efizz.(field)(row, :)))', desired_sample_points(:));
+                imag_part = interp1(original_sample_points(:), imag(exp(1i*efizz.(field)(row, :)))', desired_sample_points(:));
+                tmp(row, :) = angle(real_part + 1i*imag_part);
+            end
+            efizz.(field) = tmp;
         else
             % For other fields, we can interpolate directly
             tmp = zeros(size(efizz.(field), 1), d_factor);
