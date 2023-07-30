@@ -7,6 +7,7 @@ import glob
 from sklearn.utils import resample
 from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
+import itertools
 
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
 # name   = 'ZT2powerccatime'
@@ -41,21 +42,38 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
     # Bin the lindist data
     data_trajbound["lindist_bin"] = pd.cut(data_trajbound["lindist"], bins=n_bins)
     
-    for bin_label in tqdm(data_trajbound["lindist_bin"].unique().categories, desc="lindist_bin", total=n_bins):
-        for (iboot,column) in enumerate(columns_to_bootstrap):
-            # Get the data for this bin and column
-            data = data_trajbound.loc[data_trajbound["lindist_bin"] == bin_label, column]
-            # Generate bootstrap samples and compute their means
-            bootstrap_means = [resample(data).mean() for _ in range(n_bootstrap_samples)]
-            # Add the results to the DataFrame
-            for bootstrap_mean in bootstrap_means:
-                bootstrap_means_combined.append({
-                    "iboot": iboot,
-                    "lindist_bin": bin_label,
-                    "column": column,
-                    "bootstrap_mean": bootstrap_mean,
-                    "trajbound": trajbound
-                })
+    # Loop over the unique combinations of column, trajbound, and lindist_bin
+    for column, trajbound, bin_label in tqdm(list(itertools.product(columns_to_bootstrap, [0, 1], data_trajbound["lindist_bin"].unique().categories)), desc="column, trajbound, lindist_bin"):
+        # Get the data for this column, trajbound, and bin_label
+        data = data_trajbound.loc[(data_trajbound["lindist_bin"] == bin_label), ["animal",column]]
+        
+        # Find the minimum number of points available for each animal
+        min_points_per_animal = data.groupby("animal").size().min()
+        
+        # Generate bootstrap samples
+        for iboot in range(n_bootstrap_samples):
+            # Initialize an empty list to hold the data for this bootstrap sample
+            bootstrap_sample = []
+            
+            # Sample the minimum number of points from each animal's data
+            for animal, animal_data in data.groupby("animal"):
+                bootstrap_sample.append(animal_data.sample(min_points_per_animal, replace=True))
+            
+            # Concatenate the samples to form the bootstrap sample
+            bootstrap_sample = pd.concat(bootstrap_sample)
+            
+            # Compute the mean of the bootstrap sample
+            bootstrap_mean = bootstrap_sample.mean()
+            
+            # Add the result to the DataFrame
+            bootstrap_means_combined.append({
+                "iboot": iboot,
+                "lindist_bin": bin_label,
+                "column": column,
+                "bootstrap_mean": bootstrap_mean,
+                "trajbound": trajbound
+            })
+
 
 # Convert the list of dictionaries to a DataFrame
 bootstrap_means_combined = pd.DataFrame(bootstrap_means_combined)
