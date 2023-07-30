@@ -266,3 +266,5 @@ behavior.tperfOutbound = interp1(behavior.time(behavior.trajbound==0),...
 
 disp("Done with addToBehavior ... took " + num2str(toc) + " seconds");
 
+% Let's add a call to compute local idphi
+behavior.idphi = idphi(behavior.X, behavior.Y, 10); % 1/3 of a second integration window
