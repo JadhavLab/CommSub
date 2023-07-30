@@ -180,13 +180,13 @@ try
     lregion.trajall       = findgroups(lregion.epoch, lregion.traj);
     [groups, traj, ldist] = findgroups(lregion.trajall, lregion.ldistB);
     uGroups = unique(groups);
-    idphi = zeros(numel(traj), numel(ldist));
+    % idphi = zeros(numel(traj), numel(ldist));
     for g = uGroups'
 
         headdir = lregion(g,:).headdir;
         vel = lregion(g,:).vel;
         dphi = abs(diff(headdir));
-        idphi(traj(g), ldist(g)) = sum(dphi);
+        % idphi(traj(g), ldist(g)) = sum(dphi);
         dV = abs(diff(vel));
         idv(traj(g), ldist(g)) = sum(dV);
 

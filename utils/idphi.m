@@ -15,4 +15,6 @@ function idphi_series = idphi(x, y, interval)
         end_index = min(length(x), i + interval);
         idphi_series(i) = sum(abs(diff(phi(start_index:end_index))));
     end
+    idphi_series = idphi_series / (2 * interval + 1);
+    idphi_series = idphi_series(:);
 end
