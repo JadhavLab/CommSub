@@ -16,7 +16,7 @@ ip.addParameter('windowsize', 50, @isnumeric);
 ip.addParameter('specNames',  {'S1','S2','Cavg','wpli_avg','phi'}, @iscellstr);
 ip.addParameter('freq_ylims', [0, 50], @isnumeric);
 ip.addParameter('components', [1,2,3,4,5], @isnumeric);
-ip.addParameter('figAppend', "", @(x) isstring(x));
+ip.addParameter('figAppend', "");
 ip.addParameter('folder', "triggered_spectrogram", @(x) isstring(x));
 ip.addParameter('quantile_threshold', 0.95, @isnumeric);
 ip.addParameter('runtype', 1, @isnumeric); % 1 = run, 0 = rest
@@ -25,6 +25,15 @@ ip.parse(varargin{:});
 Opt = ip.Results;
 Opt.folder = string(Opt.folder) + "_run=" + Opt.runtype + filesep;
 boots = Opt.boots;
+
+if isstruct(Opt.figAppend)
+    scalar_info = Opt.figAppend;
+    tmp = string(struct2cell(scalar_info));
+    tmp = strjoin(tmp, "_");
+    Opt.figAppend = tmp;
+else
+    scalar_info = struct();
+end
 
 if ~exist(figuredefine(Opt.folder), 'dir')
     mkdir(figuredefine(Opt.folder));
@@ -201,10 +210,17 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
         % Length
         u_segments = u_segments(:,:,~isnan(u_segments(1,1,:)));
         v_segments = v_segments(:,:,~isnan(v_segments(1,1,:)));
+        % Interpolate UV to match efizz window segment time size
+        told = linspace(time_avg(1), time_avg(end), size(u_segments, 1));
+        tnew = linspace(time_avg(1), time_avg(end), total_window_size);
         u_average  = mean(u_segments, 3);
+        u_average  = interp1(told(:), u_average, tnew, 'linear');
         v_average  = mean(v_segments, 3);
+        v_average  = interp1(told(:), v_average, tnew, 'linear');
         u_stderr   = std(u_segments, 0, 3) / sqrt(size(u_segments, 3));
+        u_stderr   = interp1(told(:), u_stderr, tnew, 'linear');
         v_stderr   = std(v_segments, 0, 3) / sqrt(size(v_segments, 3));
+        v_stderr   = interp1(told(:), v_stderr, tnew, 'linear');
         if boots
             disp("bootstrapping boot=" + boots + " ci...")
             u_ci_upper = bootci(boots, @(x) mean(x, 1), u_segments);
@@ -235,6 +251,12 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
         out(i,comp).direction = d;
 
     end
+
+    % save to table
+    [t_uv, t_spec] = table.analyses.trigspec(out, time_avg, efizz.f, scalar_info);
+    tablefolder = figuredefine("tables");
+    parquetwrite(fullfile(tablefolder, "triggeredspec_uv"+Opt.figAppend+".parquet"), t_uv);
+    parquetwrite(fullfile(tablefolder, "triggeredspec_spec"+Opt.figAppend+".parquet"), t_spec);
 
     if Opt.ploton
         disp("Plotting " + name + " direction " + d);
