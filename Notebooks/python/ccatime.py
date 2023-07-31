@@ -1,4 +1,5 @@
 import numpy as np
+from pathos.helpers import cpu_count
 from jax import numpy as jnp
 import cupy as cp
 import pandas as pd
@@ -52,37 +53,43 @@ def get_cont_vars(df):
 # print("time: ", end3-end2)
 
 # Load the data
+print("Loading data...")
 df = pd.read_parquet(os.path.join(folder, f'{name}.parquet'))
+print("Data loaded.")
 cont_vars = get_cont_vars(df)
-dfc = df[cont_vars]
+dfc = df[["animal", *cont_vars]]
+print("Drop[ping time...")
+cont_vars.remove("time")
 dfc = dfc.drop(["time"],axis=1)
 # add these columns back from df: 'rewarded', 'trajbound', 'inBoundChoiceTimes', 'outBoundChoiceTimes', 'rewardTimes'
 # dfc = pd.concat([dfc, df[['rewarded', 'trajbound', 'inBoundChoiceTimes', 'outBoundChoiceTimes', 'rewardTimes','animal']]], axis=1)
-dfc = pd.concat([dfc, df[['animal']]], axis=1)
 # zscore dfc columns
-dfc = dfc.apply(lambda x: (x - x.mean()) / x.std())
+print("Z-scoring...")
+dfc.loc[:,cont_vars] = dfc.loc[:,cont_vars].apply(lambda x: (x - x.mean()) / x.std())
+print("Z-scoring done.")
 # Define the lag
 maxlag = 10
 animals = df['animal'].unique()
+chunk_size = 240_000 // cpu_count()
 i_list_startswith = ["U","V","S","Cavg","wpli_avg"]
 
-def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=False, GPU=False, calc_te=True):
+def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=False, GPU=False, 
+                 calc_te=True, chunk_size=chunk_size):
     i, j = pair
     if i == j or not any(dfc.columns[i].startswith(x) for x in i_list_startswith):
         return None
     print(f"Processing {i}, {j}")
-    X = dfc.iloc[:, [i, j]]  # dfc should contain 'animal' column 
-    if "animal" in X.columns:
+    if dfc.columns[i] == "animal" or dfc.columns[j] == "animal":
         return None
-    X = X.dropna().values
     RESULTS = []
     for animal in tqdm(df['animal'].unique(),total=len(animals)):  # loop through each unique animal
-        X_animal = X[df['animal'] == animal]  # filter data for the current animal
+        df_animal = df[df['animal'] == animal]  # filter data for the current animal
+        X_animal = df_animal.iloc[:, [i, j]].dropna().values
         num_chunks = X_animal.shape[0] // chunk_size  # calculate num_chunks for the current animal
         for chunk_index in range(num_chunks): 
             start_index = chunk_index * chunk_size
-            end_index = min(start_index + chunk_size, X.shape[0])
-            X_chunk = X[start_index:end_index]
+            end_index = min(start_index + chunk_size, len(X_animal))
+            X_chunk = X_animal[start_index:end_index]
             results = grangercausalitytests(X_chunk, maxlag=max_lag, verbose=False)
             df_results = pd.DataFrame({
                 'lag': range(1, max_lag+1),
@@ -118,6 +125,7 @@ pairs = [(i, j) for i in range(dfc.shape[1]) for j in range(dfc.shape[1])
 from pathos.multiprocessing import ProcessingPool as Pool
 with Pool(cpu_count()) as pool:
     results = pool.map(process_pair, pairs)
+!pushover "Done with granger causality and transfer entropy"
 
 # Convert results to a dataframe
 DF_results = pd.concat(results)

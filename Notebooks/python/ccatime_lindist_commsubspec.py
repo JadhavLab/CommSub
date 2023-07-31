@@ -46,7 +46,8 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
     iters = list(itertools.product(columns_to_bootstrap, [0, 1], data_trajbound["lindist_bin"].unique().categories))
     for column, trajbound, bin_label in tqdm(iters, desc="column, trajbound, lindist_bin", total=len(iters)):
         # Get the data for this column, trajbound, and bin_label
-        data = data_trajbound.loc[(data_trajbound["lindist_bin"] == bin_label), ["animal",column]]
+        data = data_trajbound.loc[(data_trajbound["lindist_bin"] == bin_label),
+                                  ["animal",column]]
         
         # Find the minimum number of points available for each animal
         min_points_per_animal = data.groupby("animal").size().min()
@@ -64,7 +65,7 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
             bootstrap_sample = pd.concat(bootstrap_sample)
             
             # Compute the mean of the bootstrap sample
-            bootstrap_mean = bootstrap_sample.mean(numeric_only=True)
+            bootstrap_mean = bootstrap_sample.mean(numeric_only=True).astype(float)
             
             # Add the result to the DataFrame
             bootstrap_means_combined.append({
@@ -80,12 +81,13 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
 bootstrap_means_combined = pd.DataFrame(bootstrap_means_combined)
 # Create a new lindist_bin_ind column
 bootstrap_means_combined["lindist_bin_ind"] = bootstrap_means_combined["lindist_bin"].apply(lambda x: x.right)
-bootstrap_means_combined.to_csv(os.path.join(folder, f'{name}_bootstrap{append}.csv'), index=False)
+bootstrap_means_combined.loc[:,'bootstrap_mean'] = bootstrap_means_combined.bootstrap_mean.astype(float)
+bootstrap_means_combined.to_parquet(os.path.join(folder, f'{name}_bootstrap{append}.parquet'), index=False)
 
 # Smooth
 bootstrap_means_combined.sort_values(by=["column", "trajbound", "iboot", "lindist_bin_ind"], inplace=True)
-bootstrap_means_combined["bootstrap_mean"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(7, 1).mean())
-bootstrap_means_combined["bootstrap_mean"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.interpolate())
+bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(7, 1).mean())
+bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean_smooth"].transform(lambda x: x.interpolate())
 
 
 # ----------------------------------------------------
@@ -95,13 +97,15 @@ scaler = MinMaxScaler()
 for column in tqdm(columns_to_bootstrap, desc="feature engineering", total=len(columns_to_bootstrap)):
     # Get the data for this column
     data = bootstrap_means_combined[bootstrap_means_combined["column"] == column]["bootstrap_mean"].values.reshape(-1, 1)
+    data_smooth  = bootstrap_means_combined[bootstrap_means_combined["column"] == column]["bootstrap_mean_smooth"].values.reshape(-1, 1)
     # Scale the data
     scaled_data = scaler.fit_transform(data)
+    scaled_data_smooth = scaler.fit_transform(data_smooth)
     # Update the DataFrame
     bootstrap_means_combined.loc[bootstrap_means_combined["column"] == column, "bootstrap_mean"] = scaled_data
-
-bootstrap_means_combined.head()
-bootstrap_means_combined.to_csv(os.path.join(folder, f'{name}_bootstrap_normalized{append}.csv'), index=False)
+    bootstrap_means_combined.loc[bootstrap_means_combined["column"] == column, "bootstrap_mean_smooth"] = scaled_data_smooth
+# bootstrap_means_combined.head()
+bootstrap_means_combined.to_parquet(os.path.join(folder, f'{name}_bootstrap_normalized{append}.parquet'), index=False)
 # ----------------------------------------------------
 
 # Define the trajbounds for each column of the subplot grid
@@ -233,3 +237,15 @@ if not os.path.exists(figfolder):
 plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.png', dpi=300)
 plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.svg', dpi=300)
 plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.pdf', dpi=300)
+
+
+# Split the data into two DataFrames based on trajbound
+df_trajbound_0 = bootstrap_means_combined[bootstrap_means_combined["trajbound"] == 0]
+df_trajbound_1 = bootstrap_means_combined[bootstrap_means_combined["trajbound"] == 1]
+
+# Check if there are any identical rows between the two DataFrames
+identical_rows = df_trajbound_0.merge(df_trajbound_1, how='inner')
+
+# Print the number of identical rows
+print("Number of identical rows:", identical_rows.shape[0])
+
