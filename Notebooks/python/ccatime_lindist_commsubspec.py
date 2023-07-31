@@ -43,8 +43,8 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
     data_trajbound["lindist_bin"] = pd.cut(data_trajbound["lindist"], bins=n_bins)
     
     # Loop over the unique combinations of column, trajbound, and lindist_bin
-    iters = list(itertools.product(columns_to_bootstrap, [0, 1], data_trajbound["lindist_bin"].unique().categories))
-    for column, trajbound, bin_label in tqdm(iters, desc="column, trajbound, lindist_bin", total=len(iters)):
+    iters = list(itertools.product(columns_to_bootstrap, data_trajbound["lindist_bin"].unique().categories))
+    for column, bin_label in tqdm(iters, desc="column, lindist_bin", total=len(iters)):
         # Get the data for this column, trajbound, and bin_label
         data = data_trajbound.loc[(data_trajbound["lindist_bin"] == bin_label),
                                   ["animal",column]]
@@ -188,6 +188,8 @@ line_styles = {
 
 # Create a 5x2 grid of subplots
 fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(15, 25))
+smooth = True
+field = "bootstrap_mean_smooth" if smooth else "bootstrap_mean"
 
 # Set the overall title
 fig.suptitle('Normalized Bootstrap Means for Different Components and Trajectories', fontsize=20)
@@ -199,21 +201,23 @@ for i, components in enumerate(row_components):
             bootstrap_means_combined["column"].isin(components) &
             (bootstrap_means_combined["trajbound"] == trajbound)
         ]
+        print("select components", components, "and unique components", data["column"].unique())
+        print("select trajbound", trajbound, "and unique trajbounds", data["trajbound"].unique())
         # Create the subplot
         for component in components:
             component_data = data[data["column"] == component].sort_values(by="lindist_bin_mid")
             # Add the base value to the bootstrap_mean if stratification is active
             if stratify_spectral_components and component.startswith(("S1", "S2","U", "V")):
-                component_data["bootstrap_mean"] += component_fill_bases[component]
+                component_data[field] += component_fill_bases[component]
             # Plot the curve
-            axes[i, j].plot(component_data["lindist_bin_mid"], component_data["bootstrap_mean"], color=component_colors[component], label=component,
+            axes[i, j].plot(component_data["lindist_bin_mid"], component_data[field], color=component_colors[component], label=component,
                             linestyle=line_styles[component])
             # Fill under the curve based on the component type and the flag
             if component in ["U1", "U2", "U3", "V1", "V2", "V3"] or (stratify_spectral_components and component.startswith(("S1", "S2"))):
-                axes[i, j].fill_between(component_data["lindist_bin_mid"], component_fill_bases[component], component_data["bootstrap_mean"], color=component_colors[component], alpha=0.3)
+                axes[i, j].fill_between(component_data["lindist_bin_mid"], component_fill_bases[component], component_data[field], color=component_colors[component], alpha=0.3)
             # Shade the confidence interval around the curve if the flag is set
             if shade_confidence_intervals:
-                component_data_bootstrap_samples = component_data["bootstrap_mean"].tolist()
+                component_data_bootstrap_samples = component_data[field].tolist()
                 confidence_interval = np.percentile(component_data_bootstrap_samples, [2.5, 97.5])
                 axes[i, j].fill_between(component_data["lindist_bin_mid"], confidence_interval[0], confidence_interval[1], color=component_colors[component], alpha=0.1)
         # Set the title and labels
@@ -239,6 +243,8 @@ plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.svg', dpi=300)
 plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.pdf', dpi=300)
 
 
+## -------------------------Checking for duplicates------------------------- ##
+
 # Split the data into two DataFrames based on trajbound
 df_trajbound_0 = bootstrap_means_combined[bootstrap_means_combined["trajbound"] == 0]
 df_trajbound_1 = bootstrap_means_combined[bootstrap_means_combined["trajbound"] == 1]
@@ -248,4 +254,14 @@ identical_rows = df_trajbound_0.merge(df_trajbound_1, how='inner')
 
 # Print the number of identical rows
 print("Number of identical rows:", identical_rows.shape[0])
+
+# Drop the 'trajbound' column
+df_no_trajbound = bootstrap_means_combined.drop('trajbound', axis=1)
+
+# Find duplicate rows
+duplicates = df_no_trajbound.duplicated()
+
+# Print the number of duplicate rows
+print("Number of duplicate rows:", duplicates.sum())
+
 

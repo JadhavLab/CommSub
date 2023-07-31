@@ -17,8 +17,17 @@ function out = event_analysis(Patterns_overall, Spk, Events, Option, varargin)
 ip = inputParser();
 ip.addParameter('precompute', 0, @isscalar);
 ip.addParameter('method', 'zscore', @ischar);
+ip.addParameter('scalar_struct', []);
+ip.addParameter('N', 5, @isscalar);
 ip.parse(varargin{:});
 Opt = ip.Results;
+
+if isempty(Opt.scalar_struct)
+    Opt.scalar_struct = struct(...
+        'animal', Option.animal,...
+        'genH', Option.genH_name,...
+        'zscore', Option.preProcess_zscore);
+end
 
 % Assuming 'area1' and 'area2' are the indices of the areas you're interested in
 area1 = find(strcmp(Spk.areaPerNeuron, 'CA1'));
@@ -35,9 +44,9 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
 
     event_u = cell(length(Events.cellOfWindows), length(Events.cellOfWindows{1}));
     event_v = cell(length(Events.cellOfWindows), length(Events.cellOfWindows{1}));
-    event_r_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), 3);
-    event_u_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), 3);
-    event_v_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), 3);
+    event_r_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
+    event_u_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
+    event_v_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
 
     if isempty(Patterns_overall(i).cca)
         continue;
@@ -83,6 +92,7 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
 
     % Loop over all events
     W = struct();
+    ecnt=0;
     for w = p
         windows = Events.cellOfWindows{w};
         for j = 1:length(windows)
@@ -91,6 +101,7 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
             event_time_bins = find(Spk.timeBinMidPoints >= windows(j,1) &...
                 Spk.timeBinMidPoints <= windows(j,2));
             if isempty(event_time_bins)
+                ecnt=ecnt+1;
                 continue;
             end
 
@@ -103,13 +114,14 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
             end
 
             % Project the spike data onto the space defined by a and b to get u and v
-            u = area1_spikes' * a(:,1:3);
-            v = area2_spikes' * b(:,1:3);
+            u = area1_spikes' * a(:,1:Opt.N);
+            v = area2_spikes' * b(:,1:Opt.N);
 
             % Calculate the correlation between u and v
-            r = [corr(u(:,1), v(:,1)),...
-                 corr(u(:,2), v(:,2)),...
-                 corr(u(:,3), v(:,3))];
+            r = nan(Opt.N,1);
+            for n = 1:Opt.N
+                r(n) = corr(u(:,n), v(:,n));
+            end
             
             % Store the CCA r-value and canonical variates for this event
             event_r_values(w,j,:) = r;  % assuming we are interested in the first canonical correlation
@@ -120,6 +132,9 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
         end
     end
 
+    disp("...done")
+    disp("fraction of empty events: " + num2str(ecnt/numel(Events.cellOfWindows)))
+
     % Store the CCA r-values and canonical variates for this pattern
     out(i{:}).event_r_values = event_r_values;
     out(i{:}).event_u_values = event_u_values;
@@ -128,3 +143,11 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
     out(i{:}).event_v        = event_v;
 
 end
+
+tabappend = struct2cell(Opt.scalar_struct);
+tabappend = string(tabappend(:));
+tabappend = strjoin(tabappend, "_");
+
+tablefolder = figuredefine("tables");
+t = table.analyses.eventuv(out, [], [], [], Opt.scalar_struct);
+parquetwrite(fullfile(tablefolder, "eventuv" + tabappend + ".parquet"), t);
