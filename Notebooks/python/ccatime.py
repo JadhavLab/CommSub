@@ -70,7 +70,7 @@ print("Z-scoring done.")
 # Define the lag
 maxlag = 10
 animals = df['animal'].unique()
-chunk_size = 240_000 // cpu_count()
+chunk_size = 260_000 // cpu_count()
 i_list_startswith = ["U","V","S","Cavg","wpli_avg"]
 
 def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=False, GPU=False, 
@@ -81,16 +81,22 @@ def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=False, GPU=False,
     print(f"Processing {i}, {j}")
     if dfc.columns[i] == "animal" or dfc.columns[j] == "animal":
         return None
+    if any(dfc.iloc[:,[i,j]].dtypes == "object"):
+        return None
     RESULTS = []
-    for animal in tqdm(df['animal'].unique(),total=len(animals)):  # loop through each unique animal
-        df_animal = df[df['animal'] == animal]  # filter data for the current animal
-        X_animal = df_animal.iloc[:, [i, j]].dropna().values
+    for animal in tqdm(dfc['animal'].unique(),total=len(animals)):  # loop through each unique animal
+        dfc_animal = dfc.query("animal == @animal")  # get the data for the current animal
+        X_animal = dfc_animal.iloc[:, [i, j]].dropna().values
         num_chunks = X_animal.shape[0] // chunk_size  # calculate num_chunks for the current animal
         for chunk_index in range(num_chunks): 
             start_index = chunk_index * chunk_size
             end_index = min(start_index + chunk_size, len(X_animal))
             X_chunk = X_animal[start_index:end_index]
-            results = grangercausalitytests(X_chunk, maxlag=max_lag, verbose=False)
+            try:
+                results = grangercausalitytests(X_chunk, maxlag=max_lag, verbose=False)
+            except ValueError:
+                print(f"ValueError for {i}, {j}, {animal}, {chunk_index}")
+                continue
             df_results = pd.DataFrame({
                 'lag': range(1, max_lag+1),
                 'pvalue': [results[lag][0]['ssr_ftest'][1] for lag in range(1, max_lag+1)],
@@ -114,6 +120,8 @@ def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=False, GPU=False,
     RESULTS = pd.concat(RESULTS)
     return RESULTS
 
+import gc
+gc.collect()
 test = process_pair((1,2))
 
 # Serialize the function
@@ -125,7 +133,7 @@ pairs = [(i, j) for i in range(dfc.shape[1]) for j in range(dfc.shape[1])
 from pathos.multiprocessing import ProcessingPool as Pool
 with Pool(cpu_count()) as pool:
     results = pool.map(process_pair, pairs)
-!pushover "Done with granger causality and transfer entropy"
+!pushover "Done with granger causality and transfer entropye
 
 # Convert results to a dataframe
 DF_results = pd.concat(results)

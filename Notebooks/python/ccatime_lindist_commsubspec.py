@@ -59,22 +59,20 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
             
             # Sample the minimum number of points from each animal's data
             for animal, animal_data in data.groupby("animal"):
-                bootstrap_sample.append(animal_data.sample(min_points_per_animal, replace=True))
-            
-            # Concatenate the samples to form the bootstrap sample
-            bootstrap_sample = pd.concat(bootstrap_sample)
-            
-            # Compute the mean of the bootstrap sample
-            bootstrap_mean = bootstrap_sample.mean(numeric_only=True).astype(float)
-            
-            # Add the result to the DataFrame
-            bootstrap_means_combined.append({
-                "iboot": iboot,
-                "lindist_bin": bin_label,
-                "column": column,
-                "bootstrap_mean": bootstrap_mean,
-                "trajbound": trajbound
-            })
+                sample = (animal_data.sample(min_points_per_animal, replace=True))
+                
+                # Compute the mean of the bootstrap sample
+                bootstrap_mean = sample.mean(numeric_only=True).astype(float)
+                
+                # Add the result to the DataFrame
+                bootstrap_means_combined.append({
+                    "iboot": iboot,
+                    "lindist_bin": bin_label,
+                    "column": column,
+                    "bootstrap_mean": bootstrap_mean,
+                    "trajbound": trajbound,
+                    "animal": animal
+                })
 
 
 # Convert the list of dictionaries to a DataFrame
@@ -89,11 +87,11 @@ bootstrap_means_combined.sort_values(by=["column", "trajbound", "iboot", "lindis
 bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(7, 1).mean())
 bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean_smooth"].transform(lambda x: x.interpolate())
 
-
 # ----------------------------------------------------
 # Normalize the bootstrap_mean values
 # ----------------------------------------------------
 scaler = MinMaxScaler()
+iters = itertools.product(columns_to_bootstrap, bootstrap_means_combined.animal.unique())
 for column in tqdm(columns_to_bootstrap, desc="feature engineering", total=len(columns_to_bootstrap)):
     # Get the data for this column
     data = bootstrap_means_combined[bootstrap_means_combined["column"] == column]["bootstrap_mean"].values.reshape(-1, 1)
@@ -151,7 +149,7 @@ bootstrap_means_combined["lindist_bin_mid"] = \
 # plt.tight_layout()
 # # Add space for the overall title
 # fig.subplots_adjust(top=0.92)
-plt.show()
+# plt.show()
 
 # ----------------------------------------------------
 
