@@ -4,8 +4,13 @@ function [t_uv, t_spec] = trigspec(s, time_labels, frequency_labels, scalar_info
         t_uv = cell(1, numel(s));
         t_spec = cell(1, numel(s));
         for i = 1:numel(s)
+            if nd.isEmpty(s(i))
+                continue
+            end
             [t_uv{i}, t_spec{i}] = table.analyses.trigspec(s(i), time_labels, frequency_labels, scalar_info);
         end
+        t_uv   = t_uv(~cellfun(@isempty, t_uv));
+        t_spec = t_spec(~cellfun(@isempty, t_spec));
         t_uv   = vertcat(t_uv{:});
         t_spec = vertcat(t_spec{:});
     else

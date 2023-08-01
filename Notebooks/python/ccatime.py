@@ -123,23 +123,33 @@ def process_pair(pair, k=1, max_lag=maxlag, safetyCheck=False, GPU=False,
 import gc
 gc.collect()
 test = process_pair((1,2))
+# serialized_func = dill.dumps(process_pair)
 
-# Serialize the function
-serialized_func = dill.dumps(process_pair)
+## BLOCK DESIGN
 # Prepare a list of all pairs of column indices
-pairs = [(i, j) for i in range(dfc.shape[1]) for j in range(dfc.shape[1]) 
-         if i != j]
-# Create a pool of worker processes
 from pathos.multiprocessing import ProcessingPool as Pool
-with Pool(cpu_count()) as pool:
-    results = pool.map(process_pair, pairs)
-!pushover "Done with granger causality and transfer entropye
+# Define block size
+def process_block(block_pairs):
+    with Pool(cpu_count()) as pool:
+        block_results = pool.map(process_pair, block_pairs)
+    return block_results
+pairs = [(i, j) for i in range(dfc.shape[1]) for j in range(dfc.shape[1]) if i != j]
+block_size = 32
+num_blocks = len(pairs) // block_size + (len(pairs) % block_size != 0)
+all_results = []
+for block_index in tqdm(range(num_blocks), total=num_blocks, desc='Blocks'):
+    start_index = block_index * block_size
+    end_index = min((block_index + 1) * block_size, len(pairs))
+    block_pairs = pairs[start_index:end_index]
+    block_results = process_block(block_pairs)
+    all_results.extend(block_results)
+    print(f'Finished processing block {block_index + 1} of {num_blocks}')
 
-# Convert results to a dataframe
-DF_results = pd.concat(results)
+DF_results = pd.concat(all_results)
 pre = name.replace('ccatime', f'_granger_causality')
-DF_results.to_csv(os.path.join(folder, f'{pre}.csv'),
-                  index=False)
+DF_results.to_csv(os.path.join(folder, f'{pre}.csv'), index=False)
+
+######################################
 
 # Let's add some summary statistics
 pre = name.replace('ccatime', f'_granger_causality')

@@ -27,7 +27,7 @@ function out = regressefizz(efizz, Patterns_overall, field, varargin)
         if strcmp(field, 'phi')
             % If the field is 'phi', we interpolate real and imaginary parts separately
             tmp  = zeros(size(efizz.(field), 1), d_factor);
-            for row = progress(1:size(efizz.(field), 1))
+            for row = 1:size(efizz.(field), 1)
                 real_part = interp1(original_sample_points(:), real(exp(1i*efizz.(field)(row, :)))', desired_sample_points(:));
                 imag_part = interp1(original_sample_points(:), imag(exp(1i*efizz.(field)(row, :)))', desired_sample_points(:));
                 tmp(row, :) = angle(real_part + 1i*imag_part);
@@ -36,7 +36,7 @@ function out = regressefizz(efizz, Patterns_overall, field, varargin)
         else
             % For other fields, we can interpolate directly
             tmp = zeros(size(efizz.(field), 1), d_factor);
-            for i = progress(1:size(efizz.(field), 1))
+            for i = 1:size(efizz.(field), 1)
                 tmp(i, :) = interp1(original_sample_points, efizz.(field)(i, :), desired_sample_points);
             end
             efizz.(field) = tmp;
@@ -79,8 +79,8 @@ function out = regressefizz(efizz, Patterns_overall, field, varargin)
             pvalue_V = model_V.Coefficients.pValue;
         else
             % Convert to unit circle coordinates
-            x = cosd(aligned_efizz);
-            y = sind(aligned_efizz);
+            x = cos(aligned_efizz);
+            y = sin(aligned_efizz);
             % Perform regression for U
             model_U_x = fitlm(x, U(:, i));
             model_U_y = fitlm(y, U(:, i));

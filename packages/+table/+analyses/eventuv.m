@@ -56,8 +56,12 @@ function t_event = eventuv(s, pattern_labels, event_labels, uv_labels, scalar_in
     else
         t_event = cell(1, numel(s));
         for i = 1:numel(s)
+            if nd.isEmpty(s(i))
+                continue
+            end
             t_event{i} = table.analyses.eventuv(s(i), pattern_labels, event_labels, uv_labels, scalar_info);
         end
+        t_event(cellfun(@isempty, t_event)) = [];
         t_event = vertcat(t_event{:});
     end
 end

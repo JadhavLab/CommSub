@@ -34,13 +34,13 @@ columns_to_bootstrap = ["U1", "U2", "U3", "V1", "V2", "V3", "Cavgtheta",
 
 # Reinitialize the DataFrame to hold the results
 bootstrap_means_combined = []
+# Bin the lindist data
+df["lindist_bin"] = pd.cut(df["lindist"], bins=n_bins)
 
 # Rerun the bootstrap for each bin and each column, for each trajectory bound
 for trajbound in tqdm([0, 1], desc="trajbound", total=2):
     # Filter the data based on trajbound
     data_trajbound = df[df["trajbound"] == trajbound]
-    # Bin the lindist data
-    data_trajbound["lindist_bin"] = pd.cut(data_trajbound["lindist"], bins=n_bins)
     
     # Loop over the unique combinations of column, trajbound, and lindist_bin
     iters = list(itertools.product(columns_to_bootstrap, data_trajbound["lindist_bin"].unique().categories))
@@ -83,28 +83,33 @@ bootstrap_means_combined.loc[:,'bootstrap_mean'] = bootstrap_means_combined.boot
 bootstrap_means_combined.to_parquet(os.path.join(folder, f'{name}_bootstrap{append}.parquet'), index=False)
 
 # Smooth
-bootstrap_means_combined.sort_values(by=["column", "trajbound", "iboot", "lindist_bin_ind"], inplace=True)
-bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(7, 1).mean())
-bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["column", "trajbound", "iboot"])["bootstrap_mean_smooth"].transform(lambda x: x.interpolate())
+bootstrap_means_combined.sort_values(by=["animal", "column", "trajbound", "iboot", "lindist_bin_ind"], inplace=True)
+bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["animal","column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(7, 1).mean())
+bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["animal","column", "trajbound", "iboot"])["bootstrap_mean_smooth"].transform(lambda x: x.interpolate())
 
 # ----------------------------------------------------
 # Normalize the bootstrap_mean values
 # ----------------------------------------------------
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
 scaler = MinMaxScaler()
 iters = itertools.product(columns_to_bootstrap, bootstrap_means_combined.animal.unique())
-for column in tqdm(columns_to_bootstrap, desc="feature engineering", total=len(columns_to_bootstrap)):
-    # Get the data for this column
-    data = bootstrap_means_combined[bootstrap_means_combined["column"] == column]["bootstrap_mean"].values.reshape(-1, 1)
-    data_smooth  = bootstrap_means_combined[bootstrap_means_combined["column"] == column]["bootstrap_mean_smooth"].values.reshape(-1, 1)
+for column, animal in tqdm(iters, desc="feature engineering", total=len(columns_to_bootstrap) * bootstrap_means_combined.animal.nunique()):
+    # Get the data for this column and animal
+    data = bootstrap_means_combined[(bootstrap_means_combined["column"] == column) & (bootstrap_means_combined["animal"] == animal)]["bootstrap_mean"].values.reshape(-1, 1)
+    data_smooth  = bootstrap_means_combined[(bootstrap_means_combined["column"] == column) & (bootstrap_means_combined["animal"] == animal)]["bootstrap_mean_smooth"].values.reshape(-1, 1)
     # Scale the data
     scaled_data = scaler.fit_transform(data)
     scaled_data_smooth = scaler.fit_transform(data_smooth)
     # Update the DataFrame
-    bootstrap_means_combined.loc[bootstrap_means_combined["column"] == column, "bootstrap_mean"] = scaled_data
-    bootstrap_means_combined.loc[bootstrap_means_combined["column"] == column, "bootstrap_mean_smooth"] = scaled_data_smooth
+    bootstrap_means_combined.loc[(bootstrap_means_combined["column"] == column) & (bootstrap_means_combined["animal"] == animal), "bootstrap_mean"] = scaled_data
+    bootstrap_means_combined.loc[(bootstrap_means_combined["column"] == column) & (bootstrap_means_combined["animal"] == animal), "bootstrap_mean_smooth"] = scaled_data_smooth
 # bootstrap_means_combined.head()
 bootstrap_means_combined.to_parquet(os.path.join(folder, f'{name}_bootstrap_normalized{append}.parquet'), index=False)
 # ----------------------------------------------------
+# Add the lindist_bin_mid column back to the DataFrame
+bootstrap_means_combined["lindist_bin_mid"] = \
+    bootstrap_means_combined["lindist_bin"].apply(lambda x: x.mid)
 
 # Define the trajbounds for each column of the subplot grid
 column_trajbounds = [0, 1]
@@ -118,9 +123,6 @@ row_components = [["U1", "U2", "U3"], ["V1", "V2", "V3"], ["Cavgtheta",
                   ["Cavgripple", "S1ripple", "S2ripple", "wpli_avgripple"]]
 
 
-# Add the lindist_bin_mid column back to the DataFrame
-bootstrap_means_combined["lindist_bin_mid"] = \
-    bootstrap_means_combined["lindist_bin"].apply(lambda x: x.mid)
 
 # # Create a 5x2 grid of subplots
 # fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(15, 25))
@@ -236,9 +238,9 @@ plt.show()
 figfolder = '/Volumes/MATLAB-Drive/Shared/figures/lindist_bootstrap/'
 if not os.path.exists(figfolder):
     os.makedirs(figfolder)
-plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.png', dpi=300)
-plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.svg', dpi=300)
-plt.savefig(figfolder + f'lindist_bootstrap{append}_balancedanim.pdf', dpi=300)
+plt.savefig(figfolder + f'lindist_bootstrap{append}_{field}_balancedanim.png', dpi=300)
+plt.savefig(figfolder + f'lindist_bootstrap{append}_{field}_balancedanim.svg', dpi=300)
+plt.savefig(figfolder + f'lindist_bootstrap{append}_{field}_balancedanim.pdf', dpi=300)
 
 
 ## -------------------------Checking for duplicates------------------------- ##
