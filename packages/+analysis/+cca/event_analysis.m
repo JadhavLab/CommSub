@@ -47,6 +47,7 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
     event_r_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
     event_u_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
     event_v_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
+    event_time = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}));
 
     if isempty(Patterns_overall(i).cca)
         continue;
@@ -91,10 +92,10 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
     directionality = Patterns_overall(i{:}).directionality;
 
     % Loop over all events
-    W = struct();
     ecnt=0;
     for w = p
         windows = Events.cellOfWindows{w};
+        disp("length windows = " + length(windows))
         for j = 1:length(windows)
 
             % Find the time bins that correspond to the current event
@@ -104,6 +105,7 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
                 ecnt=ecnt+1;
                 continue;
             end
+            center_time = mean(windows(j,:));
 
             % Extract the spike data for the two areas during this event
             if directionality == "hpc-pfc"
@@ -129,19 +131,18 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
             event_v_values(w,j,:) = mean(v,1);
             event_u{w,j} = u;
             event_v{w,j} = v;
+            event_time(w,j) = center_time;
         end
     end
-
     disp("...done")
     disp("fraction of empty events: " + num2str(ecnt/numel(Events.cellOfWindows)))
-
     % Store the CCA r-values and canonical variates for this pattern
     out(i{:}).event_r_values = event_r_values;
     out(i{:}).event_u_values = event_u_values;
     out(i{:}).event_v_values = event_v_values;
     out(i{:}).event_u        = event_u;
     out(i{:}).event_v        = event_v;
-
+    out(i{:}).event_time     = event_time;
 end
 
 tabappend = struct2cell(Opt.scalar_struct);

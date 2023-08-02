@@ -8,13 +8,13 @@ import scipy
 import warnings
 
 # Reload the data
-
-animal = 'ZT2'
+animal = ''
 typ    = 'power' # coherence
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
 df = pd.read_csv(f'/{folder}/{animal}{typ}_granger_causality_directionality.csv')
 # If two copies of same column, drop one
 df = df.loc[:, ~df.columns.duplicated()]
+cmap = sns.diverging_palette(250, 10, s=80, l=55, n=9, as_cmap=True)
 
 def get_significant_interactions(df, max_lag_order=df['lag'].max(),
                                  drop_columns=['time', 'vel']):
@@ -80,12 +80,15 @@ for lag in range(1, df['lag'].max()+1):
 # --------------------------------------------------------------------------
 # Set up the matplotlib figure
 def plot_heatmap(heatmap_data_signed_log):
+
+    if 'column1' in heatmap_data_signed_log.columns:
+        heatmap_data_signed_log = heatmap_data_signed_log.set_index('column1')
+
     f, ax = plt.subplots(figsize=(12, 9))
 
     # Draw the heatmap
-    cmap = sns.diverging_palette(250, 10, s=80, l=55, n=9, as_cmap=True)
-    sns.heatmap(heatmap_data_signed_log, cmap=cmap, center=0, annot=True, fmt=".2f",
-                square=True, linewidths=.5, cbar_kws={"shrink": .5})
+    sns.heatmap(heatmap_data_signed_log, cmap=cmap, center=0, annot=True,
+                fmt=".2f", square=True, linewidths=.5, cbar_kws={"shrink": .5})
 
     # Set the title
     ax.set_title('Signed Logarithm of Average Magnitude of Influence for Maximum Lag Order (excluding \'time\' column)')
@@ -103,6 +106,7 @@ plot_heatmap(hds[7])
 plot_heatmap(hds[8])
 plot_heatmap(hds[9])
 plot_heatmap(hds[10])
+plt.close('all')
 
 # TODO: average the lower diagonal with inverse of upper diagonal
 
@@ -119,7 +123,7 @@ zone_mapping = {'Cavg': ['Cavgtheta', 'Cavgdelta', 'Cavgripple'],
                 'S2': ['S2theta', 'S2delta', 'S2ripple'],
                 'U': ['U1', 'U2', 'U3'],
                 'V': ['V1', 'V2', 'V3'],
-                'behavior': ['vel', 'accel', 'lindist']}
+                'behavior': ['accel', 'lindist']}
 
 # Define the order of the columns based on the zones
 column_order = [column for zone in zones for column in
@@ -298,3 +302,5 @@ def plot_interactions_for_lag(df, lag):
 plot_interactions_for_lag(df, 1)
 plot_interactions_for_lag(df, 2)
 
+
+#

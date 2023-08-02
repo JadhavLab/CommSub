@@ -16,7 +16,7 @@ function t_event = eventuv(s, pattern_labels, event_labels, uv_labels, scalar_in
 
     if numel(s) == 1
         % Define the event field names
-        event_fields = {'event_u_values', 'event_v_values', 'patterns', 'events', 'uv_components'};
+        event_fields = {'event_u_values', 'event_v_values', 'patterns', 'events', 'uv_components', 'event_time'};
 
         s.patterns = pattern_labels(:);
         s.events = event_labels(:)';
@@ -59,9 +59,12 @@ function t_event = eventuv(s, pattern_labels, event_labels, uv_labels, scalar_in
             if nd.isEmpty(s(i))
                 continue
             end
+            [i1,i2] = ind2sub(size(s), i);
+            scalar_info.pattern_cca = i;
+            scalar_info.pattern_cca1 = i1;
+            scalar_info.pattern_cca2 = i2;
             t_event{i} = table.analyses.eventuv(s(i), pattern_labels, event_labels, uv_labels, scalar_info);
         end
-        t_event(cellfun(@isempty, t_event)) = [];
         t_event = vertcat(t_event{:});
     end
 end

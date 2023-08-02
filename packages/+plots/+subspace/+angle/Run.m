@@ -69,15 +69,12 @@ targetIndex = nd.fieldGetCell(P,'index_target');
 smax = max(cellfun(@max, sourceIndex),[],'all');
 tmax = max(cellfun(@max, targetIndex),[],'all');
 
-
 % ----------------------------
 % How many components?
 % ----------------------------
-K = 1:6;
-for selectGenH  = ["coherence", "fft", "wpli"]
-for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
-                   ..."frobenius_similarity", "frobenius_dissimilarity"...
-                ]
+K = 2:6;
+for selectGenH  = progress(["coherence", "fft", "wpli"],'Title','selectGenH')
+for measurement = progress(["princ_similarity" ,"princ_dissimilarity"],'Title','measurement')
     for normalize = [false, true]
         for k = progress(K, 'Title','K')
 
@@ -91,7 +88,9 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
                 thisB_ = B_{I{:}};
                 thisV = V{ I{:} }; % V is the same for all indices
                 tmp  = thisB_(:,1:k) * thisV(:,1:k)'; % B = B_ * V' (dim-reduced)
-                tmp = munge.alignToAreaMatrices(tmp, sourceIndex{I{:}}, targetIndex{I{:}}, smax, tmax); %ry 2023
+                if isempty(selectGenH)
+                    tmp = munge.alignToAreaMatrices(tmp, sourceIndex{I{:}}, targetIndex{I{:}}, smax, tmax); %ry 2023
+                end
                 B{I{:}} = tmp;
             end
 
@@ -148,6 +147,7 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
 
                 end
             end
+                keyboard
             if endsWith(measurement, "similarity")
                 subspaceDist = squeeze(median(subspaceDist,1));
                 subspaceDist = subspaceDist + abs(min(subspaceDist,[],'all'));
@@ -168,19 +168,19 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
             if ~exist(figuredefine("subspaceAngle","type="+selectGenH), 'dir')
                 mkdir(figuredefine("subspaceAngle","type="+selectGenH))
             end
-            analysisName = figuredefine("subspaceAngle","onlyCoh="+onlyCoh, analysisName);
+            analysisName = figuredefine("subspaceAngle","type="+selectGenH, analysisName);
             save(analysisName, 'subspaceDist', 'rowVar');
         end
     end
 end
 end
 
-K = 2:7;
-figureFolder = figuredefine("subspaceAngle","onlyCoh="+onlyCoh);
-for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
-                   "frobenius_similarity", "frobenius_dissimilarity"]
+K = 2:6;
+for selectGenH  = ["coherence", "fft", "wpli"]
+for measurement = ["princ_similarity"]
     for normalize = [false, true]
         for k = progress(K, 'Title','K')
+            figureFolder = figuredefine("subspaceAngle","type="+selectGenH);
             analysisName = sprintf('subspaceDist_K=%d_norm=%d_measure=%s.mat',...
                 k, normalize, measurement);
             if ~exist(figuredefine("subspaceAngle","type="+selectGenH), 'dir')
@@ -192,11 +192,13 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
             % ----------------------------
             % Normalize and plot distances
             % ----------------------------
-            f = figc("subpsace distances, " + analysisName);
+            % f = figc("subpsace distances, " + analysisName);
             for i = 1:size(subspaceDist,1)
                 for j = 1:size(subspaceDist,2)
                     if i==j
-                        subspaceDist(i,j) = 0;
+                        mu1 = subspaceDist(i,:);
+                        mu2 = subspaceDist(:,j);
+                        subspaceDist(i,j) = mean([mu1(:) mu2(:)], 'all','omitnan');
                     end
                 end
             end
@@ -209,6 +211,7 @@ for measurement = ["princ_similarity" ,"princ_dissimilarity", ...
             cgFig(1).Children(end).FontSize=16;
             G.addTitle("subspace distance, K="+k + ", " + measurement + ", " + normalize)
             saveas(cgFig(1),fullfile(figureFolder,sprintf('subspaceDistance_K=%d.svg',k)));
+end
 end
 end
 end

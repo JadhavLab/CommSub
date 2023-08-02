@@ -157,11 +157,11 @@ if Option.analysis.cca % 🔀
     % Copy over the components
     Components_overall =  ...
          nd.fieldSet(Components_overall, 'cca', Patterns_overall);
-    analysis.cca.savedat(Patterns_overall, behavior, Option, figAppend);
+    analysis.cca.savedat(Patterns_overall, Spk, behavior, Option, figAppend);
     % ---------------------------------------------------------------------
     % Event analysis ------------------------------------------------------
     % (append cca commsub levels during events)
-    % TODO: 🛑 藺
+    % 藺
     event_anal   = ... 
          analysis.cca.event_analysis(Patterns_overall, Spk, Events, Option);
     plots.plot_event_values(event_anal(2,7), 'figAppend', figAppend);
@@ -183,7 +183,6 @@ if Option.analysis.cca % 🔀
     disp("Running triggered spectrogram - run")
     close all
     % 藺 triggered win
-    keyboard
     triggered_spectrogram_run = ...
     analysis.cca.triggered_spectrogram(Patterns_overall, Spk, efizz,...
     'ploton', false, ... 
@@ -193,15 +192,18 @@ if Option.analysis.cca % 🔀
     save(figuredefine("data", "trigspec_" + figAppend), "Option", "triggered_spectrogram_run");
     dcnt=0;
     % 藺 regress
-    for d = progress([inf, 50], 'Title', 'Regress-faxis'); dcnt=dcnt+1;
+    tic
+    for d = progress([inf], 'Title', 'Regress-faxis'); dcnt=dcnt+1;
         for i = progress(1:size(Patterns_overall,2), 'Title', 'Regress')
             for f = progress(["phi","S1","S2","Cavg","wpli_avg"],'Title', 'Regress-field')
-                datterns_overall(2,i).regress(dcnt).(f) = ... 
+                Patterns_overall(2,i).regress(dcnt).(f) = ... 
                 analysis.cca.regressefizz(efizz, Patterns_overall(2,i), f,...
                 'faxis', d, "tabPrepend", figAppend, 'ploton', true);
             end
         end
     end
+    close all
+    disp("Regressed efizz in " + toc + " seconds")
     % ---------------------------------------------------------------------
 end
 
@@ -238,6 +240,7 @@ end
 
 % TODO: (1) plug in JPECC version of rankRegress here
 % TODO: (2) function that outputs average response of Pattern struct per neuron
+close all
 
 %%%%%%%%%%%%%%%% CREATE TABLE AND SAVE RESULTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if Option.save % 💾

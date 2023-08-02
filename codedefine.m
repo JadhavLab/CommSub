@@ -1,13 +1,27 @@
 function folder = codedefine(varargin)
 
+persistent announced
+if ~exist('announced', 'var') || isempty(announced)
+    announced = false;
+end
+
 if ispc
-    disp('Defining code folder for Ziyi machine');
+    if ~announced
+        disp('Defining code folder for Ziyi machine');
+        announced = true;
+    end
     folder = 'C:\\Users\BrainMaker\Matlab Drive\Shared\';
 elseif ismac
-    disp('Defining code folder for Ryan''s machine');
+    if ~announced
+        disp('Defining code folder for Ryan''s machine');
+        announced = true;
+    end
     folder = '~/Data/Matlab-DRIVE/Shared/';
 elseif isunix
-    disp('Defining code folder for Ryan''s linux machine');
+    if ~announced
+        disp('Defining code folder for Ryan''s linux machine');
+        announced = true;
+    end
     folder = '/Volumes/MATLAB-Drive/Shared/';
 end
 

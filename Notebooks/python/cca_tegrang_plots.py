@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-animal   = 'ZT2'
+animal   = ''
 spectype = 'power'
 folder   = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
 
@@ -14,6 +14,19 @@ data = pd.read_csv(os.path.join(folder,
 )
 # Check the first few rows of the dataframe
 data.head()
+
+def average_lower_diagonal(df):
+    # Create a copy of the dataframe to avoid modifying the original
+    df_copy = df.copy()
+    # Get the values below the diagonal (including the diagonal)
+    lower_diagonal = np.tril(df_copy.values)
+    # Get the values above the diagonal (excluding the diagonal), and take their negatives
+    upper_diagonal = -np.triu(df_copy.values, k=1)
+    # Calculate the average of the two matrices, element-wise
+    averaged_values = (lower_diagonal + upper_diagonal) / 2
+    # Create a new dataframe with the averaged values
+    df_averaged = pd.DataFrame(averaged_values, index=df_copy.index, columns=df_copy.columns)
+    return df_averaged
 
 # We need to apply the get_significant_interactions function to the data
 # But first, we need to fix an issue with the function where it references a variable 'direction' that is not defined

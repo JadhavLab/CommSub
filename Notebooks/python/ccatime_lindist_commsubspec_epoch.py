@@ -94,6 +94,8 @@ def label_epochs(df, time_col='time', time_threshold=4):
     return df
 # Test the function on your dataframe
 df = df.sort_values(['time','animal']).groupby('animal').apply(label_epochs).reset_index()
+if not name.endswith("_epoch"):
+    name = name + "_epoch"
 
 # Number of bins and bootstrap samples
 n_bins = 45
@@ -117,10 +119,14 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
     data_trajbound = df[df["trajbound"] == trajbound]
     
     # Loop over the unique combinations of column, trajbound, and lindist_bin
-    iters = list(itertools.product(columns_to_bootstrap, data_trajbound["lindist_bin"].unique().categories))
-    for column, bin_label in tqdm(iters, desc="column, lindist_bin", total=len(iters)):
+    iters = list(itertools.product(columns_to_bootstrap, 
+                                   data_trajbound["lindist_bin"].unique().categories,
+                                   data_trajbound["epoch"].unique()))
+
+    for (column, bin_label, epoch) in tqdm(iters, desc="column, lindist_bin", total=len(iters)):
         # Get the data for this column, trajbound, and bin_label
-        data = data_trajbound.loc[(data_trajbound["lindist_bin"] == bin_label),
+        data = data_trajbound.loc[(data_trajbound["lindist_bin"] == bin_label) &
+                                  (data_trajbound["epoch"] == epoch),
                                   ["animal",column]]
         
         # Find the minimum number of points available for each animal
@@ -221,62 +227,62 @@ component_fill_bases = {k: v * between_scale for k, v in component_fill_bases.it
 animal_bootstrap_means_combined = bootstrap_means_combined.groupby(["iboot", "column", "trajbound", "lindist_bin_mid"]).mean().reset_index()
 rows = 4 if skipripple else 5
 
-fig, axes = plt.subplots(nrows=rows, ncols=2, figsize=(15, 25))
-smooth = True
-field = "bootstrap_mean_smooth" if smooth else "bootstrap_mean"
-# Set the overall title
-fig.suptitle('Normalized Bootstrap Means for Different Components and Trajectories', fontsize=20)
-for i, components in enumerate(row_components[:rows]):
-    for j, trajbound in enumerate(column_trajbounds):
-        # Get the data for this subplot
-        data = animal_bootstrap_means_combined[
-            animal_bootstrap_means_combined["column"].isin(components) &
-            (animal_bootstrap_means_combined["trajbound"] == trajbound)
-        ]
-        print("select components", components, "and unique components", data["column"].unique())
-        print("select trajbound", trajbound, "and unique trajbounds", data["trajbound"].unique())
-        # Create the subplot
-        for component in components:
-            if skipripple and "ripple" in component:
-                continue
-            component_data = data[data["column"] == component].sort_values(by="lindist_bin_mid")
-            # Add the base value to the bootstrap_mean if stratification is active
-            # if stratify_spectral_components and component.startswith(("S1", "S2","U", "V")):
-            component_data[field] += component_fill_bases[component]
-            component_data[field] *= scale
-            # Plot the curve
-            sns.lineplot(x="lindist_bin_mid", y=field, data=component_data, color=component_colors[component], 
-                         errorbar="se", 
-                         ax=axes[i, j], linestyle=line_styles[component])
-            axes[i,j].axhline(y=scale*(component_fill_bases[component]+0.5), color=component_colors[component], linestyle="dotted")
-            if ci:
-                ci_99 = component_data.groupby("lindist_bin_mid").quantile(0.99)[field]
-                ci_1 = component_data.groupby("lindist_bin_mid").quantile(0.01)[field]
-                axes[i,j].plot(ci_99.index, ci_99, color=component_colors[component], linestyle="dashed")
-                axes[i,j].plot(ci_1.index, ci_1, color=component_colors[component], linestyle="dashed")
-            if i == 2 or i == 3:
-                axes[i,j].set_ylim([0.3, 1.4])
+for epoch in tqdm(animal_bootstrap_means_combined["epoch"].unique(), desc="epoch"):
 
-            # Fill under the curve based on the component type and the flag
-            # if component in ["U1", "U2", "U3", "V1", "V2", "V3"] or (stratify_spectral_components and component.startswith(("S1", "S2"))):
-            #     axes[i, j].fill_between(component_data["lindist_bin_mid"], 
-            #                             component_fill_bases[component], 
-            #                             component_data[field], 
-            #                             color=component_colors[component], 
-            #                             alpha=0.3)
-            # Shade the confidence interval around the curve if the flag is set
-            # if shade_confidence_intervals:
-            #     component_data_bootstrap_samples = component_data[field].tolist()
-            #     confidence_interval = np.percentile(component_data_bootstrap_samples, [2.5, 97.5])
-            #     axes[i, j].fill_between(component_data["lindist_bin_mid"], confidence_interval[0], confidence_interval[1], color=component_colors[component], alpha=0.1)
-        # Set the title and labels
-        axes[i, j].set_title(f'Trajbound = {trajbound}')
-        axes[i, j].set_xlabel("Lindist Bin Midpoint")
-        axes[i, j].set_ylabel("Normalized Bootstrap Mean")
-        # Rotate the x-axis labels for readability
-        axes[i, j].tick_params(axis='x', rotation=45)
-        # Add a legend
-        axes[i, j].legend()
+    D = animal_bootstrap_means_combined[animal_bootstrap_means_combined["epoch"] == epoch]
+
+    fig, axes = plt.subplots(nrows=rows, ncols=2, figsize=(15, 25))
+    smooth = True
+    field = "bootstrap_mean_smooth" if smooth else "bootstrap_mean"
+    # Set the overall title
+    fig.suptitle('Epoch=' + epoch, fontsize=20)
+    for i, components in enumerate(row_components[:rows]):
+        for j, trajbound in enumerate(column_trajbounds):
+            # Get the data for this subplot
+            data = D[D["column"].isin(components) & (D["trajbound"] == trajbound)]
+            print("select components", components, "and unique components", data["column"].unique())
+            print("select trajbound", trajbound, "and unique trajbounds", data["trajbound"].unique())
+            # Create the subplot
+            for component in components:
+                if skipripple and "ripple" in component:
+                    continue
+                component_data = data[data["column"] == component].sort_values(by="lindist_bin_mid")
+                # Add the base value to the bootstrap_mean if stratification is active
+                # if stratify_spectral_components and component.startswith(("S1", "S2","U", "V")):
+                component_data[field] += component_fill_bases[component]
+                component_data[field] *= scale
+                # Plot the curve
+                sns.lineplot(x="lindist_bin_mid", y=field, data=component_data, color=component_colors[component], 
+                             errorbar="se", 
+                             ax=axes[i, j], linestyle=line_styles[component])
+                axes[i,j].axhline(y=scale*(component_fill_bases[component]+0.5), color=component_colors[component], linestyle="dotted")
+                if ci:
+                    ci_99 = component_data.groupby("lindist_bin_mid").quantile(0.99)[field]
+                    ci_1 = component_data.groupby("lindist_bin_mid").quantile(0.01)[field]
+                    axes[i,j].plot(ci_99.index, ci_99, color=component_colors[component], linestyle="dashed")
+                    axes[i,j].plot(ci_1.index, ci_1, color=component_colors[component], linestyle="dashed")
+                if i == 2 or i == 3:
+                    axes[i,j].set_ylim([0.3, 1.4])
+                # Fill under the curve based on the component type and the flag
+                # if component in ["U1", "U2", "U3", "V1", "V2", "V3"] or (stratify_spectral_components and component.startswith(("S1", "S2"))):
+                #     axes[i, j].fill_between(component_data["lindist_bin_mid"], 
+                #                             component_fill_bases[component], 
+                #                             component_data[field], 
+                #                             color=component_colors[component], 
+                #                             alpha=0.3)
+                # Shade the confidence interval around the curve if the flag is set
+                # if shade_confidence_intervals:
+                #     component_data_bootstrap_samples = component_data[field].tolist()
+                #     confidence_interval = np.percentile(component_data_bootstrap_samples, [2.5, 97.5])
+                #     axes[i, j].fill_between(component_data["lindist_bin_mid"], confidence_interval[0], confidence_interval[1], color=component_colors[component], alpha=0.1)
+            # Set the title and labels
+            axes[i, j].set_title(f'Trajbound = {trajbound}')
+            axes[i, j].set_xlabel("Lindist Bin Midpoint")
+            axes[i, j].set_ylabel("Normalized Bootstrap Mean")
+            # Rotate the x-axis labels for readability
+            axes[i, j].tick_params(axis='x', rotation=45)
+            # Add a legend
+            axes[i, j].legend()
 
 # Improve the layout
 plt.tight_layout()
@@ -290,4 +296,47 @@ if not os.path.exists(figfolder):
 plt.savefig(figfolder + f'lindist_bootstrap{append}_{field}_balancedanim_collapseanimals.png', dpi=300)
 plt.savefig(figfolder + f'lindist_bootstrap{append}_{field}_balancedanim_collapseanimals.svg', dpi=300)
 plt.savefig(figfolder + f'lindist_bootstrap{append}_{field}_balancedanim_collapseanimals.pdf', dpi=300)
+
+
+# ------------------------------------------------------
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import numpy as np
+
+def plot_by_epoch(df, column, epochs, field="bootstrap_mean_smooth"):
+    # Get the unique epochs
+    unique_epochs = sorted(df[epochs].unique())
+    
+    # Create colormap based on the number of epochs
+    colors = cm.rainbow(np.linspace(0, 1, len(unique_epochs)))
+    
+    # Create a dictionary to map epoch to color
+    epoch_color_map = dict(zip(unique_epochs, colors))
+    
+    # Create a subplot
+    fig, ax = plt.subplots(figsize=(10, 7))
+    
+    # Group data by epoch and plot each group
+    for epoch, group in df.groupby(epochs):
+        # Subset to the column of interest
+        group = group[group["column"] == column]
+        
+        # Sort values for consistent plotting
+        group = group.sort_values(by="lindist_bin_mid")
+        
+        # Plot the line for this epoch
+        sns.lineplot(x="lindist_bin_mid", y=field, data=group, ax=ax, color=epoch_color_map[epoch], label=f'Epoch {epoch}')
+    
+    # Set title and labels
+    ax.set_title(f'{column} over epochs')
+    ax.set_xlabel('lindist_bin_mid')
+    ax.set_ylabel(field)
+    
+    # Show the plot
+    plt.show()
+
+# Call the function
+plot_by_epoch(animal_bootstrap_means_combined, "S1theta", "epoch")
+
 

@@ -137,7 +137,10 @@ pairs = [(i, j) for i in range(dfc.shape[1]) for j in range(dfc.shape[1]) if i !
 block_size = 32
 num_blocks = len(pairs) // block_size + (len(pairs) % block_size != 0)
 all_results = []
+
 for block_index in tqdm(range(num_blocks), total=num_blocks, desc='Blocks'):
+    if block_index <= 0:
+        continue
     start_index = block_index * block_size
     end_index = min((block_index + 1) * block_size, len(pairs))
     block_pairs = pairs[start_index:end_index]
