@@ -3,10 +3,18 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
+from tqdm import tqdm
+import os
 
 animal   = ''
 spectype = 'power'
 folder   = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
+plotfolder = '/Volumes/MATLAB-Drive/Shared/figures/cca_tegrang'
+if not os.path.exists(plotfolder):
+    os.makedirs(plotfolder)
+# Create a color map for the different spectral types
+color_map = {'Cavg': 'blue', 'S1': 'green', 'S2': 'red', 'wpli': 'purple'}
 
 # Load the data
 data = pd.read_csv(os.path.join(folder,
@@ -159,6 +167,7 @@ sns.heatmap(transfer_entropy_heatmap_data_signed_log, cmap="coolwarm", center=0)
 plt.show()
 
 
+
 # --- Transfer entropy heatmap with signed log for each lag ---
 
 def create_gif(df_dict, vmin=None, vmax=None, cmap="coolwarm", filename="heatmap.gif"):
@@ -203,27 +212,24 @@ grouped_uv_data = grouped_uv_data.reset_index()
 # Create a new column 'spectral_type' based on the 'column2' column
 grouped_uv_data['spectral_type'] = grouped_uv_data['column2'].str.extract('(Cavg|S1|S2|wpli)')
 
-# Create a color map for the different spectral types
-color_map = {'Cavg': 'blue', 'S1': 'green', 'S2': 'red', 'wpli': 'purple'}
-
 # Create a bar plot
 plt.figure(figsize=(10, 6))
-sns.barplot(data=grouped_uv_data, x='column1', y='transfer_entropy', hue='spectral_type', palette=color_map)
+sns.barplot(data=grouped_uv_data, x='column1', y='transfer_entropy',
+            hue='spectral_type', palette=color_map)
 plt.title('Mean Transfer Entropy Between U and V Components and Other Columns')
 plt.xlabel('Column1 (U and V Components)')
 plt.ylabel('Mean Transfer Entropy')
 plt.legend(title='Spectral Type')
 plt.show()
 
-
 # -------------- SPLIT BY LAG AND BY THETA DELTA RIPPLE ---------------
-
+data['te_control'] = data['transfer_entropy'] - data['surrogate_transfer_entropy']
 # Define a function to plot the bar plot for a specific lag order
-def plot_transfer_entropy_barplot_dodge(lag_order):
+def plot_transfer_entropy_barplot_dodge(lag_order, control=False):
     # Filter the data to include only the rows with 'column1' as one of the U and V components and the specified lag order
     uv_data_lag = data[(data['column1'].str.startswith(('U', 'V'))) & (data['lag'] == lag_order)]
     # Group by 'column1', 'column2', and 'lag' and calculate the mean transfer entropy
-    grouped_uv_data_lag = uv_data_lag.groupby(['column1', 'column2', 'lag'])['transfer_entropy'].mean()
+    grouped_uv_data_lag = uv_data_lag.groupby(['column1', 'column2', 'lag'])[['transfer_entropy','te_control']].mean()
     # Reset the index of the DataFrame
     grouped_uv_data_lag = grouped_uv_data_lag.reset_index()
     # Create new columns 'spectral_type' and 'frequency_band' based on the 'column2' column
@@ -231,7 +237,9 @@ def plot_transfer_entropy_barplot_dodge(lag_order):
     grouped_uv_data_lag['frequency_band'] = grouped_uv_data_lag['column2'].str.extract('(theta|delta|ripple)')
     # Create a bar plot with subplot rows for lags and subplot columns for frequency bands, with bars dodged by spectral type
     g = sns.FacetGrid(grouped_uv_data_lag, row='lag', col='frequency_band', sharex=False)
-    g.map_dataframe(sns.barplot, x='column1', y='transfer_entropy', hue='spectral_type', palette=color_map, dodge=True)
+    g.map_dataframe(sns.barplot, x='column1', y='transfer_entropy' if not control else 'te_control',
+                    hue='spectral_type', palette=color_map, dodge=True,
+                    ci='se')
     plt.subplots_adjust(top=0.92)
     g.fig.suptitle('Mean Transfer Entropy Between U and V Components and Other Columns (Split by Frequency Band)', fontsize=16)
     g.set_axis_labels('Column1 (U and V Components)', 'Mean Transfer Entropy')
@@ -240,7 +248,38 @@ def plot_transfer_entropy_barplot_dodge(lag_order):
 
 # Plot the bar plot for the first 5 lag orders
 for lag in range(1, 6):
-    plot_transfer_entropy_barplot_dodge(lag)
+    plot_transfer_entropy_barplot_dodge(lag, control=True)
+
+plt.close('all')
+
+
+# -------------- WITH ERROR BARS ---------------
+
+def plot_transfer_entropy_barplot_dodge(lag_order, control=False):
+    # Filter the data to include only the rows with 'column1' as one of the U and V components and the specified lag order
+    uv_data_lag = data[(data['column1'].str.startswith(('U', 'V'))) & (data['lag'] == lag_order)]
+    # No need to group and reduce to mean here, sns.barplot will handle it
+    # Create new columns 'spectral_type' and 'frequency_band' based on the 'column2' column
+    uv_data_lag['spectral_type'] = uv_data_lag['column2'].str.extract('(Cavg|S1|S2|wpli)')
+    uv_data_lag['frequency_band'] = uv_data_lag['column2'].str.extract('(theta|delta|ripple)')
+    # Create a bar plot with subplot rows for lags and subplot columns for frequency bands, with bars dodged by spectral type
+    g = sns.FacetGrid(uv_data_lag, row='lag', col='frequency_band', sharex=False)
+    g.map_dataframe(sns.barplot, x='column1', y='transfer_entropy' if not control else 'te_control', 
+                    hue='spectral_type', palette=color_map, dodge=True, ci='sd')     # error bars are standard deviations
+    plt.subplots_adjust(top=0.92)
+    g.fig.suptitle('Mean Transfer Entropy Between U and V Components and Other Columns (Split by Frequency Band)', fontsize=16)
+    g.set_axis_labels('Column1 (U and V Components)', 'Mean Transfer Entropy')
+ents and Other Columns (Split by Frequency Band)')
+    g.set_axis_labels('Column1 (U and V Components)', 'Mean F Value')
+    g.add_legend(title='Spectral Type')
+    plt.show()
+    g.add_legend(title='Spectral Type')
+    plt.show()
+
+for lag in range(1, 6):
+    plot_transfer_entropy_barplot_dodge(lag, control=True)
+
+# -------------- WITH ERROR BARS AND CONTROL ---------------
 
 # -------------- GRANGER VERION OF SPLIT ------------------------------
 # Define a function to plot the bar plot for a specific lag order
@@ -267,3 +306,116 @@ def plot_F_barplot_dodge(lag_order):
 for lag in range(1, 6):
     plot_F_barplot_dodge(lag)
 
+# -------------- GRANGER VERION OF SPLIT WITH CONTROL ------------------------------
+
+def plot_F_barplot_dodge(lag_order):
+    # Filter the data to include only the rows with 'column1' as one of the U and V components and the specified lag order
+    uv_data_lag = data[(data['column1'].str.startswith(('U', 'V'))) &
+                       (data['lag'] == lag_order)]
+    # Create new columns 'spectral_type' and 'frequency_band' based on the 'column2' column
+    uv_data_lag['spectral_type'] = uv_data_lag['column2'].str.extract('(Cavg|S1|S2|wpli)')
+    uv_data_lag['frequency_band'] = uv_data_lag['column2'].str.extract('(theta|delta|ripple)')
+    # Create a bar plot with subplot rows for lags and subplot columns for frequency bands, with bars dodged by spectral type
+    g = sns.FacetGrid(uv_data_lag, row='lag', col='frequency_band', sharex=False)
+    g.map_dataframe(sns.barplot, x='column1', y='F', hue='spectral_type', palette=color_map, dodge=True, 
+                    estimator=np.mean, ci="sd")     # mean and standard error
+    plt.subplots_adjust(top=0.9)
+    g.fig.suptitle('Mean F Value Between U and V Components and Other Columns (Split by Frequency Band)')
+    g.set_axis_labels('Column1 (U and V Components)', 'Mean F Value')
+    g.add_legend(title='Spectral Type')
+    plt.show()
+
+for lag in range(1, 6):
+    plot_F_barplot_dodge(lag)
+
+# -------------- GRANGER VERION OF SPLIT WITH CONTROL AND ERROR BARS ------------------------------
+
+def bootstrap_means(df, measurement_cols, n_bootstrap, split_cols=None):
+    # Initialize results
+    bootstrap_results = []
+    
+    if split_cols is None:
+        # No splitting, perform bootstrap as before
+        for iboot in range(n_bootstrap):
+            bootstrap_samples = []
+            for animal in df['animal'].unique():
+                animal_data = df[df['animal'] == animal]
+                sample = animal_data.sample(n=len(animal_data), replace=True)
+                bootstrap_samples.append(sample)
+            bootstrap_df = pd.concat(bootstrap_samples, ignore_index=True)
+            bootstrap_means = bootstrap_df[measurement_cols].mean()
+            bootstrap_means['iboot'] = iboot
+            bootstrap_results.append(bootstrap_means)
+    else:
+        # Splitting, perform bootstrap separately for each split
+        splits = df[split_cols].drop_duplicates()
+        for _, split_values in tqdm(splits.iterrows(), total=len(splits)):
+            split_data = df.copy()
+            for col in split_cols:
+                split_data = split_data[split_data[col] == split_values[col]]
+            for iboot in range(n_bootstrap):
+                bootstrap_samples = []
+                for animal in split_data['animal'].unique():
+                    animal_data = split_data[split_data['animal'] == animal]
+                    sample = animal_data.sample(n=len(animal_data), replace=True)
+                    bootstrap_samples.append(sample)
+                bootstrap_df = pd.concat(bootstrap_samples, ignore_index=True)
+                bootstrap_means = bootstrap_df[measurement_cols].mean()
+                bootstrap_means = pd.concat([bootstrap_means, split_values])
+                bootstrap_means['iboot'] = iboot
+                bootstrap_results.append(bootstrap_means)
+    # Convert the list of Series to a DataFrame
+    bootstrap_results_df = pd.DataFrame(bootstrap_results)
+    return bootstrap_results_df
+
+
+# BOOTSTRAP TE 
+def stripplots(df, measurement_cols, title=""):
+    """ stripplots(df, measurement_cols)
+    Create stripplots for each measurement column in the DataFrame. """
+    # Filter the data to include only the rows with 'column1' as one of the U and V components and the specified lag order
+    uv_data_lag = data[(data['column1'].str.startswith(('U', 'V'))) &
+                       (data['lag'] == 1)]
+    # Apply the bootstrap_means function to the filtered DataFrame
+    global bootstrap_data
+    bootstrap_data = bootstrap_means(uv_data_lag, [measurement_cols],
+                                     n_bootstrap=1000, split_cols=['column1','column2'])
+    os.system('pushover-cli "Bootstrap done"')
+    bootstrap_data.to_csv(os.path.expanduser('~/Desktop/bootstrap_data.csv'), index=False)
+    def plot_stripplot(data, title):
+        plt.figure(figsize=(10, 6))
+        g = sns.catplot(data=data, row='column2', x='column1', y=measurement_cols, ci='sd', alpha=0.5)
+        # Add horizontal line to each subplot
+        for ax in g.axes.flatten():
+            ax.axhline(0, color='red')
+            plt.ylabel('Mean {} Value'.format(measurement_cols))
+        plt.subplots_adjust(bottom=0.1, top=0.9)
+        plt.suptitle(title)
+        plt.show()
+        g.savefig(os.path.join((plotfolder, title + '.png')))
+        return g
+    # Transform the DataFrame to the format suitable for seaborn
+    # bootstrap_data_melt = bootstrap_data.melt(id_vars='iboot', var_name='measurement', value_name='value')
+    bootstrap_data.te_control.hist()
+    plt.axvline([0], color='red')
+    plt.savefig(os.path.join((plotfolder, title + f' {measurement_cols}_hist.png')))
+    # Create a bar plot
+    plot_stripplot(bootstrap_data, title + f' {measurement_cols} -- All')
+    bduv = bootstrap_data.query("column2.str.contains('U|V')", engine='python')
+    # get sets of U and V that match in the last character
+    bduv_matched = bduv[bduv['column1'].str[-1] == bduv['column2'].str[-1]]
+    # set of only U
+    bdu = bduv_matched[bduv_matched['column1'].str.startswith('U')]
+    # set of only V
+    bdv = bduv_matched[bduv_matched['column1'].str.startswith('V')]
+    plot_stripplot(bduv_matched, title + f' {measurement_cols} -- U and V Matched')
+    plot_stripplot(bdu,          title + f' {measurement_cols} -- U Only')
+    plot_stripplot(bdv,          title + f' {measurement_cols} -- V Only')
+    # get start with spectral_cols strings in column1 and UV in column2
+    spectral_cols = ["S1", "S2", "Cavg", "wpli_avg"]
+    specUV = bootstrap_data.query("column1.str.contains('U|V') == True and column2.str.contains('|'.join(@spectral_cols))", engine='python')
+    plot_stripplot(specUV, title + f' {measurement_cols} -- Spectral and UV Matched')
+    return bootstrap_data
+
+bootstrap_data = stripplots(data, 'te_control')
+bootstrap_data = stripplots(data, 'magnitude')

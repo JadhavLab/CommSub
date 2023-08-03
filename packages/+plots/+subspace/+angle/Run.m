@@ -2,7 +2,6 @@
 -------------------------------
 Possible subpsace angle methods
 -------------------------------
-
 1. **Principal Angles (Canonical Angles or Subspace Angles):** This method is
 probably the most common way to measure the angle between two subspaces.
 Principal angles are invariant under unitary transformations. In the context of
@@ -12,20 +11,6 @@ of \( \mathbb{R}^n \) (or \( \mathbb{C}^n \)) with dimensions \( p \) and \( q
 \) respectively, there are \( min(p, q) \) principal angles between \( U \) and
 \( V \). The cosine of these angles can be found as the singular values of the
 cross-covariance matrix \( X^T Y \).
-
-2. **Frobenius Norm of Difference of Projections:** Another way to define the
-angle between two subspaces is to look at the difference between the projection
-matrices for each subspace. The projection matrix of a subspace \( S \)
-represented by a matrix \( X \) can be calculated as \( X (X^T X)^{-1} X^T \).
-The angle can then be defined as the Frobenius norm of the difference of the
-projection matrices for the two subspaces.
-
-3. **Geodesic Distance on the Grassmann Manifold:** This approach considers the
-space of all \( k \)-dimensional subspaces in \( \mathbb{R}^n \) (or \(
-\mathbb{C}^n \)) as a manifold (the Grassmann manifold) and defines the angle
-between two subspaces as the geodesic distance between the two points on the
-manifold representing the subspaces. This distance can be calculated from the
-principal angles.
 %}
 
 
@@ -73,11 +58,14 @@ tmax = max(cellfun(@max, targetIndex),[],'all');
 % How many components?
 % ----------------------------
 K = 2:6;
-for selectGenH  = progress(["coherence", "fft", "wpli"],'Title','selectGenH')
-for measurement = progress(["princ_similarity" ,"princ_dissimilarity"],'Title','measurement')
+for selectGenH  = progress([... "coherence",...
+    "fft", "wpli"],'Title','selectGenH')
+for measurement = progress([..."princ_similarity" ,"princ_dissimilarity",...
+        % "princ_resamp_dissimilarity", "princ_resamp_similarity",...
+        "princ_unitvar_similarity", "princ_unitvar_dissimilarity",...
+        ],'Title','measurement')
     for normalize = [false, true]
         for k = progress(K, 'Title','K')
-
             % ---------------------
             % Compute dim-reduced B
             % ---------------------
@@ -87,14 +75,12 @@ for measurement = progress(["princ_similarity" ,"princ_dissimilarity"],'Title','
                 I = num2cell(index);
                 thisB_ = B_{I{:}};
                 thisV = V{ I{:} }; % V is the same for all indices
-                tmp  = thisB_(:,1:k) * thisV(:,1:k)'; % B = B_ * V' (dim-reduced)
+                tmp = thisB_(:,1:k) * thisV(:,1:k)'; % B = B_ * V' (dim-reduced)
                 if isempty(selectGenH)
                     tmp = munge.alignToAreaMatrices(tmp, sourceIndex{I{:}}, targetIndex{I{:}}, smax, tmax); %ry 2023
                 end
                 B{I{:}} = tmp;
             end
-
-
             % Munge the shapes used to compute distances here
             partitionDim = 2;
             genHDim = 1; dirDim = 3; patternDim = 4;
@@ -110,13 +96,11 @@ for measurement = progress(["princ_similarity" ,"princ_dissimilarity"],'Title','
                 indices = indices(genHfilter, :);
                 assert(~isempty(indices), "No indices found")
             end
-            
             subspaceDist = zeros(numel(partitions),...
                             size(indices, 1), size(indices, 1));
             rowVar = string([]);
             % expects a row vector ndim == ndims(B) == ndims(P)
             getInd = @(part,rest) [rest(1) part rest(2:end)]; 
-
             % -----------------------------
             % Compute angle of each subpace
             % -----------------------------
@@ -128,6 +112,7 @@ for measurement = progress(["princ_similarity" ,"princ_dissimilarity"],'Title','
             else
                 error("You spelled it wrong")
             end
+                
             assert(~isempty(indices), "No indices found")
             for part = progress(partitions','Title','Partitions')
                 for i = 1:size(indices,1)
@@ -137,41 +122,77 @@ for measurement = progress(["princ_similarity" ,"princ_dissimilarity"],'Title','
                         I1 = num2cell(I1);
                         I2 = num2cell(I2);
                         x = B{I1{:}}; y = B{I2{:}};
+                        six = sourceIndex{I1{:}}; tix = targetIndex{I1{:}};
+                        siy = sourceIndex{I2{:}}; tiy = targetIndex{I2{:}};
+                        assert(isequal(six,siy), "Indices don't match")
                         % subspaceDist(part,i,j) = subspace(x, y, ang_method);
-                        subspaceDist(part,i,j) = subspaceang(x, y, ang_method);
+                        [~,r1] = clean.removeDepRows(x);
+                        [~,r2] = clean.removeDepRows(y);
+                        r = setdiff(1:size(x,1), union(r1,r2));
+                        % [~,c1] = clean.removeDepRows(x');
+                        % [~,c2] = clean.removeDepRows(y');
+                        % c = setdiff(1:size(x,2), union(c1,c2));
+                        x = x(r,:); 
+                        y = y(r,:);
+                        if contains(measurement, "unitvar")
+                            % make rows unit vector
+                            xr = x ./ vecnorm(x,2,2);
+                            yr = y ./ vecnorm(y,2,2);
+                            % make columns unit vector
+                            xc = x ./ vecnorm(x,2,1);
+                            yc = y ./ vecnorm(y,2,1);
+                            goodRows = ~any(isnan(xr),2) & ~any(isinf(xr),2) & ~any(isnan(yr),2) & ~any(isinf(yr),2);
+                            goodCols = ~any(isnan(xc),1) & ~any(isinf(xc),1) & ~any(isnan(yc),1) & ~any(isinf(yc),1);
+                            xr = xr(goodRows,goodCols);
+                            xc = xc(goodRows,goodCols);
+                            yr = yr(goodRows,goodCols);
+                            yc = yc(goodRows,goodCols);
+                            subspaceDist(part,i,j) = mean(...
+                                [subspaceang(xr, yr, ang_method),...
+                                subspaceang(xc, yc, ang_method)]);
+                        elseif contains(measurement, "resamp")
+                            % sample rows and columns 10 times
+                            tmp = zeros(10,1);
+                            for i = 1:3
+                                rows = randsample(1:size(x,1), size(x,1));
+                                cols = randsample(1:size(x,2), size(x,2));
+                                tmp(i) = subspaceang(x(rows,cols), y(rows,cols), ang_method);
+                            end
+                            subspaceDist(part,i,j) = mean(tmp);
+                        else
+                            subspaceDist(part,i,j) = subspaceang(x, y, ang_method);
+                        end
+                        % figure;tiledlayout(2,1);nexttile; imagesc(x);cmocean('balance');clim([-0.1,0.1]);nexttile;imagesc(y);cmocean('balance');clim([-0.1,0.1]); axis(findobj('type','axes'),'square')
                     end
-
                     [x, ~, y, z] = deal(I1{:});
                     index     = [direct(y), patternSymbols(z), genH(x)];
                     rowVar(i) = join(string(index),'-');
-
                 end
             end
-                keyboard
-            if endsWith(measurement, "similarity")
+            if contains(measurement, "similarity")
                 subspaceDist = squeeze(median(subspaceDist,1));
-                subspaceDist = subspaceDist + abs(min(subspaceDist,[],'all'));
-            elseif endsWith(measurement, "dissimilarity")
+                % subspaceDist = subspaceDist + abs(min(subspaceDist,[],'all'));
+                nondiag = ~eye(size(subspaceDist,[2,3])); % added 2023, ry
+                nondiag = repmat(nondiag,[size(subspaceDist,1),1,1]);
+                maxVal = max(subspaceDist(nondiag),[],'all');
+                subspaceDist = maxVal - subspaceDist;
+            elseif contains(measurement, "dissimilarity")
                 subspaceDist = squeeze(median(subspaceDist,1));
             else
                 error("You spelled it wrong")
             end
             if normalize
-                subspaceDist = (subspaceDist-min(subspaceDist,[],'all')) ...
-                ./(max(subspaceDist,[],'all')-min(subspaceDist,[],'all'));
+                nondiag = ~eye(size(subspaceDist)); % added 2023, ry
+                subspaceDist = (subspaceDist-min(subspaceDist(nondiag),[],'all')) ...
+                ./(max(subspaceDist(nondiag),[],'all')-min(subspaceDist(nondiag),[],'all'));
             else
                 % NOTHING :)
             end
             rowVar = cellstr(rowVar);
-            analysisName = sprintf('subspaceDist_K=%d_norm=%d_measure=%s.mat',...
-                k, normalize, measurement);
-            if ~exist(figuredefine("subspaceAngle","type="+selectGenH), 'dir')
-                mkdir(figuredefine("subspaceAngle","type="+selectGenH))
-            end
-            analysisName = figuredefine("subspaceAngle","type="+selectGenH, analysisName);
-            save(analysisName, 'subspaceDist', 'rowVar');
+            plots.subspace.angle.save(subspaceDist, rowVar, k, normalize, measurement, selectGenH);
         end
     end
+end
 end
 end
 
@@ -180,28 +201,8 @@ for selectGenH  = ["coherence", "fft", "wpli"]
 for measurement = ["princ_similarity"]
     for normalize = [false, true]
         for k = progress(K, 'Title','K')
-            figureFolder = figuredefine("subspaceAngle","type="+selectGenH);
-            analysisName = sprintf('subspaceDist_K=%d_norm=%d_measure=%s.mat',...
-                k, normalize, measurement);
-            if ~exist(figuredefine("subspaceAngle","type="+selectGenH), 'dir')
-                mkdir(figuredefine("subspaceAngle","type="+selectGenH))
-            end
-            analysisName = figuredefine("subspaceAngle","type="+selectGenH,...
-                                        analysisName);
-            load(analysisName, 'subspaceDist', 'rowVar');
-            % ----------------------------
-            % Normalize and plot distances
-            % ----------------------------
-            % f = figc("subpsace distances, " + analysisName);
-            for i = 1:size(subspaceDist,1)
-                for j = 1:size(subspaceDist,2)
-                    if i==j
-                        mu1 = subspaceDist(i,:);
-                        mu2 = subspaceDist(:,j);
-                        subspaceDist(i,j) = mean([mu1(:) mu2(:)], 'all','omitnan');
-                    end
-                end
-            end
+            plots.subspace.angle.load(k, normalize, measurement, selectGenH);
+            % -----------------------------
             G = clustergram(subspaceDist, 'ColumnLabels', rowVar, 'RowLabels', rowVar, 'Colormap', crameri('acton'), 'symmetric', true);
 %             set(G, 'Colormap', crameri('lajolla'))
 %             set(G, 'Colormap', crameri('-grayC'))

@@ -27,32 +27,28 @@
 % IV. Factors in $Q$ sane (in Factor Analysis)
 % 
 
-load("Megatable.mat");
+% load("Megatable.mat");
+load("DetailedRunsSummary.mat");
 %%
 
-key = "326c076"
+% key = "326c076"
+if ~exist('key','var')
+    table.combineAndUpdateTables("RunsSummary_*", "RunsSummary");
+    table.combineAndUpdateTables("DetailedRunsSummary_*", "DetailedRunsSummary");
+    load("DetailedRunsSummary.mat");
+    DetailedRunsSummary = sortrows(DetailedRunsSummary, "timestamp", "descend");
+    key = DetailedRunsSummary(1,"hash");
+    key = key.hash(1,1);
+end
 queryresult = [];
 
-% buggy: repeating asking for inputs
-% query the table
-numToExamine = size(TABLE,1);
-for i = 1:numToExamine
-    fileTable = table2array(TABLE(i,"Filetable"));
-    if fileTable.hash == key
-        queryresult = TABLE(i,:);
-    end
-end
-
-if isempty(queryresult)
-    warning("the key does not exist");
-end
 %%
-Options = table2array(queryresult(1,"Optiontable"));
-animal = table2array(Options (1,"animal"));
 
-% if loaded checkpoint.mat
-addpath(genpath("data" + filesep + animal)); % genpath enumerates every folder in inside the folder it's given
-addpath(genpath('utils')); % all folders in utils added, including semedo code
+load(hashdefine(key + ".mat"));
+
+%%
+animal = Option.animal;
+
 %% Testing
 % I. Spike matrices $X_{hpc$ $X_{pfc}$ sane
 
@@ -155,11 +151,18 @@ disp('done')
 
 figure
 
+ca1=Spk.areaPerNeuron == "CA1";
+pfc=Spk.areaPerNeuron == "PFC";
+overall = Spk.spikeCountMatrix;
+overall_hpc = overall(ca1,:);
+overall_pfc = overall(pfc,:);
+X_hpc = Spk.hpc.X;
+X_pfc = Spk.pfc.X;
+
 for p = 1:numel(X_hpc)
     subplot(3,2,p)
     [currPattern,allzerosHPC] = clean.throwOutAllZeros(X_hpc{p}');
     d_hpc = corrcoef(currPattern);
-    
     for i = 1:size(d_hpc,1)
         d_hpc(i,i) = nan;
     end
@@ -187,6 +190,7 @@ for p = 1:numel(X_pfc)
     cmocean('balance')
     set(gca,'clim',[-max(abs(d_pfc(:))), max(abs(d_pfc(:)))])
 end
+
 % Control is uncorrelated with pattern type
 % black line showing the 95% cutoff of correlation distributions.
 % 

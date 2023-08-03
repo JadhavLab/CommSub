@@ -159,3 +159,4 @@ g2.set_names('x', 'HPC regional dimensions', ...
 g2.axe_property('XTickLabelRotation',35)        
 g2.draw()
 
+

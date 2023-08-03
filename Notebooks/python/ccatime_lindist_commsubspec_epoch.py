@@ -151,7 +151,8 @@ for trajbound in tqdm([0, 1], desc="trajbound", total=2):
                     "column": column,
                     "bootstrap_mean": bootstrap_mean,
                     "trajbound": trajbound,
-                    "animal": animal
+                    "animal": animal,
+                    "epoch": epoch
                 })
 
 
@@ -163,10 +164,13 @@ bootstrap_means_combined.loc[:,'bootstrap_mean'] = bootstrap_means_combined.boot
 bootstrap_means_combined.to_parquet(os.path.join(folder, f'{name}_bootstrap{append}.parquet'), index=False)
 
 # Smooth
-bootstrap_means_combined.sort_values(by=["animal", "column", "trajbound", "iboot", "lindist_bin_ind"], inplace=True)
-bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["animal","column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(7, 1).mean())
-bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["animal","column", "trajbound", "iboot"])["bootstrap_mean_smooth"].transform(lambda x: x.interpolate())
-
+print("sorting...")
+bootstrap_means_combined.sort_values(by=["animal", "epoch", "column", "trajbound", "iboot", "lindist_bin_ind"], inplace=True)
+print("rolling mean...")
+bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["animal","epoch","column", "trajbound", "iboot"])["bootstrap_mean"].transform(lambda x: x.rolling(7, 1).mean())
+print("rolling interp...")
+bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.groupby(["animal","epoch","column", "trajbound", "iboot"])["bootstrap_mean_smooth"].transform(lambda x: x.interpolate())
+      
 # ----------------------------------------------------
 # Normalize the bootstrap_mean values
 # ----------------------------------------------------
@@ -338,5 +342,4 @@ def plot_by_epoch(df, column, epochs, field="bootstrap_mean_smooth"):
 
 # Call the function
 plot_by_epoch(animal_bootstrap_means_combined, "S1theta", "epoch")
-
 

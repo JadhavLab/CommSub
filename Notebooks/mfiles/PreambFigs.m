@@ -124,3 +124,5 @@ O = munge.reshapeByLabels(Option, 1,   [Option.generateH], 'checksumSplitField',
 
 %% Calculate the pattern 
 T = query.getPatternTable(Patterns, Option);
+
+!pushover-cli "Finished PreambFigs"

@@ -4,11 +4,12 @@ commsubspaceToPath
 
 % grabfields = ["Cavg", "Ctoppair"];
 % grabfields = ["wpli_avg", "wpli_toppair"];
-grabfields = ["phi"];
+% grabfields = ["phi"];
+grabfields = ["wpli_avg", "phi"];
 const = option.constants();
-animal_list = const.all_animals;
+animal_list = ["ER1"]
 animal = animal_list{1};
-for i = progress(2:length(animal_list), 'Title', 'FieldsToEfizz')
+for i = progress(1:length(animal_list), 'Title', 'FieldsToEfizz')
     animal = animal_list{i};
     m = matfile(animal + "spectralBehavior.mat", 'Writable', true);
     efizz = m.efizz;
