@@ -135,6 +135,11 @@ def gen_heatmaps(heatmap_data, heatmap_data_signed_log, tit, average_lower=True)
         plt.title(f"Lag order: {lag}")
         plt.savefig(os.path.join(plotfolder,f"heatmap_lag_{lag}_{average_lower}.png"))
         plt.close()
+    def get_global_vals(thing):
+        global_min = min(df.min().min() for df in thing.values())
+        global_max = max(df.max().max() for df in thing.values())
+        return global_min, global_max
+    global_min, global_max = get_global_vals(averaged_heatmap_data_signed_log)
     # --
     # Generate and save heatmaps
     for lag, df in averaged_heatmap_data_signed_log.items():
@@ -146,9 +151,21 @@ def gen_heatmaps(heatmap_data, heatmap_data_signed_log, tit, average_lower=True)
         images.append(imageio.imread(os.path.join(plotfolder,f"heatmap_lag_{lag}_{average_lower}.png")))
     # Append the first image to make the GIF loop
     images.append(images[0])
+    imageio.mimsave(os.path.join(plotfolder,f'{animal}{tit}_log_heatmap_{average_lower}.gif'),
+                    images, duration=1, loop=1000)  # duration is the time between frames in seconds
+    # Generate and save heatmaps
+    global_min, global_max = get_global_vals(averaged_heatmap_data)
+    for lag, df in averaged_heatmap_data.items():
+        create_heatmap(df, lag, global_min, global_max)
+    # --
+    # Create GIF
+    images = []
+    for lag in range(1, lag_max + 1):
+        images.append(imageio.imread(os.path.join(plotfolder,f"heatmap_lag_{lag}_{average_lower}.png")))
+    # Append the first image to make the GIF loop
+    images.append(images[0])
     imageio.mimsave(os.path.join(plotfolder,f'{animal}{tit}_heatmap_{average_lower}.gif'),
                     images, duration=1, loop=1000)  # duration is the time between frames in seconds
-    os.system(f'xdg-open {plotfolder}/{animal}{tit}_heatmap_{average_lower}.gif')
 
 # ================================================================
 # GRANGER CAUSALITY DIRECTION
