@@ -8,12 +8,17 @@ folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
 plotfolder='/Volumes/MATLAB-Drive/Shared/figures/cca_regress_python/'
 if not os.path.exists(plotfolder):
     os.makedirs(plotfolder)
+
 # Read the CSV file into a dataframe
 df = pd.read_csv(os.path.join(folder, 'combined_faxis=Inf_regress.csv'))
-significant_df['animal'] = significant_df['filename'].apply(lambda x: os.path.basename(x).split('_')[0])
+
 
 # Filter for rows where pvalue_U and pvalue_V are both significant (less than 0.05)
 significant_df = df[(df['pvalue_U'] < 0.05) & (df['pvalue_V'] < 0.05)]
+significant_df['animal'] = significant_df['filename'].apply(lambda x: os.path.basename(x).split('_')[0])
+
+# remove 60 hz from coherence -- because coherence sensitive to 60 hz noise
+significant_df = significant_df.query('(field == "coherence" & (f < 57 | f > 63)) | field != "coherence"')
 
 # Take the absolute value of coef_U and coef_V
 significant_df['abs_coef_U'] = np.abs(significant_df['coef_U'])
@@ -97,19 +102,50 @@ plt.show()
 plt.savefig(os.path.join(plotfolder, 'raw_animal_coef_mean.png'))
 plt.savefig(os.path.join(plotfolder, 'raw_animal_coef_mean.pdf'))
 
+# ------------------------------
+
+# Create a seaborn plot with 'field' in the columns, 'f' on the x-axis, and 'coef_difference' on the y-axis,
+# splitting by 'animal' in the rows
+cm = sns.color_palette("PuBuGn_d", 5)
+g = sns.FacetGrid(significant_df, col="field", row="coef_i", hue="coef_i", height=4, aspect=1, sharey=False)
+g.map(sns.lineplot, 'f', 'coef_mean', marker='o')
+
+# Add titles to the subplots
+g.set_titles("{col_name} by coef_i")
+
+# Show the plot
+plt.show()
+plt.savefig(os.path.join(plotfolder, 'coef_mean_by_component.png'))
+plt.savefig(os.path.join(plotfolder, 'coef_mean_by_component.pdf'))
+
+# ------------------------------
+
+# Create a seaborn plot with 'field' in the columns, 'f' on the x-axis, and 'coef_difference' on the y-axis,
+# splitting by 'animal' in the rows
+cm = sns.color_palette("PuBuGn_d", 5)
+g = sns.FacetGrid(significant_df, col="field", row="coef_i", hue="animal", height=4, aspect=1, sharey=False)
+g.map(sns.lineplot, 'f', 'coef_mean', marker='o')
+
+# Add titles to the subplots
+g.set_titles("{col_name} by coef_i")
+for ax in g.axes.ravel():
+    ax.set_ylim([0, 0.6])
+    # ax.axvline(x=60, color='black', linestyle='--')
+
+# Show the plot
+plt.show()
+plt.savefig(os.path.join(plotfolder, 'animal_coef_mean_by_component.png'))
+plt.savefig(os.path.join(plotfolder, 'animal_coef_mean_by_component.pdf'))
 
 # ------------------------------
 
 # Create a new column for the difference between coef_U and coef_V
 significant_df['coef_difference'] = significant_df['coef_U'] - significant_df['coef_V']
-
 # Create a seaborn plot with 'field' in the columns, 'f' on the x-axis, and 'coef_difference' on the y-axis
 g = sns.FacetGrid(significant_df, col="field", height=4, aspect=1)
 g.map(sns.lineplot, 'f', 'coef_difference', marker='o')
-
 # Add titles to the subplots
 g.set_titles("{col_name}")
-
 # Show the plot
 plt.show()
 plt.savefig(os.path.join(plotfolder, 'cI.png'))
@@ -128,11 +164,14 @@ g.set_titles("{col_name}")
 plt.show()
 plt.savefig(os.path.join(plotfolder, 'animal_coef_difference.png'))
 
-
 # ------------------------------
 
 # Create a seaborn plot with 'field' in the columns, 'f_bin' on the x-axis, and 'coef_difference' on the y-axis
 # Add a horizontal black dashed line at y=0
+# Group by 'f_bin', 'field', and 'animal', and compute the mean of 'coef_difference' within each group
+# Round the 'f' values to the nearest 5 to create frequency bins
+significant_df['f_bin'] = 5 * round(significant_df['f'] / 5)
+grouped_df = significant_df.groupby(['f_bin', 'field', 'animal'])['coef_difference'].mean().reset_index()
 g = sns.FacetGrid(grouped_df, col="field", height=4, aspect=1, sharey=False)
 g.map(sns.lineplot, 'f_bin', 'coef_difference', marker='o')
 g.map(plt.axhline, y=0, ls='--', c='black')
@@ -142,7 +181,25 @@ g.set_titles("{col_name}")
 
 # Show the plot
 plt.show()
-ertion()
 plt.savefig(os.path.join(plotfolder, 'binned_coef_difference.png'))
 plt.savefig(os.path.join(plotfolder, 'binned_coef_difference.pdf'))
+
+
+# Create a seaborn plot with 'field' in the columns, 'f_bin' on the x-axis, and 'coef_difference' on the y-axis
+# Add a horizontal black dashed line at y=0
+# Group by 'f_bin', 'field', and 'animal', and compute the mean of 'coef_difference' within each group
+# Round the 'f' values to the nearest 5 to create frequency bins
+significant_df['f_bin'] = 10 * round(significant_df['f'] / 10)
+grouped_df = significant_df.groupby(['f_bin', 'field', 'animal'])['coef_difference'].mean().reset_index()
+g = sns.FacetGrid(grouped_df, col="field", height=4, aspect=1, sharey=False)
+g.map(sns.lineplot, 'f_bin', 'coef_difference', marker='o')
+g.map(plt.axhline, y=0, ls='--', c='black')
+
+# Add titles to the subplots
+g.set_titles("{col_name}")
+
+# Show the plot
+plt.show()
+plt.savefig(os.path.join(plotfolder, 'large_binned_coef_difference.png'))
+plt.savefig(os.path.join(plotfolder, 'large_binned_coef_difference.pdf'))
 

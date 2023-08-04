@@ -68,6 +68,9 @@ line_styles = {
 # - - - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - - 
 print("Loading data...")
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
+figfolder = '/Volumes/MATLAB-Drive/Shared/figures/lindist_bootstrap_epoch/'
+if not os.path.exists(figfolder):
+    os.makedirs(figfolder)
 # name   = 'ZT2powerccatime'
 name   = 'powerccatime'
 append = '_50bin'
@@ -198,6 +201,8 @@ for column, animal in tqdm(iters, desc="feature engineering", total=len(columns_
 bootstrap_means_combined.to_parquet(
         os.path.join(folder, f'{name}_bootstrap_normalized{append}.parquet'), 
                                     index=False)
+
+animal_bootstrap_means_combined = bootstrap_means_combined.groupby(["iboot", "epoch", "column", "trajbound", "lindist_bin_mid"]).mean().reset_index()
 # ----------------------------------------------------
 # Read Parquet
 # ----------------------------------------------------
@@ -228,7 +233,6 @@ else:
     between_scale = 5/8
 component_fill_bases = {k: v * between_scale for k, v in component_fill_bases.items()}
 
-animal_bootstrap_means_combined = bootstrap_means_combined.groupby(["iboot", "column", "trajbound", "lindist_bin_mid"]).mean().reset_index()
 rows = 4 if skipripple else 5
 
 for epoch in tqdm(animal_bootstrap_means_combined["epoch"].unique(), desc="epoch"):
@@ -294,7 +298,6 @@ plt.tight_layout()
 # fig.subplots_adjust(top=0.92)
 plt.show()
 
-figfolder = '/Volumes/MATLAB-Drive/Shared/figures/lindist_bootstrap/'
 if not os.path.exists(figfolder):
     os.makedirs(figfolder)
 plt.savefig(figfolder + f'lindist_bootstrap{append}_{field}_balancedanim_collapseanimals.png', dpi=300)
@@ -313,33 +316,91 @@ def plot_by_epoch(df, column, epochs, field="bootstrap_mean_smooth"):
     unique_epochs = sorted(df[epochs].unique())
     
     # Create colormap based on the number of epochs
-    colors = cm.rainbow(np.linspace(0, 1, len(unique_epochs)))
+    colors = cm.coolwarm(np.linspace(0, 1, len(unique_epochs)))
     
     # Create a dictionary to map epoch to color
     epoch_color_map = dict(zip(unique_epochs, colors))
     
     # Create a subplot
-    fig, ax = plt.subplots(figsize=(10, 7))
+    fig, ax = plt.subplots(2,1,figsize=(10, 7))
     
     # Group data by epoch and plot each group
     for epoch, group in df.groupby(epochs):
         # Subset to the column of interest
         group = group[group["column"] == column]
-        
         # Sort values for consistent plotting
         group = group.sort_values(by="lindist_bin_mid")
-        
         # Plot the line for this epoch
-        sns.lineplot(x="lindist_bin_mid", y=field, data=group, ax=ax, color=epoch_color_map[epoch], label=f'Epoch {epoch}')
+        sns.lineplot(x="lindist_bin_mid", y=field, 
+                     data=group.query('trajbound == 0'), 
+                     ax=ax[0],
+                     color=epoch_color_map[epoch], label=f'Epoch {epoch}')
+        sns.lineplot(x="lindist_bin_mid", y=field, 
+                     data=group.query('trajbound == 1'), 
+                     ax=ax[1],
+                     color=epoch_color_map[epoch], label=f'Epoch {epoch}')
     
     # Set title and labels
-    ax.set_title(f'{column} over epochs')
-    ax.set_xlabel('lindist_bin_mid')
-    ax.set_ylabel(field)
+    fig.suptitle(f'{column} over epochs')
+    ax[1].set_xlabel('lindist_bin_mid')
+    ax[1].set_ylabel(field)
+    ax[0].set_ylabel(field)
     
     # Show the plot
     plt.show()
 
 # Call the function
-plot_by_epoch(animal_bootstrap_means_combined, "S1theta", "epoch")
+for column in tqdm(component_fill_bases.keys(),total=len(component_fill_bases.keys())):
+    plot_by_epoch(animal_bootstrap_means_combined, column, "epoch")
+    plt.savefig(os.path.join(figfolder, f"{column}_bootstrap_mean_smooth_by_epoch.png"), dpi=300)
+    plt.savefig(os.path.join(figfolder, f"{column}_bootstrap_mean_smooth_by_epoch.pdf"), dpi=300)
+
+
+# ------------------------------------------------------
+# By animal
+# ------------------------------------------------------
+def plot_by_animal(df, column, field="bootstrap_mean_smooth"):
+    # Get the unique animals, epochs, and trajbounds
+    unique_animals = sorted(df["animal"].unique())
+    unique_epochs = sorted(df["epoch"].unique())
+    unique_trajbounds = sorted(df["trajbound"].unique())
+    
+    # Create colormap based on the number of epochs
+    colors = cm.coolwarm(np.linspace(0, 1, len(unique_epochs)))
+
+    # Create a dictionary to map epoch to color
+    epoch_color_map = dict(zip(unique_epochs, colors))
+    
+    # Create a subplot
+    fig, axes = plt.subplots(len(unique_animals), len(unique_trajbounds), figsize=(10, 7 * len(unique_animals)))
+
+    # Group data by animal, epoch, and trajbound and plot each group
+    for animal in unique_animals:
+        for trajbound in unique_trajbounds:
+            for epoch in unique_epochs:
+                # Subset to the data of interest
+                data = df[(df["animal"] == animal) & (df["trajbound"] == trajbound) & (df["epoch"] == epoch) & (df["column"] == column)]
+                # Sort values for consistent plotting
+                data = data.sort_values(by="lindist_bin_mid")
+                # Plot the line for this animal, epoch, and trajbound
+                if not data.empty:
+                    sns.lineplot(
+                        x="lindist_bin_mid", y=field, data=data,
+                        ax=axes[unique_animals.index(animal), unique_trajbounds.index(trajbound)],
+                        color=epoch_color_map[epoch], label=f'Epoch {epoch}'
+                    )
+                    # Set title and labels
+                    axes[unique_animals.index(animal), unique_trajbounds.index(trajbound)].set_title(f'Animal {animal}, Trajbound {trajbound}')
+                    axes[unique_animals.index(animal), unique_trajbounds.index(trajbound)].set_xlabel('lindist_bin_mid')
+                    axes[unique_animals.index(animal), unique_trajbounds.index(trajbound)].set_ylabel(field)
+
+    # Show the plot
+    plt.tight_layout()
+    plt.show()
+
+# The test function call has been commented out because we don't currently have access to the bootstrap_means_combined DataFrame
+for column in tqdm(component_fill_bases.keys(),total=len(component_fill_bases.keys())):
+    plot_by_animal(bootstrap_means_combined, column)
+    plt.savefig(os.path.join(figfolder, f"{column}_bootstrap_mean_smooth_by_animal.png"), dpi=300)
+    plt.savefig(os.path.join(figfolder, f"{column}_bootstrap_mean_smooth_by_animal.pdf"), dpi=300)
 

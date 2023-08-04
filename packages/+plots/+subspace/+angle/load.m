@@ -15,6 +15,7 @@ load(analysisName, 'subspaceDist', 'rowVar');
 % f = figc("subpsace distances, " + analysisName);
 for i = 1:size(subspaceDist,1)
     for j = 1:size(subspaceDist,2)
+        % keyboard
         if i==j
             mu1 = subspaceDist(i,:);
             mu2 = subspaceDist(:,j);

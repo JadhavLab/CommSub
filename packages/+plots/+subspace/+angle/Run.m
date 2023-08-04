@@ -60,9 +60,9 @@ tmax = max(cellfun(@max, targetIndex),[],'all');
 K = 2:6;
 for selectGenH  = progress([... "coherence",...
     "fft", "wpli"],'Title','selectGenH')
-for measurement = progress([..."princ_similarity" ,"princ_dissimilarity",...
-        % "princ_resamp_dissimilarity", "princ_resamp_similarity",...
-        "princ_unitvar_similarity", "princ_unitvar_dissimilarity",...
+for measurement = progress(["princ",...
+        "princ_resamp",...
+        "princ_unitvar", ...
         ],'Title','measurement')
     for normalize = [false, true]
         for k = progress(K, 'Title','K')
@@ -169,30 +169,11 @@ for measurement = progress([..."princ_similarity" ,"princ_dissimilarity",...
                     rowVar(i) = join(string(index),'-');
                 end
             end
-            if contains(measurement, "similarity")
-                subspaceDist = squeeze(median(subspaceDist,1));
-                % subspaceDist = subspaceDist + abs(min(subspaceDist,[],'all'));
-                nondiag = ~eye(size(subspaceDist,[2,3])); % added 2023, ry
-                nondiag = repmat(nondiag,[size(subspaceDist,1),1,1]);
-                maxVal = max(subspaceDist(nondiag),[],'all');
-                subspaceDist = maxVal - subspaceDist;
-            elseif contains(measurement, "dissimilarity")
-                subspaceDist = squeeze(median(subspaceDist,1));
-            else
-                error("You spelled it wrong")
-            end
-            if normalize
-                nondiag = ~eye(size(subspaceDist)); % added 2023, ry
-                subspaceDist = (subspaceDist-min(subspaceDist(nondiag),[],'all')) ...
-                ./(max(subspaceDist(nondiag),[],'all')-min(subspaceDist(nondiag),[],'all'));
-            else
-                % NOTHING :)
-            end
             rowVar = cellstr(rowVar);
+            disp("Saving subspaceDist with size: " + string(size(subspaceDist)))
             plots.subspace.angle.save(subspaceDist, rowVar, k, normalize, measurement, selectGenH);
         end
     end
-end
 end
 end
 
