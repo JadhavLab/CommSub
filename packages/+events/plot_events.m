@@ -7,7 +7,7 @@ function plot_events(Events, varname, varargin)
     Opt.Hvar = ip.Results.Hvar;
     Hvar = Opt.Hvar;
 
-    cols = find(ismember(varname, Events.cellOfWin_varnames));
+    cols = find(ismember(string(varname), string(Events.cellOfWin_varnames)));
     assert(~isempty(cols), 'Variable %s not found in Events.cellOfWin_varnames', varname);
     plot(Events.times, Events.(Hvar)(:, cols), 'LineStyle', '-.', 'LineWidth', 0.5, 'Color', [0.5 0.5 0.5]);
     hold on;

@@ -46,6 +46,7 @@ function plotCrossIEI(Events, varargin)
     xlabel('IEI');
     ylabel('Probability');
     legend(Events.cellOfWin_varnames);
+    linkaxes(findobj(gcf, 'Type', 'Axes'), 'xy');
 end
 
 function plotIEIHistogram(Events, i, j, Opt)
@@ -72,7 +73,7 @@ function plotIEIHistogram(Events, i, j, Opt)
     IEI = IEI(IEI > quantile(IEI, Opt.quantile) & IEI < quantile(IEI, 1 - Opt.quantile));
 
     % Generate a histogram of the IEI
-    histogram(IEI, 'Normalization', 'probability');
+    histogram(IEI, 'Normalization', 'probability', 'NumBins', 100);
 
     % Add a title to the histogram
     title(sprintf('IEI Histogram for %s and %s', Events.cellOfWin_varnames{i}, Events.cellOfWin_varnames{j}));

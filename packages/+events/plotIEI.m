@@ -57,7 +57,13 @@ function plotIEIHistogram(Events, i, Opt, varargin)
     IEI = IEI(IEI > quantile(IEI, Opt.quantile) & IEI < quantile(IEI, 1 - Opt.quantile));
 
     % Generate a histogram of the IEI
-    histogram(IEI, 'Normalization', 'probability', varargin{:});
+    if iscell(varargin{1})
+        varargin = varargin{1};
+    end
+    h=histogram(IEI, 'normalization', 'probability');
+    for v = 1:2:numel(varargin)
+        h.(varargin{v}) = varargin{v+1};
+    end
 
     % Add a title to the histogram
     title(sprintf('IEI Histogram for %s', Events.cellOfWin_varnames{i}));

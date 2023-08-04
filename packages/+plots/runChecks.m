@@ -91,13 +91,18 @@ disp("Done running checks" + newline + toc + " seconds elapsed")
 
 function out= d()
     out=struct();
-    fig("event timeseries"); events.plot_events(Events, 'rewardTimes');
+    fig("event timeseries"); events.plot_events(Events, 'theta');
+    fig("event timeseries"); events.plot_events(Events, 'delta');
+    fig("event timeseries"); events.plot_events(Events, 'ripple');
+    sgtitle("1st theta, 2nd delta, 3rd ripple");
+    savefig(gcf, fullfile(figuredefine(), "eventDetails", ...
+        "all_events" + char(Option.animal) + ".fig"));
     fig("iei"); events.plotIEI(Events, 'NumBins', 1000);
+    savefig(gcf, fullfile(figuredefine(), "eventDetails", ...
+        "iei" + char(Option.animal) + ".fig"));
     fig("cross iei"); events.plotCrossIEI(Events, 'NumBins', 1000, 'layout', 'matrix');
+    savefig(gcf, fullfile(figuredefine(), "eventDetails", ...
+        "cross_iei" + char(Option.animal) + ".fig"));
 end
 
-
-end % of runChecks
-
-o
-    
+end % function
