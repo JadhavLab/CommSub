@@ -436,10 +436,13 @@ methods (Access = protected)
         end
 
         % RYAN - custom code, if time more than 1 minute, send pushover notification
-        if toc(obj.TicObject) > 60
+        global dopushover
+        if ~exist('dopushover','var') || isempty(dopushover)
+            dopushover = true;
+        end
+        if dopushover && (toc(obj.TicObject) > 60)
             system("pushover-cli '" + obj.Title + " complete'");
         end
-
     end
 end
 

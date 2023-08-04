@@ -178,7 +178,7 @@ if Option.analysis.cca % 🔀
     {'vel', 'accel', 'lindist', 'rewarded', ...
     'trajbound','inBoundChoiceTimes','outBoundChoiceTimes','rewardTimes'});
     % ---------------------------------------------------------------------
-    % Triggered spectrogram -----------------------------------------------
+    % Triggered spectrogram u----------------------------------------------
     % (create compute triggered spectrograms for commsubs)
     disp("Running triggered spectrogram - run")
     close all

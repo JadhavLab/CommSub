@@ -40,7 +40,6 @@ def average_lower_diagonal(df):
 # But first, we need to fix an issue with the function where it references a variable 'direction' that is not defined
 # The line should be 'raise ValueError(f"Invalid direction: {group.direction.iloc[0]}")'
 # Let's correct this and define a new version of the function
-#
 def get_significant_interactions(df, max_lag_order):
     # Filter the data to only include rows with the maximum lag order
     df_max_lag = df[df['lag'] == max_lag_order]
@@ -132,7 +131,6 @@ images.append(images[0])
 imageio.mimsave('heatmap.gif', images, duration=1)  # duration is the time between frames in seconds
 
 # --- Transfer entropy heatmap ---
-
 def get_transfer_entropy_heatmap(df, max_lag_order):
     # Filter the data to only include rows with the maximum lag order
     df_max_lag = df[df['lag'] == max_lag_order]

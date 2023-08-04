@@ -95,3 +95,9 @@ function out= d()
     fig("iei"); events.plotIEI(Events, 'NumBins', 1000);
     fig("cross iei"); events.plotCrossIEI(Events, 'NumBins', 1000, 'layout', 'matrix');
 end
+
+
+end % of runChecks
+
+o
+    

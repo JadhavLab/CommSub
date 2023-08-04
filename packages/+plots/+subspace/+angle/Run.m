@@ -54,16 +54,20 @@ targetIndex = nd.fieldGetCell(P,'index_target');
 smax = max(cellfun(@max, sourceIndex),[],'all');
 tmax = max(cellfun(@max, targetIndex),[],'all');
 
+
+selectGenHs = [... "coherence",...
+    "fft", "wpli"];
+measurements = ["princ",...
+        "princ_resamp",...
+        "princ_unitvar", ...
+        ];
+
 % ----------------------------
 % How many components?
 % ----------------------------
 K = 2:6;
-for selectGenH  = progress([... "coherence",...
-    "fft", "wpli"],'Title','selectGenH')
-for measurement = progress(["princ",...
-        "princ_resamp",...
-        "princ_unitvar", ...
-        ],'Title','measurement')
+for selectGenH  = progress(selectGenHs,'Title','selectGenH')
+for measurement = progress(measurements,'Title','measurement')
     for normalize = [false, true]
         for k = progress(K, 'Title','K')
             % ---------------------
@@ -98,6 +102,8 @@ for measurement = progress(["princ",...
             end
             subspaceDist = zeros(numel(partitions),...
                             size(indices, 1), size(indices, 1));
+            frobDist = zeros(numel(partitions),...
+                            size(indices, 1), size(indices, 1));
             rowVar = string([]);
             % expects a row vector ndim == ndims(B) == ndims(P)
             getInd = @(part,rest) [rest(1) part rest(2:end)]; 
@@ -115,8 +121,8 @@ for measurement = progress(["princ",...
                 
             assert(~isempty(indices), "No indices found")
             for part = progress(partitions','Title','Partitions')
-                for i = 1:size(indices,1)
-                    for j = 1:size(indices,1)
+                for i = 1:size(indices, 1)
+                    for j = 1:size(indices, 1)
                         I1 = getInd(part, indices(i,:));
                         I2 = getInd(part, indices(j,:));
                         I1 = num2cell(I1);
@@ -150,39 +156,57 @@ for measurement = progress(["princ",...
                             subspaceDist(part,i,j) = mean(...
                                 [subspaceang(xr, yr, ang_method),...
                                 subspaceang(xc, yc, ang_method)]);
+                            frobDist(part,i,j) = mean(...
+                                [norm(xr-yr,'fro'),...
+                                norm(xc-yc,'fro')]);
                         elseif contains(measurement, "resamp")
                             % sample rows and columns 10 times
-                            tmp = zeros(10,1);
-                            for i = 1:3
+                            n = 3;
+                            tmp = zeros(n,1);
+                            tmpf = zeros(n,1);
+                            for i = 1:n
                                 rows = randsample(1:size(x,1), size(x,1));
                                 cols = randsample(1:size(x,2), size(x,2));
                                 tmp(i) = subspaceang(x(rows,cols), y(rows,cols), ang_method);
+                                tmpf(i) = norm(x(rows,cols)-y(rows,cols),'fro');
                             end
-                            subspaceDist(part,i,j) = mean(tmp);
+                            subspaceDist(part,i,j) = mean(tmp,1);
+                            frobDist(part,i,j)     = mean(tmpf,1);
                         else
                             subspaceDist(part,i,j) = subspaceang(x, y, ang_method);
+                            frobDist(part,i,j)     = norm(x-y,'fro');
                         end
                         % figure;tiledlayout(2,1);nexttile; imagesc(x);cmocean('balance');clim([-0.1,0.1]);nexttile;imagesc(y);cmocean('balance');clim([-0.1,0.1]); axis(findobj('type','axes'),'square')
                     end
                     [x, ~, y, z] = deal(I1{:});
                     index     = [direct(y), patternSymbols(z), genH(x)];
                     rowVar(i) = join(string(index),'-');
+                    assert(size(subspaceDist,3) == size(subspaceDist,2), "Not square")
                 end
             end
             rowVar = cellstr(rowVar);
             disp("Saving subspaceDist with size: " + string(size(subspaceDist)))
-            plots.subspace.angle.save(subspaceDist, rowVar, k, normalize, measurement, selectGenH);
+            plots.subspace.angle.save(subspaceDist, frobDist, rowVar, k, normalize, measurement, selectGenH);
+            tmp = {frobDist,subspaceDist};
+            % -----------------------------
+            % Checksum of the save file
+            % -----------------------------
+            [subspaceDist, frobDist, rowVar] = plots.subspace.angle.load(k, normalize, measurement, selectGenH);
+            assert(isequal(subspaceDist, tmp{2}), "Subspace dist not equal")
+            assert(isequal(frobDist, tmp{1}), "Frobenius dist not equal")
         end
     end
 end
 end
 
+%% Plot
+
 K = 2:6;
-for selectGenH  = ["coherence", "fft", "wpli"]
-for measurement = ["princ_similarity"]
+for selectGenH  = selectGenHs
+for measurement = measurements
     for normalize = [false, true]
         for k = progress(K, 'Title','K')
-            plots.subspace.angle.load(k, normalize, measurement, selectGenH);
+            [subspaceDist, frobDist, rowVar] = plots.subspace.angle.load(k, normalize, measurement, selectGenH);
             % -----------------------------
             G = clustergram(subspaceDist, 'ColumnLabels', rowVar, 'RowLabels', rowVar, 'Colormap', crameri('acton'), 'symmetric', true);
 %             set(G, 'Colormap', crameri('lajolla'))
@@ -193,8 +217,8 @@ for measurement = ["princ_similarity"]
             cgFig(1).Children(end).FontSize=16;
             G.addTitle("subspace distance, K="+k + ", " + measurement + ", " + normalize)
             saveas(cgFig(1),fullfile(figureFolder,sprintf('subspaceDistance_K=%d.svg',k)));
-end
-end
+        end % k
+    end % normalize
 end
 end
 

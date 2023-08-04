@@ -33,7 +33,7 @@ head(T)
 % ISSUE: GETTING ALMOST SAME CORRELATION FOR ALL i AND j
 % Create a gramm object
 clf
-var = "diff_norm";
+var = "diff";
 if contains(var, "norm")
     q = 0.01;
     inds = T.(var) > quantile(T.(var), q) & T.(var) < quantile(T.(var), 1-q);
@@ -46,10 +46,11 @@ g = gramm('x', T.(var), ...
 % Split the data into columns by patternType
 g.facet_grid([], T.patternType);
 % Add density plot
+g.set_stat_options("alpha", 0.5, "nboot", 1000);
 g.stat_density("function", "pdf")
 g.stat_summary("type", "sem", "geom", "area")
 % Draw the plot
-g.axe_property("YLim", [0 0.2]);
+% g.axe_property("YLim", [0 0.2]);
 g.draw();
 
 % correlations minus overall correlation
