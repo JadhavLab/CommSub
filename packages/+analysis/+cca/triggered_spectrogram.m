@@ -135,6 +135,9 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Patterns')
         sp_start_indices = sp_start_indices(:);
         sp_stop_indices  = interp1(sp_time, 1:numel(sp_time), efizz.t(efizz_indices+window_size), 'nearest');
         sp_stop_indices  = sp_stop_indices(:);
+        if isempty(sp_start_indices) || isempty(sp_stop_indices)
+            continue
+        end
         sp_win_size      = mode(abs([sp_stop_indices - spike_indices; spike_indices - sp_start_indices]))+1;
         total_sp_win_size = 2 * sp_win_size + 1;
 
