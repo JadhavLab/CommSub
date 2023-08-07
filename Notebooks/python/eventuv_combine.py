@@ -1,6 +1,8 @@
 import pandas as pd
 import os
 from glob import glob
+import arrow
+import datetime
 
 # Directory where your files are located
 directory = "/Volumes/MATLAB-Drive/Shared/figures/tables/"
@@ -13,6 +15,11 @@ dfs = []
 
 # Read each file into a dataframe and append to list
 for file in files:
+    print("Reading {}".format(file))
+    ctime = os.path.getctime(file)
+    # Convert ctime to human readable format
+    ctime = datetime.datetime.fromtimestamp(ctime).strftime('%Y-%m-%d %H:%M:%S')
+    print("...created on {}".format(ctime))
     path = os.path.join(directory, file)
     df = pd.read_parquet(path)
     dfs.append(df)

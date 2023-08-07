@@ -47,7 +47,10 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
     event_r_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
     event_u_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
     event_v_values = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
+    event_u_values_mean = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
+    event_v_values_mean = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}), Opt.N);
     event_time = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}));
+    % uv_components = nan(length(Events.cellOfWindows), length(Events.cellOfWindows{1}));
 
     if isempty(Patterns_overall(i).cca)
         continue;
@@ -93,10 +96,10 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
 
     % Loop over all events
     ecnt=0;
-    for w = p
+    for w = p % uv components
         windows = Events.cellOfWindows{w};
         disp("length windows = " + length(windows))
-        for j = 1:length(windows)
+        for j = 1:length(windows) % events
 
             % Find the time bins that correspond to the current event
             event_time_bins = find(Spk.timeBinMidPoints >= windows(j,1) &...
@@ -129,6 +132,10 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
             event_r_values(w,j,:) = r;  % assuming we are interested in the first canonical correlation
             event_u_values(w,j,:) = mean(u,1);
             event_v_values(w,j,:) = mean(v,1);
+            event_u_values_mean(w,j,:)  = repmat(mean(mean(u,1)),1,Opt.N);
+            event_v_values_mean(w,j,:)  = repmat(mean(mean(v,1)),1,Opt.N);
+            % figure out how many nans
+            % arrayfun(@(x) sum(isnan(event_v_values(:,x,:)),'all'), 1:size(event_v_values,2))
             event_u{w,j} = u;
             event_v{w,j} = v;
             event_time(w,j) = center_time;
@@ -143,6 +150,7 @@ for i = progress(1:numel(Patterns_overall), 'Title', 'Event analysis')
     out(i{:}).event_u        = event_u;
     out(i{:}).event_v        = event_v;
     out(i{:}).event_time     = event_time;
+    % out(i{:}).uv_comp        = uv_components;
 end
 
 tabappend = struct2cell(Opt.scalar_struct);
@@ -151,4 +159,7 @@ tabappend = strjoin(tabappend, "_");
 
 tablefolder = figuredefine("tables");
 t = table.analyses.eventuv(out, [], [], [], Opt.scalar_struct);
+tmp = Option.patternNames(t.patterns);
+t.patternNames = tmp(:);
+assert(numel(unique(t.uv_components)) > 1, "Only one uv component found. Check your data.")
 parquetwrite(fullfile(tablefolder, "eventuv" + tabappend + ".parquet"), t);
