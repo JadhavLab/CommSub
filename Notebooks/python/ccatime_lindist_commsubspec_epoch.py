@@ -68,7 +68,7 @@ line_styles = {
 # - - - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - -- - - 
 print("Loading data...")
 folder = '/Volumes/MATLAB-Drive/Shared/figures/tables/'
-figfolder = '/Volumes/MATLAB-Drive/Shared/figures/lindist_bootstrap_epoch/'
+figfolder = '/Volumes/MATLAB-Drive/Shared/figures/lindist_bootstrap_epoch/zscore'
 if not os.path.exists(figfolder):
     os.makedirs(figfolder)
 # name   = 'ZT2powerccatime'
@@ -165,6 +165,7 @@ bootstrap_means_combined = pd.DataFrame(bootstrap_means_combined)
 bootstrap_means_combined["lindist_bin_ind"] = bootstrap_means_combined["lindist_bin"].apply(lambda x: x.right)
 bootstrap_means_combined.loc[:,'bootstrap_mean'] = bootstrap_means_combined.bootstrap_mean.astype(float)
 bootstrap_means_combined.to_parquet(os.path.join(folder, f'{name}_bootstrap{append}.parquet'), index=False)
+bootstrap_means_combined = pd.read_parquet(os.path.join(folder, f'{name}_bootstrap{append}.parquet'))
 
 # Smooth
 print("sorting...")
@@ -179,7 +180,7 @@ bootstrap_means_combined["bootstrap_mean_smooth"] = bootstrap_means_combined.gro
 # ----------------------------------------------------
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
-scaler = MinMaxScaler()
+# scaler = MinMaxScaler()
 iters = itertools.product(columns_to_bootstrap, bootstrap_means_combined.animal.unique())
 for column, animal in tqdm(iters, desc="feature engineering", total=len(columns_to_bootstrap) * bootstrap_means_combined.animal.nunique()):
     # Get the data for this column and animal
@@ -199,22 +200,27 @@ for column, animal in tqdm(iters, desc="feature engineering", total=len(columns_
             (bootstrap_means_combined["animal"] == animal), "bootstrap_mean_smooth"] = scaled_data_smooth
 # bootstrap_means_combined.head()
 bootstrap_means_combined.to_parquet(
-        os.path.join(folder, f'{name}_bootstrap_normalized{append}.parquet'), 
-                                    index=False)
-
-animal_bootstrap_means_combined = bootstrap_means_combined.groupby(["iboot", "epoch", "column", "trajbound", "lindist_bin_mid"]).mean().reset_index()
-# ----------------------------------------------------
-# Read Parquet
-# ----------------------------------------------------
-bootstrap_means_combined = pd.read_parquet(os.path.join(folder, f'{name}_bootstrap_normalized{append}.parquet'))
+        os.path.join(folder, f'{name}_bootstrap_normalized{append}_{str(scaler).replace("()","").lower()}.parquet'), index=False)
+bootstrap_means_combined = pd.read_parquet(
+        os.path.join(folder, f'{name}_bootstrap_normalized{append}_{str(scaler).replace("()","").lower()}.parquet'))
 
 # Add the lindist_bin_mid column back to the DataFrame
 print("Adding lindist_bin_mid column...")
 bootstrap_means_combined["lindist_bin_mid"] = \
     bootstrap_means_combined["lindist_bin"].apply(lambda x: x.mid)
 
+animal_bootstrap_means_combined = bootstrap_means_combined.groupby(
+        ["iboot", "epoch", "column", "trajbound", "lindist_bin_mid"]).mean().reset_index()
+# ----------------------------------------------------
+# Read Parquet
+# ----------------------------------------------------
+bootstrap_means_combined = pd.read_parquet(os.path.join(folder, f'{name}_bootstrap_normalized{append}.parquet'))
+
+
 
 # -------------------------Checking for duplicates------------------------- ##
+
+print("Plot the bootstrap means overall")
 
 component_fill_bases = {
     "U1": 0, "U2": 1, "U3": 2,
@@ -243,7 +249,7 @@ for epoch in tqdm(animal_bootstrap_means_combined["epoch"].unique(), desc="epoch
     smooth = True
     field = "bootstrap_mean_smooth" if smooth else "bootstrap_mean"
     # Set the overall title
-    fig.suptitle('Epoch=' + epoch, fontsize=20)
+    fig.suptitle('Epoch=' + str(epoch), fontsize=20)
     for i, components in enumerate(row_components[:rows]):
         for j, trajbound in enumerate(column_trajbounds):
             # Get the data for this subplot
@@ -349,6 +355,7 @@ def plot_by_epoch(df, column, epochs, field="bootstrap_mean_smooth"):
     # Show the plot
     plt.show()
 
+print("Plotting by epoch")
 # Call the function
 for column in tqdm(component_fill_bases.keys(),total=len(component_fill_bases.keys())):
     plot_by_epoch(animal_bootstrap_means_combined, column, "epoch")
@@ -398,6 +405,7 @@ def plot_by_animal(df, column, field="bootstrap_mean_smooth"):
     plt.tight_layout()
     plt.show()
 
+print("Plotting by animal")
 # The test function call has been commented out because we don't currently have access to the bootstrap_means_combined DataFrame
 for column in tqdm(component_fill_bases.keys(),total=len(component_fill_bases.keys())):
     plot_by_animal(bootstrap_means_combined, column)
