@@ -28,7 +28,8 @@ Default = struct();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ----- Key properties -----
-Default.animal                        = "ZT2";
+Default.animal                        = "JS15";
+% Default.animal                        = "ZT2";
 Default.samplingRate                  = [] ;             % For spikes.getSpikeTrain, nan if not given
 
 % used to determine how large the individual bins are in spikeCountMatrix

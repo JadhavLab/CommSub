@@ -58,7 +58,7 @@ figure;
 tiledlayout(4,6);
 F = fieldnames(corrs);
 for i = 1:4
-for j = 1:6
+for j = 1:length(unique(T.pattern))
     nexttile
     imagesc(corrs.(F{i}){j} - overall)
     title(F{i})

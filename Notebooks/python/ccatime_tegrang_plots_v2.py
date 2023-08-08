@@ -378,3 +378,48 @@ def generate_proportion_network(df, column1, column2, te_col, surrogate_te_col):
     plt.axis('off')
     plt.show()
 
+
+import networkx as nx
+import matplotlib.pyplot as plt
+
+def generate_graph_from_df(df, pvalue_field='pvalue', magnitude_field='F', significance_level=0.05):
+    """
+    Generate a directed graph based on Granger causality results.
+    
+    Parameters:
+    - df: DataFrame containing Granger causality results.
+    - pvalue_field: column name for p-values to determine edges.
+    - magnitude_field: column name for edge weights.
+    - significance_level: significance level for p-value to consider an edge.
+    
+    Returns:
+    - G: A networkx DiGraph.
+    """
+    # Create a directed graph
+    G = nx.DiGraph()
+    
+    # Iterate through rows of the dataframe
+    for _, row in df.iterrows():
+        source = row['column1']
+        target = row['column2']
+        
+        # Check if the p-value is less than the significance level
+        if row[pvalue_field] < significance_level:
+            # Add an edge with weight based on the magnitude_field
+            G.add_edge(source, target, weight=row[magnitude_field])
+    
+    return G
+
+# Visualization
+def visualize_graph(G):
+    pos = nx.spring_layout(G)  # Positioning of nodes
+    weights = [G[u][v]['weight'] for u, v in G.edges()]
+    nx.draw(G, pos, with_labels=True, width=weights, node_size=500,
+            node_color="skyblue", font_size=10)
+    plt.title("Granger Causality Network")
+    plt.show()
+
+# Generate a graph using the function
+G = generate_graph_from_df(data)  # Assuming results_df is your Granger causality results dataframe
+visualize_graph(G)
+

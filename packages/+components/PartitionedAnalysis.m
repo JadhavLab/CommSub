@@ -181,7 +181,7 @@ end
 %%
 for i = 1:4
     for p = 1:Option.numPartition
-        temp = R_bybeh{p}{i}(1:6,1:6);
+        temp = R_bybeh{p}{i}(1:Option.nPatternAndControl,1:Option.nPatternAndControl);
         avg_leadingDimCorr(p,:) = mean(abs(temp), 1);
     end
     beh_leadingDimCorr(i,:) = mean(avg_leadingDimCorr,1);

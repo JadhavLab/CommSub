@@ -6,7 +6,9 @@ from matplotlib import pyplot as plt
 import hdf5storage
 import seaborn as sns
 import numpy as np
+import pandas as pd
 from matplotlib import colors
+import networkx as nx
 
 # Argument parser
 parser = argparse.ArgumentParser(description="Load and process .mat file for neural data analysis.")
@@ -99,7 +101,6 @@ if __name__ == "__main__":
 
     # ----------------------------
 
-    import pandas as pd
 
     # Helper function to create dataframe for given distance tensor
     def create_dataframe(distance_tensor, row_vars):
@@ -338,7 +339,6 @@ if __name__ == "__main__":
 
     # ----------------------------
 
-    import networkx as nx
 
     def plot_network_graph(df, scale=1):
         # Create a new graph from the dataframe
@@ -370,4 +370,3 @@ if __name__ == "__main__":
     # Running the function for the subspaceDf dataframe
     plot_network_graph(subspaceDf)
     plot_network_graph(frobDf)
-

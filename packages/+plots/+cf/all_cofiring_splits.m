@@ -1,10 +1,11 @@
 M=matfile('~/savestate.mat')
+Spk = M.Spk;
 
 genH = shortcut.generateH(string(Option.generateH));
 patternSymbols = shortcut.patternSymbols(patternNames,2);
 
-spikeRateMatrix = M.spikeRateMatrix;
-areasPerNeuron  = M.areaPerNeuron;
+spikeRateMatrix = Spk.spikeRateMatrix;
+areasPerNeuron  = Spk.areaPerNeuron;
 
 H = areasPerNeuron == "CA1";
 P = areasPerNeuron == "PFC";
@@ -54,8 +55,8 @@ message = ["skewness_{","quant^{60}_{"];
 message = repmat(message,3,1) + repmat(["hh","pp","hp"]',1,2) + repmat("} = ",3,2) + [s',q'];
 title(message)
 set(gca,'yscale','log');
-X_hpc = M.X_hpc;
-X_pfc = M.X_pfc;
+X_hpc = Spk.hpc.X;
+X_pfc = Spk.pfc.X;
 
 figc("Also true within rhythms?");
 tiledlayout(2,6)

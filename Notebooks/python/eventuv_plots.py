@@ -3,6 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
+import os
+
+figfolder = "/Volumes/MATLAB-Drive/Shared/figures/eventuv_python/"
+if not os.path.exists(figfolder):
+    os.makedirs(figfolder)
 
 # Load the provided CSV file
 df = pd.read_parquet('/Volumes/MATLAB-Drive/Shared/figures/tables/eventuv.parquet')
@@ -204,20 +209,37 @@ df_clean['perpendicular_score'] = np.abs(df_clean['event_u_values'] - df_clean['
 df_clean[['projection_score', 'perpendicular_score']].head()
 df_clean['abs_projection_score'] = df_clean['projection_score'].abs()
 df_clean['abs_perpendicular_score'] = df_clean['perpendicular_score'].abs()
+df_clean['proj_over_perp'] = df_clean['abs_projection_score'] / df_clean['abs_perpendicular_score']
+df_clean['abs_proj_over_perp'] = df_clean['abs_projection_score'] / df_clean['abs_perpendicular_score']
 
-
-def plot_bar(data, y_value):
+def plot_bar(data, y_value, query=None):
     plt.figure(figsize=(12, 6))
-    sns.barplot(data=data, x='patterns', y=y_value, hue='genH_highlow', errorbar=('ci', 99))
+    if query:
+        data = data.query(query)
+    g=sns.barplot(data=data, x='patterns', y=y_value, hue='genH_highlow', errorbar=('ci', 99))
     plt.title(f'Bar Plot for {y_value}\n(99% CI)')
     plt.show()
 
+# Function that takes the sqrt(sum of uv_components squared) 
+def mag2(X):
+    X = np.sqrt(np.sum(X**2, axis=0))
+    return X
+
 # Plotting for projection score
 plt.close('all')
-plot_bar(df_clean, 'projection_score')
-plot_bar(df_clean, 'perpendicular_score')
+index = ['animal','genH', 'genH_highlow', 'highlow', 'patterns', 'event_time']
+df_clean_uvgroup = df_clean.groupby(index).agg({'projection_score': mag2,
+                                                'perpendicular_score': mag2,
+                                                'abs_projection_score': mag2,
+                                                'abs_perpendicular_score': mag2,
+                                                'proj_over_perp': 'mean',
+                                                'abs_proj_over_perp': 'mean'}).reset_index()
+plot_bar(df_clean_uvgroup, 'projection_score')
+plot_bar(df_clean_uvgroup, 'perpendicular_score')
 plot_bar(df_clean, 'abs_projection_score')
 plot_bar(df_clean, 'abs_perpendicular_score')
+plot_bar(df_clean, 'proj_over_perp')
+plot_bar(df_clean, 'abs_proj_over_perp')
 
 def plot_bar_comp(data, y_value):
     sns.catplot(data=data, x='patterns', y=y_value, hue='genH_highlow', errorbar=('ci', 99),
@@ -342,6 +364,8 @@ def perform_umap(df_matrix:pd.DataFrame, n_neighbors=15, min_dist=0.1,
     - DataFrame: UMAP-transformed data.
     """
     import umap
+    if any([x in df_matrix.columns for x in index]):
+        df_matrix = df_matrix.set_index(index)
     reducer = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist, n_components=n_components, metric=metric)
     print(f"Performing UMAP with {n_neighbors} neighbors, {min_dist} min_dist, {n_components} components, and {metric} metric...")
     embedding = reducer.fit_transform(df_matrix.values)
@@ -455,22 +479,99 @@ plot_umap_3d(um, hue='genH_highlow', row="patterns", col="animal",
 # UV magnitude over event times
 # ========
 
+# TODO: CUT OUT DIFF GREATER THAN 1 minute
+
+
 # Calculate magnitude for each u and v component
 df_matrix['magnitude_u'] = np.sqrt(df_matrix['1.0_u']**2 + df_matrix['2.0_u']**2 + df_matrix['3.0_u']**2 + df_matrix['4.0_u']**2 + df_matrix['5.0_u']**2)
 df_matrix['magnitude_v'] = np.sqrt(df_matrix['1.0_v']**2 + df_matrix['2.0_v']**2 + df_matrix['3.0_v']**2 + df_matrix['4.0_v']**2 + df_matrix['5.0_v']**2)
 
+# Reset the index for the operation
+df_matrix_reset = df_matrix.reset_index()
+# Calculate the linspace for each group
+def assign_time(group):
+    group_size = len(group)
+    first_event = group['events'].iloc[0]
+    last_event = group['events'].iloc[-1]
+    group['time'] = np.linspace(first_event, last_event, group_size)
+    return group
+df_matrix_time = df_matrix_reset.groupby(['animal', 'genH']).apply(assign_time)
+# Setting the new dataframe index back to its original structure
+df_matrix_time = df_matrix_time.set_index(['events', 'animal', 'genH', 'genH_highlow', 'highlow', 'patterns'])
+df_matrix_time.head()
+
+
 # Subtract minimum time per animal
-df_matrix = df_matrix.reset_index()
-df_matrix['event_time'] = df_matrix['event_time'] - df_matrix.groupby('animal')['event_time'].transform('min')
+df_matrix = df_matrix_time.reset_index()
+df_matrix['time'] = df_matrix['time'] - df_matrix.groupby('animal')['time'].transform('min')
 
 #9 Melt the data for easy plotting
-df_melted = df_matrix.melt(id_vars='event_time', value_vars=['magnitude_u', 'magnitude_v'], var_name='component', value_name='magnitude')
+df_melted = df_matrix.melt(id_vars='time', value_vars=['magnitude_u', 'magnitude_v'], var_name='component', value_name='magnitude')
 # Plot using relplot
 print("Plotting...")
-g = sns.relplot(data=df_melted, x='event_time', y='magnitude', kind='line', hue='component', height=5, aspect=2)
+g = sns.relplot(data=df_melted, x='time', y='magnitude', kind='line', hue='component', height=5, aspect=2)
+g.set_axis_labels("Event Time", "Magnitude")
+g.tight_layout()
+plt.show()
+plt.close()
+
+# Define window size
+window_size = 20
+# Apply rolling mean
+df_matrix['magnitude_u_smooth'] = df_matrix.groupby(['animal', 'genH'])['magnitude_u'].transform(lambda x: x.rolling(window_size).mean())
+df_matrix['magnitude_v_smooth'] = df_matrix.groupby(['animal', 'genH'])['magnitude_v'].transform(lambda x: x.rolling(window_size).mean())
+
+df_melted = df_matrix.melt(id_vars='time', value_vars=['magnitude_u_smooth', 'magnitude_v_smooth'], var_name='component', value_name='magnitude')
+# Plot using relplot
+print("Plotting...")
+g = sns.relplot(data=df_melted, x='time', y='magnitude', kind='line', hue='component', height=5, aspect=2, alpha=0.5)
 g.set_axis_labels("Event Time", "Magnitude")
 g.tight_layout()
 plt.show()
 
+# Define number of bins
+num_bins = 100
+# Bin the event_time data
+df_matrix['time_bin'] = df_matrix.groupby(['animal', 'genH'])['time'].transform(lambda x: pd.cut(x, num_bins, labels=range(num_bins)))
 
+
+# Plot using relplot
+print("Plotting...")
+g = sns.relplot(data=df_matrix, x='time_bin', y='magnitude_u', kind='line', hue='genH', height=5, aspect=2)
+g.set_axis_labels("Time Bin", "Magnitude")
+g.tight_layout()
+plt.show()
+
+
+# Plot using relplot
+print("Plotting...")
+g = sns.relplot(data=df_matrix, x='time_bin', y='magnitude_u', kind='line', hue='genH_highlow', height=5, aspect=2)
+g.set_axis_labels("Time Bin", "Magnitude")
+g.tight_layout()
+plt.show()
+
+
+
+# Plot using relplot
+print("Plotting...")
+g = sns.relplot(data=df_matrix, x='time_bin', y='magnitude_v', kind='line', hue='genH', height=5, aspect=2)
+g.set_axis_labels("Time Bin", "Magnitude")
+g.tight_layout()
+plt.show()
+
+
+# Plot using relplot
+print("Plotting...")
+g = sns.relplot(data=df_matrix, x='time_bin', y='magnitude_v', kind='line', hue='genH_highlow', height=5, aspect=2)
+g.set_axis_labels("Time Bin", "Magnitude")
+g.tight_layout()
+plt.show()
+
+
+# Plot using relplot
+print("Plotting...")
+g = sns.relplot(data=df_matrix.query('genH == "coherence"'), x='time_bin', y='magnitude_u', kind='line', hue='genH_highlow', height=5, aspect=2)
+g.set_axis_labels("Time Bin", "Magnitude")
+g.tight_layout()
+plt.show()
 
