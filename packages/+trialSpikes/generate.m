@@ -119,6 +119,20 @@ for iPattern = progress(1:numResult, 'Title', 'Patterns')
 
 end
 
+
+nValues = cellfun(@(x) size(x, 3), spikeSampleTensor);
+nSum = sum(nValues);
+spikeRateTensor = zeros(nNeurons, samplesPerTrial, nSum);
+
+currentPosition = 1;
+for i = 1:numel(spikeSampleTensor)
+    currentSize = size(spikeSampleTensor{i}, 3);
+    spikeRateTensor(:, :, currentPosition:(currentPosition+currentSize-1)) = spikeSampleTensor{i};
+    currentPosition = currentPosition + currentSize;
+end
+
+Spk.spikeRateTensor = spikeRateTensor;
+
 % Unify good neurons across patterns
 gn = good_neurons{1};
 for iPattern = 2:numResult
@@ -164,6 +178,8 @@ end
 Spk.spikeCountMatrix = Spk.spikeCountMatrix(good_neurons,:);
 Spk.spikeRateMatrix  = Spk.spikeRateMatrix(good_neurons,:);
 Spk.areaPerNeuron    = Spk.areaPerNeuron(good_neurons);
+Spk.spikeRateTensor = Spk.spikeRateTensor(good_neurons,:,:);
+Spk.good_neurons = good_neurons;
 
 % Finally let's setup two dictionaries that translate between regional
 % index and index in the spikeSampleMatrix
@@ -175,5 +191,6 @@ Spk.pfc.original_index = find(Spk.areaPerNeuron == "PFC");
 Spk.pfc.regional_index = 1:numel(Spk.pfc.original_index);
 Spk.pfc.to_orig   = dictionary(Spk.pfc.regional_index, Spk.pfc.original_index);
 Spk.pfc.from_orig = dictionary(Spk.pfc.original_index, Spk.pfc.regional_index);
+
 
 end

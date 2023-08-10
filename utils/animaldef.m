@@ -1,6 +1,9 @@
 function animalinfo = animaldef(animalname)
 	
-	% Get the user name! and determine user specific root folder
+if ispc
+    rootfolder = 'F:/ComSub/';
+else
+    % Get the user name! and determine user specific root folder
 	[~,username] = unix('whoami');
 	switch deblank(username)
 		case 'ss'				% on laptop
@@ -34,7 +37,9 @@ function animalinfo = animaldef(animalname)
                 error(sprintf(['Haven''nt properly constructured animaldef to find path '...
 				'to animal data for username %s'],username));
             end
-	end
+    end
+end
+
 
 switch animalname
 

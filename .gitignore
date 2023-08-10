@@ -12,7 +12,6 @@ DATA_TABLES
 *.vim
 figures
 SingleDayExpt
-*.mlx
 hash/*.mat
 .mind
 hash/.8dKXLsX2ZhwXjc5YT2GzXu.tmp
