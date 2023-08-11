@@ -1,4 +1,4 @@
-function J_Patterns = JPECC(Patterns, Option)
+function J_Patterns = JPECC(Patterns, Option, type, trial)
 % Computes lagged JPECC between patterns in two brain araes
 
 %Patterns(i).X_source = [Neurons, Times, Trials]
@@ -12,13 +12,13 @@ for i = 1:40
     disp(i)
     disp("----------")
 
-    p = Patterns(i,2,4);
+    p = Patterns(i,2,type);
 
     a = size(p.X_source,1);
     b = size(p.X_target,1);
 
-    tens_curr_source = reshape(p.X_source,[a,60,2000]);
-    tens_curr_target = reshape(p.X_target,[b,60,2000]);
+    tens_curr_source = reshape(p.X_source,[a,60,trial(type)]);
+    tens_curr_target = reshape(p.X_target,[b,60,trial(type)]);
 
     nBins = size(tens_curr_source,2); 
 
