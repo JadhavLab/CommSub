@@ -180,13 +180,13 @@ try
     lregion.trajall       = findgroups(lregion.epoch, lregion.traj);
     [groups, traj, ldist] = findgroups(lregion.trajall, lregion.ldistB);
     uGroups = unique(groups);
-    idphi = zeros(numel(traj), numel(ldist));
+    % idphi = zeros(numel(traj), numel(ldist));
     for g = uGroups'
 
         headdir = lregion(g,:).headdir;
         vel = lregion(g,:).vel;
         dphi = abs(diff(headdir));
-        idphi(traj(g), ldist(g)) = sum(dphi);
+        % idphi(traj(g), ldist(g)) = sum(dphi);
         dV = abs(diff(vel));
         idv(traj(g), ldist(g)) = sum(dV);
 
@@ -266,3 +266,5 @@ behavior.tperfOutbound = interp1(behavior.time(behavior.trajbound==0),...
 
 disp("Done with addToBehavior ... took " + num2str(toc) + " seconds");
 
+% Let's add a call to compute local idphi
+behavior.idphi = idphi(behavior.X, behavior.Y, 10); % 1/3 of a second integration window

@@ -67,9 +67,9 @@ else
                 'maxWindows', 2000, ...
                 'windowParameters',Option.winSize);
     % Characterize events
-    figure; events.plot_events(Events, 'rewardTimes');
+    %figure; events.plot_events(Events, 'rewardTimes');
     % figure; events.plotIEI(Events, 'NumBins', 1000);
-    figure; events.plotCrossIEI(Events, 'NumBins', 1000, 'layout', 'matrix');
+    %figure; events.plotCrossIEI(Events, 'NumBins', 1000, 'layout', 'matrix');
     Option.nPatternAndControl = numel(Events.cellOfWindows);
     Option.patternNames = ["rewardOn", "rewardOff","idphi","idphi_low"];
 

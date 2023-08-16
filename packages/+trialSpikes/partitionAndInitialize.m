@@ -69,7 +69,7 @@ for iPartition = progress(1:Option.numPartition, 'Title', 'Partitioning data')
             Patterns(iPartition,j,i).X_source  = s_dat;
             Patterns(iPartition,j,i).X_target  = t_dat;
             assert(all(size(s_dat) > 0), 'Source data is empty');
-            assert(all(size(t_dat) > 0), 'Source data is empty');
+            assert(all(size(t_dat) > 0), 'Target data is empty');
             Patterns(iPartition,j,i).X_time    = reshape(Spk.trialTimes{i}',1,[]);
             % Assign index_source and index_target
             Patterns(iPartition,j,i).index_source = s_ind;
